@@ -114,7 +114,12 @@ def register(call: CallbackQuery):
 def collect_info(call: CallbackQuery):
     chat_id = call.message.chat.id
     juridical_type = call.data
-    db.query_db('INSERT OR REPLACE INTO users (chat_id, juridical_type) VALUES (?, ?)', (chat_id, juridical_type))
+
+    # постгре
+    db.insert_users_juridical_type_data(chat_id, juridical_type)
+    # старый код
+    # db.query_db('INSERT OR REPLACE INTO users (chat_id, juridical_type) VALUES (?, ?)', (chat_id, juridical_type))
+
     logging.debug(f"Saved juridical_type: {juridical_type} for chat_id: {chat_id}")
     if juridical_type == 'ip':
         bot.send_message(chat_id, "Укажите ваши фамилию, имя и отчество. \nНапример, Иванов Иван Иванович.")

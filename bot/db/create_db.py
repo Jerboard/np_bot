@@ -1,9 +1,9 @@
-import sqlite3
+from .base_db import begin_conn
 
 
 # Создание таблиц в базе данных
 def create_tables():
-    with sqlite3.connect('bot_database2.db', check_same_thread=False) as conn:
+    with begin_conn() as conn:
         cursor = conn.cursor()
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
@@ -111,7 +111,7 @@ def create_tables():
         # Добавление таблицы creatives
         cursor.execute("""
                    CREATE TABLE IF NOT EXISTS creatives (
-                       id INTEGER PRIMARY KEY AUTOINCREMENT,
+                       id SERIAL PRIMARY KEY,
                        chat_id INTEGER,
                        campaign_id INTEGER,
                        type TEXT,
@@ -170,3 +170,16 @@ def create_tables():
             PRIMARY KEY (chat_id, contractor_id)
         )
         ''')
+        conn.commit()
+        cursor.close()
+
+# cursor.execute("""
+#     CREATE TABLE IF NOT EXISTS creatives (
+#         id SERIAL PRIMARY KEY,
+#         chat_id INTEGER,
+#         campaign_id INTEGER,
+#         type TEXT,
+#         content TEXT,
+#         resized_path TEXT
+#     )
+# """)

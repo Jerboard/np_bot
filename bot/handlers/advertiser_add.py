@@ -51,9 +51,12 @@ def collect_advertiser_info(call: CallbackQuery):
     contractor_id = db.query_db('SELECT COUNT(*) FROM contractors WHERE chat_id = ?', (chat_id,), one=True)[0] + 1
     ord_id = f"{chat_id}.{contractor_id}"
 
-    db.query_db(
-        'INSERT OR REPLACE INTO contractors (chat_id, contractor_id, role, juridical_type, ord_id) VALUES (?, ?, ?, ?, ?)',
-        (chat_id, contractor_id, contractor_role, juridical_type, ord_id))
+    # сменил запрос под постгрес
+    db.insert_contractors_data(chat_id, contractor_id, contractor_role, juridical_type, ord_id)
+
+    #  старый запрос
+    # db.query_db('INSERT OR REPLACE INTO contractors (chat_id, contractor_id, role, juridical_type, ord_id) VALUES (?, ?, ?, ?, ?)',
+    #             (chat_id, contractor_id, contractor_role, juridical_type, ord_id))
 
     if call.data == 'ip_advertiser':
         bot.send_message(chat_id,

@@ -17,6 +17,8 @@ from urllib import parse
 from urllib.parse import urlparse
 
 import db
+import utils
+import config
 import keyboards as kb
 from init import bot
 
@@ -274,9 +276,13 @@ def process_average_views(message):
     average_views = message.text
     if average_views.isdigit():
         ord_id = f"{chat_id}-p-{len(db.query_db('SELECT * FROM platforms WHERE chat_id = ?', (chat_id,))) + 1}"
-        db.query_db(
-            'INSERT OR REPLACE INTO platforms (chat_id, platform_name, platform_url, average_views, ord_id) VALUES (?, ?, ?, ?, ?)',
-            (chat_id, platform_name, platform_url, average_views, ord_id))
+
+        # поменял на постгрес
+        db.insert_platforms_data(chat_id, platform_name, platform_url, average_views, ord_id)
+        # старый код
+        # db.query_db(
+        #     'INSERT OR REPLACE INTO platforms (chat_id, platform_name, platform_url, average_views, ord_id) VALUES (?, ?, ?, ?, ?)',
+        #     (chat_id, platform_name, platform_url, average_views, ord_id))
 
         # Получение person_external_id для РР
         user_role = db.query_db('SELECT role FROM users WHERE chat_id = ?', (chat_id,), one=True)[0]
@@ -311,8 +317,12 @@ def finalize_platform_data(chat_id, contractor_id):
         person_external_id = f"{chat_id}.{contractor_id}"
         response = send_platform_to_ord(ord_id, platform_name, platform_url, average_views, person_external_id, chat_id)
         bot.send_message(chat_id, "Площадка успешно зарегистрирована в ОРД.")
-        db.query_db('INSERT OR REPLACE INTO selected_contractors (chat_id, contractor_id) VALUES (?, ?)',
-                    (chat_id, contractor_id))
+
+        # постгрес
+        db.insert_selected_contractors_data(chat_id, contractor_id)
+        # старый код
+        # db.query_db('INSERT OR REPLACE INTO selected_contractors (chat_id, contractor_id) VALUES (?, ?)',
+        #             (chat_id, contractor_id))
 
         bot.send_message(chat_id, "Добавить новую площадку или продолжить?", reply_markup=kb.get_finalize_platform_data_kb())
 
@@ -694,8 +704,12 @@ def finalize_creative(chat_id, campaign_id):
 
         marker = response['marker']
         db.query_db('UPDATE creatives SET token = ?, status = ? WHERE creative_id = ?', (marker, 'active', creative_id))
-        db.query_db('INSERT OR REPLACE INTO creative_links (chat_id, ord_id, creative_id, token) VALUES (?, ?, ?, ?)',
-                    (chat_id, contract_external_id, creative_id, marker))
+
+        # постгре
+        db.insert_creative_links_data(chat_id, contract_external_id, creative_id, marker)
+        # старый код
+        # db.query_db('INSERT OR REPLACE INTO creative_links (chat_id, ord_id, creative_id, token) VALUES (?, ?, ?, ?)',
+        #             (chat_id, contract_external_id, creative_id, marker))
 
     bot.send_message(chat_id,
                      f"Креативы успешно промаркированы. Ваш токен - {marker}.\n"

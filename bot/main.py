@@ -7,11 +7,13 @@ from handlers import bot
 from handlers.common import auto_submit_statistics
 from db.create_db import create_tables
 
+
 if __name__ == '__main__':
     if DEBUG:
         logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     else:
         log_error('start_bot', with_traceback=False)
+
     set_main_menu()
     create_tables()
     # Вызов функции для автоматической подачи статистики
