@@ -15,13 +15,15 @@ from urllib import parse
 from flask import Flask, request, redirect
 
 import db
+import config
 from init import bot, app
+from handlers.common import result_payment, check_success_payment
 
 
 @app.route('/result', methods=['GET'])
 def payment_result():
     request_data = request.query_string.decode('utf-8')
-    result = result_payment(mrh_pass2, request_data)
+    result = result_payment(config.mrh_pass2, request_data)
 
     if "OK" in result:
         inv_id = result.replace("OK", "")
@@ -34,7 +36,10 @@ def payment_result():
         row = cursor.fetchone()
         chat_id = row[0]
         amount = row[1]
-        cursor.execute('UPDATE users SET balance = balance + ?, total_balance = total_balance + ? WHERE chat_id = ?', (amount, amount, chat_id))
+        cursor.execute(
+            'UPDATE users SET balance = balance + ?, total_balance = total_balance + ? WHERE chat_id = ?',
+            (amount, amount, chat_id)
+        )
         conn.commit()
         conn.close()
 
@@ -43,11 +48,13 @@ def payment_result():
 
     return result
 
+
 @app.route('/success', methods=['GET'])
 def payment_success():
     request_data = request.query_string.decode('utf-8')
-    result = check_success_payment(mrh_pass1, request_data)
+    result = check_success_payment(config.mrh_pass1, request_data)
     return result
+
 
 def get_next_inv_id(chat_id):
     # Логика для получения следующего уникального inv_id

@@ -17,14 +17,14 @@ import db
 import keyboards as kb
 from init import bot
 from . import common as cf
+from .base import preloader_advertiser_entity
 from utils import send_contractor_to_ord
 
 
 #### Добавление контрагента ####
 @bot.message_handler(commands=['preloader_advertiser_entity'])
-def preloader_advertiser_entity(message):
-    chat_id = message.chat.id
-    bot.send_message(chat_id, "Перейти к созданию контрагента?", reply_markup=kb.get_preloader_advertiser_entity_kb())
+def preloader_advertiser_entity_base(message: types.Message):
+    preloader_advertiser_entity(message)
 
 
 @bot.callback_query_handler(func=lambda call: call.data in ['no_advertiser'])
@@ -91,7 +91,18 @@ def handle_success_add_distributor(call: CallbackQuery):
         register_advertiser_entity(call)
     elif call.data == 'continue':
         if role == 'advertiser':
-            preloader_choose_platform(call.message)
+            # перенёс preloader_choose_platform
+            # preloader_choose_platform(call.message)
+            bot.send_message(
+                chat_id,
+                "Перейти к созданию рекламной площадки?",
+                reply_markup=kb.get_preloader_choose_platform_kb()
+            )
         elif role == 'publisher':
             bot.send_message(chat_id, "Теперь укажите информацию о договоре.")
-            start_contract(call.message)
+            # перенёс start_contract
+            # start_contract(call.message)
+            selected_contractor = db.query_db(
+                'SELECT contractor_id FROM selected_contractors WHERE chat_id = ?', (chat_id,),
+                one=True
+            )

@@ -16,15 +16,18 @@ import threading
 import db
 import keyboards as kb
 from init import bot
-from .statistic import ask_amount
+from .base import ask_amount, preloader_choose_platform, preloader_advertiser_entity
 
 
 # Обработчик команды /start
 @bot.message_handler(commands=['start'])
 def start(message):
     chat_id = message.chat.id
-    user_data = db.query_db('SELECT fio, title, inn, juridical_type, balance, role FROM users WHERE chat_id = ?',
-                         (chat_id,), one=True)
+    user_data = db.query_db(
+        'SELECT fio, title, inn, juridical_type, balance, role FROM users WHERE chat_id = ?',
+        (chat_id,),
+        one=True
+    )
 
     if user_data:
         # Если пользователь найден в базе данных, выводим информацию о нем
@@ -57,13 +60,17 @@ def start(message):
         markup = types.InlineKeyboardMarkup()
         agree_button = types.InlineKeyboardButton('Я согласен', callback_data='agree')
         markup.row(agree_button)
-        bot.send_message(chat_id,
-                         'Для начала работы вам необходимо согласиться с офертой и дать согласие на обработку персональных данных: \n\n'
-                         '<a href="https://docs.google.com/document/d/1QnOmySz1lrFzrRQs6HBXuJqDAZA3DoSCRGC-KE6EMKg/edit?usp=sharing">Согласие на обработку персональных данных</a> \n'
-                         '<a href="https://docs.google.com/document/d/1_P9lq4CffvU3lIhNZ6TbyUIGPcl0n9St5pAdtVjFgBE/edit?usp=sharing">Согласие на рекламную рассылку</a> \n'
-                         '<a href="https://docs.google.com/document/d/1WvSRMMoC0OwAoRJKbuS0bi1DJOUvhsp9M_MwNTC11HU/edit?usp=sharing">Политика конфиденциальности</a> \n'
-                         '<a href="https://docs.google.com/document/d/1nWeP61-18S_4QfS4XloXSvyTLJKRbOfMe8rEZPSVJVI/edit?usp=sharing">Публичная оферта</a> \n',
-                         reply_markup=markup, parse_mode="HTML", disable_web_page_preview=True)
+        bot.send_message(
+            chat_id,
+            'Для начала работы вам необходимо согласиться с офертой и дать согласие на обработку персональных данных: \n\n'
+            '<a href="https://docs.google.com/document/d/1QnOmySz1lrFzrRQs6HBXuJqDAZA3DoSCRGC-KE6EMKg/edit?usp=sharing">Согласие на обработку персональных данных</a> \n'
+            '<a href="https://docs.google.com/document/d/1_P9lq4CffvU3lIhNZ6TbyUIGPcl0n9St5pAdtVjFgBE/edit?usp=sharing">Согласие на рекламную рассылку</a> \n'
+            '<a href="https://docs.google.com/document/d/1WvSRMMoC0OwAoRJKbuS0bi1DJOUvhsp9M_MwNTC11HU/edit?usp=sharing">Политика конфиденциальности</a> \n'
+            '<a href="https://docs.google.com/document/d/1nWeP61-18S_4QfS4XloXSvyTLJKRbOfMe8rEZPSVJVI/edit?usp=sharing">Публичная оферта</a> \n',
+            reply_markup=markup,
+            parse_mode="HTML",
+            disable_web_page_preview=True
+        )
 
 
 # Обработка смены роли пользователя
@@ -173,8 +180,9 @@ def validate_inn(inn, juridical_type):
     if not re.match(r'^\d{10}$|^\d{12}$', inn):
         return False
 
-    def check_control_digit(inn, coefficients):
-        n = sum([int(a) * b for a, b in zip(inn, coefficients)]) % 11
+    # переименовал inn в inn_check и coefficients в coefficients_check, чтоб не дублировалось название переменной
+    def check_control_digit(inn_check, coefficients_check):
+        n = sum([int(a) * b for a, b in zip(inn_check, coefficients_check)]) % 11
         return n if n < 10 else n % 10
 
     if len(inn) == 10:
@@ -212,8 +220,11 @@ def collect_role(call: CallbackQuery):
     chat_id = call.message.chat.id
     role = call.data
     db.query_db('UPDATE users SET role = ? WHERE chat_id = ?', (role, chat_id))
-    user_data = db.query_db('SELECT fio, title, inn, juridical_type FROM users WHERE chat_id = ?', (chat_id,),
-                         one=True)
+    user_data = db.query_db(
+        'SELECT fio, title, inn, juridical_type FROM users WHERE chat_id = ?',
+        (chat_id,),
+        one=True
+    )
     fio, title, inn, juridical_type = user_data
 
     logging.debug(f"User data: fio={fio}, title={title}, inn={inn}, juridical_type={juridical_type}")
@@ -229,6 +240,7 @@ def collect_role(call: CallbackQuery):
     # Отправляем данные в ОРД
     response = send_to_ord(chat_id, fio, role, juridical_type, inn, "", rs_url)
 
+    # handle_ord_response пока закомментил, используется только тут. Взял отправку сообщений
     if role == 'advertiser':
         handle_ord_response(response, call.message, preloader_advertiser_entity, call.message)
     elif role == 'publisher':
@@ -276,4 +288,3 @@ def handle_ord_response(response, message, next_step_function, *args):
         next_step_function(*args)
     else:
         bot.send_message(message.chat.id, "Произошла ошибка при регистрации в ОРД")
-

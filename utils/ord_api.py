@@ -1,3 +1,11 @@
+import logging
+import requests
+
+import db
+import config
+from init import bot, app
+from handlers.common import result_payment, check_success_payment
+
 
 # Функция для отправки данных о контрагенте в ОРД API
 def send_contractor_to_ord(ord_id, name, role, juridical_type, inn, phone, rs_url):

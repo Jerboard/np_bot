@@ -25,6 +25,19 @@ def query_db(query, args=(), one=False) -> tuple:
         return (r[0] if r else None) if one else r
 
 
+# Функция для выполнения запросов к базе данных с логированием
+# def query_db(query, args=(), one=False):
+#     logging.debug(f"Выполнение запроса: {query} с аргументами {args}")
+#     with sqlite3.connect('bot_database2.db', check_same_thread=False) as conn:
+#         cursor = conn.cursor()
+#         cursor.execute(query, args)
+#         conn.commit()
+#         r = cursor.fetchall()
+#         cursor.close()
+#         logging.debug(f"Результат запроса: {r}")
+#         return (r[0] if r else None) if one else r
+
+
 # Функция для создания директории, если она не существует
 def create_directory(path):
     if not os.path.exists(path):

@@ -5,6 +5,7 @@ from .campaign_add import bot
 from .choose_platform import bot
 from .contract_add import bot
 from .creative_add import bot
+from .payment import bot
 # from .exceptions import bot
 
 __all__ = ['bot']

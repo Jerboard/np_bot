@@ -1,7 +1,5 @@
 import sqlite3
 
-from .base_db import conn
-
 
 # Создание таблиц в базе данных
 def create_tables():
@@ -172,5 +170,3 @@ def create_tables():
             PRIMARY KEY (chat_id, contractor_id)
         )
         ''')
-
-    create_tables()

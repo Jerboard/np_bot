@@ -1,11 +1,12 @@
-from telebot import types
 from telebot.types import CallbackQuery
 
 import logging
+
 import db
 import keyboards as kb
 from init import bot
-from utils import get_ord_id
+from . import common as cf
+import utils
 
 
 ####  Добавление рекламной кампании ####
@@ -18,7 +19,7 @@ from utils import get_ord_id
 def start_campaign(message):
     chat_id = message.chat.id
     bot.send_message(chat_id, "Введите название бренда, который вы планируете рекламировать.")
-    ask_for_brand(chat_id)
+    cf.ask_for_brand(chat_id)
 
 
 @bot.callback_query_handler(
@@ -27,7 +28,7 @@ def handle_additional_link(call: CallbackQuery):
     chat_id = call.message.chat.id
     campaign_id = call.data.split(':')[1]
     if call.data.startswith('add_another_link'):
-        ask_for_target_link(chat_id, campaign_id)
+        cf.ask_for_target_link(chat_id, campaign_id)
     elif call.data.startswith('continue_campaign'):
         confirm_ad_campaign(chat_id, campaign_id)
 
@@ -56,11 +57,15 @@ def handle_ad_campaign_callback(call: CallbackQuery):
     chat_id = call.message.chat.id
     campaign_id = call.data.split(':')[1]
     if call.data.startswith("confirm_ad_campaign"):
-        bot.send_message(chat_id,
-                         f"Рекламная кампания с брендом {db.query_db('SELECT brand FROM ad_campaigns WHERE campaign_id = ?', (campaign_id,), one=True)[0]} успешно создана!")
-        add_creative_start(chat_id, campaign_id)
+        bot.send_message(
+            chat_id,
+            f"Рекламная кампания с брендом "
+            f"{db.query_db('SELECT brand FROM ad_campaigns WHERE campaign_id = ?',(campaign_id,), one=True)[0]} "
+            f"успешно создана!"
+        )
+        cf.add_creative_start(chat_id, campaign_id)
     elif call.data.startswith("change_ad_campaign"):
-        ask_for_brand(chat_id)
+        cf.ask_for_brand(chat_id)
     elif call.data.startswith("delete_ad_campaign"):
         db.query_db('DELETE FROM ad_campaigns WHERE campaign_id = ?', (campaign_id,))
         db.query_db('DELETE FROM target_links WHERE campaign_id = ?', (campaign_id,))

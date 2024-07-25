@@ -1,4 +1,8 @@
 
+# Параметры магазина
+mrh_login = "markirovkaNP"
+mrh_pass1 = "shNcJ5nQpyx9821eemKM"
+mrh_pass2 = "LGb9k7QMZ5c3lzuqM2pI"
 
 # Замените 'YOUR_TOKEN' на ваш токен, полученный при создании бота в Telegram
 TOKEN2 = '7494012774:AAHGtlNLIF-L4hJ3Sn3GuA2IBJWXC2zISas'
