@@ -1,24 +1,11 @@
 from telebot import types
 from telebot.types import CallbackQuery
-from datetime import datetime
-from moviepy.editor import VideoFileClip
-from PIL import Image
-
-import logging
-import re
-import os
-import json
-import uuid
-import sqlite3
-import requests
-import threading
 
 import db
 import keyboards as kb
 from init import bot
 from . import common as cf
 from .base import preloader_advertiser_entity
-from utils import send_contractor_to_ord
 
 
 #### Добавление контрагента ####

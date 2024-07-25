@@ -1,9 +1,6 @@
 from telebot import types
 from telebot.types import CallbackQuery
 
-import logging
-import requests
-
 import db
 import keyboards as kb
 from init import bot

@@ -1,20 +1,9 @@
-from telebot import types
-from datetime import datetime, timedelta
-
 import logging
-import json
-import hashlib
-import sqlite3
-import requests
-import threading
-from urllib import parse
-from urllib.parse import urlparse
 
 import db
+import keyboards as kb
 from init import bot
-from utils import get_next_inv_id
 from . import common as cf
-
 
 
 ### Блок подачи статистики ###

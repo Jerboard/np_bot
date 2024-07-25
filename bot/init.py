@@ -7,8 +7,8 @@ import traceback
 import logging
 import telebot
 
-from cachetools import cached, TTLCache
-from flask import Flask, request, redirect
+from cachetools import TTLCache
+from flask import Flask
 
 import config
 
@@ -17,7 +17,7 @@ bot = telebot.TeleBot(config.TOKEN)
 
 
 # Настройка логирования
-logging.basicConfig(filename='bot_errors.log', level=logging.WARNING,
+logging.basicConfig(filename='../bot_errors.log', level=logging.WARNING,
                     format='%(asctime)s %(levelname)s:%(message)s')
 
 # Настройка кэша

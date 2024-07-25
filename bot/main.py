@@ -6,8 +6,6 @@ from config import DEBUG
 from handlers import bot
 from handlers.common import auto_submit_statistics
 from db.create_db import create_tables
-from utils import app
-
 
 if __name__ == '__main__':
     if DEBUG:

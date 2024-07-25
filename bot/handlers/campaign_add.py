@@ -6,7 +6,6 @@ import db
 import keyboards as kb
 from init import bot
 from . import common as cf
-import utils
 
 
 ####  Добавление рекламной кампании ####
@@ -60,7 +59,7 @@ def handle_ad_campaign_callback(call: CallbackQuery):
         bot.send_message(
             chat_id,
             f"Рекламная кампания с брендом "
-            f"{db.query_db('SELECT brand FROM ad_campaigns WHERE campaign_id = ?',(campaign_id,), one=True)[0]} "
+            f"{db.query_db('SELECT brand FROM ad_campaigns WHERE campaign_id = ?', (campaign_id,), one=True)[0]} "
             f"успешно создана!"
         )
         cf.add_creative_start(chat_id, campaign_id)

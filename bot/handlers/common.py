@@ -17,10 +17,8 @@ from urllib import parse
 from urllib.parse import urlparse
 
 import db
-import config
 import keyboards as kb
 from init import bot
-import utils
 
 
 # Обработчик для сбора ФИО ИП контрагента
@@ -28,7 +26,7 @@ def fio_i_collector_advertiser(message, contractor_id):
     chat_id = message.chat.id
     fio_i_advertiser = message.text
     db.query_db('UPDATE contractors SET fio = ? WHERE chat_id = ? AND contractor_id = ?',
-             (fio_i_advertiser, chat_id, contractor_id))
+                (fio_i_advertiser, chat_id, contractor_id))
     bot.send_message(message.chat.id,
                      "Введите ИНН вашего контрагента. Например, 563565286576. ИНН индивидуального предпринимателя совпадает с ИНН физического лица.")
     bot.register_next_step_handler(message, lambda m: inn_collector_advertiser(m, contractor_id))
@@ -39,7 +37,7 @@ def fio_collector_advertiser(message, contractor_id):
     chat_id = message.chat.id
     fio_advertiser = message.text
     db.query_db('UPDATE contractors SET fio = ? WHERE chat_id = ? AND contractor_id = ?',
-             (fio_advertiser, chat_id, contractor_id))
+                (fio_advertiser, chat_id, contractor_id))
     bot.send_message(message.chat.id, "Введите ИНН вашего контрагента. Например, 563565286576.")
     bot.register_next_step_handler(message, lambda m: inn_collector_advertiser(m, contractor_id))
 
@@ -49,7 +47,7 @@ def title_collector_advertiser(message, contractor_id):
     chat_id = message.chat.id
     title_advertiser = message.text
     db.query_db('UPDATE contractors SET title = ? WHERE chat_id = ? AND contractor_id = ?',
-             (title_advertiser, chat_id, contractor_id))
+                (title_advertiser, chat_id, contractor_id))
     bot.send_message(message.chat.id, "Введите ИНН вашего контрагента. Например, 6141027912.")
     bot.register_next_step_handler(message, lambda m: inn_collector_advertiser(m, contractor_id))
 
@@ -98,7 +96,7 @@ def inn_collector_advertiser(message, contractor_id):
         bot.register_next_step_handler(message, lambda m: inn_collector_advertiser(m, contractor_id))
         return
     db.query_db('UPDATE contractors SET inn = ? WHERE chat_id = ? AND contractor_id = ?',
-             (inn_advertiser, chat_id, contractor_id))
+                (inn_advertiser, chat_id, contractor_id))
     contractor_data = db.query_db(
         'SELECT fio, role, juridical_type, inn, title, ord_id FROM contractors WHERE chat_id = ? AND contractor_id = ?',
         (chat_id, contractor_id), one=True)
@@ -160,13 +158,13 @@ def save_brand(message):
     chat_id = message.chat.id
     brand = message.text
     campaign_id = db.query_db('SELECT ord_id FROM platforms WHERE chat_id = ? ORDER BY ord_id DESC LIMIT 1', (chat_id,),
-                           one=True)
+                              one=True)
 
     if campaign_id:
         campaign_id = campaign_id[0]  # Извлекаем значение из результата запроса
         ord_id = utils.get_ord_id(chat_id, campaign_id)
         db.query_db('INSERT INTO ad_campaigns (chat_id, campaign_id, brand, ord_id) VALUES (?, ?, ?, ?)',
-                 (chat_id, campaign_id, brand, ord_id))
+                    (chat_id, campaign_id, brand, ord_id))
         logging.debug(f"Inserted campaign record for chat_id: {chat_id}, campaign_id: {campaign_id}, ord_id: {ord_id}")
         bot.send_message(chat_id, "Бренд сохранен.")
         ask_for_service(chat_id, campaign_id)
@@ -207,7 +205,7 @@ def save_target_link(message, campaign_id):
     if not target_link.startswith("http://") and not target_link.startswith("https://"):
         target_link = "https://" + target_link
     db.query_db('INSERT INTO target_links (chat_id, campaign_id, link) VALUES (?, ?, ?)',
-             (chat_id, campaign_id, target_link))
+                (chat_id, campaign_id, target_link))
     logging.debug(f"Inserted target link for campaign_id: {campaign_id}")
     bot.send_message(chat_id, "Целевая ссылка сохранена.")
     ask_for_additional_link(chat_id, campaign_id)
@@ -284,7 +282,7 @@ def process_average_views(message):
         user_role = db.query_db('SELECT role FROM users WHERE chat_id = ?', (chat_id,), one=True)[0]
         if user_role == 'advertiser':
             contractors = db.query_db('SELECT contractor_id, fio, title FROM contractors WHERE chat_id = ?',
-                                   (chat_id,))
+                                      (chat_id,))
             if contractors:
                 bot.send_message(
                     chat_id,
@@ -314,7 +312,7 @@ def finalize_platform_data(chat_id, contractor_id):
         response = send_platform_to_ord(ord_id, platform_name, platform_url, average_views, person_external_id, chat_id)
         bot.send_message(chat_id, "Площадка успешно зарегистрирована в ОРД.")
         db.query_db('INSERT OR REPLACE INTO selected_contractors (chat_id, contractor_id) VALUES (?, ?)',
-                 (chat_id, contractor_id))
+                    (chat_id, contractor_id))
 
         bot.send_message(chat_id, "Добавить новую площадку или продолжить?", reply_markup=kb.get_finalize_platform_data_kb())
 
@@ -374,7 +372,7 @@ def process_contract_start_date(message, contractor_id):
         formatted_date = date_obj.strftime("%Y-%m-%d")
         ord_id = utils.get_ord_id(chat_id, contractor_id)
         db.query_db('UPDATE contracts SET contract_date = ? WHERE chat_id = ? AND contractor_id = ? AND ord_id = ?',
-                 (formatted_date, chat_id, contractor_id, ord_id))
+                    (formatted_date, chat_id, contractor_id, ord_id))
         logging.debug(f"Updated contract start date for ord_id: {ord_id}")
         bot.send_message(chat_id, "Введите дату завершения договора (дд.мм.гггг):")
         bot.register_next_step_handler(message, process_contract_end_date, contractor_id)
@@ -395,7 +393,7 @@ def process_contract_end_date(message, contractor_id):
         formatted_date = date_obj.strftime("%Y-%m-%d")
         ord_id = utils.get_ord_id(chat_id, contractor_id)
         db.query_db('UPDATE contracts SET end_date = ? WHERE chat_id = ? AND contractor_id = ? AND ord_id = ?',
-                 (formatted_date, chat_id, contractor_id, ord_id))
+                    (formatted_date, chat_id, contractor_id, ord_id))
         logging.debug(f"Updated contract end date for ord_id: {ord_id}")
         bot.send_message(chat_id, "Введите номер договора:")
         bot.register_next_step_handler(message, process_contract_serial, contractor_id)
@@ -411,7 +409,7 @@ def process_contract_serial(message, contractor_id):
     serial = message.text.strip()
     ord_id = utils.get_ord_id(chat_id, contractor_id)
     db.query_db('UPDATE contracts SET serial = ? WHERE chat_id = ? AND contractor_id = ? AND ord_id = ?',
-             (serial, chat_id, contractor_id, ord_id))
+                (serial, chat_id, contractor_id, ord_id))
     logging.debug(f"Updated contract serial for ord_id: {ord_id}")
     bot.send_message(chat_id, "Введите сумму договора:")
     bot.register_next_step_handler(message, process_contract_amount, contractor_id)
@@ -425,7 +423,7 @@ def process_contract_amount(message, contractor_id):
         amount = float(amount)
         ord_id = utils.get_ord_id(chat_id, contractor_id)
         db.query_db('UPDATE contracts SET amount = ? WHERE chat_id = ? AND contractor_id = ? AND ord_id = ?',
-                 (amount, chat_id, contractor_id, ord_id))
+                    (amount, chat_id, contractor_id, ord_id))
         logging.debug(f"Updated contract amount for ord_id: {ord_id}")
 
         # Спросить про НДС
@@ -548,7 +546,7 @@ def handle_creative_upload(message, campaign_id):
     if message.content_type in ['text', 'photo', 'video', 'audio', 'document']:
         creative_content = save_creative(message)
         creative_count = db.query_db('SELECT COUNT(*) FROM creatives WHERE chat_id = ? AND campaign_id = ?',
-                                  (chat_id, campaign_id), one=True)
+                                     (chat_id, campaign_id), one=True)
         if creative_count is None:
             creative_count = [0]
         ord_id_data = db.query_db(
@@ -655,7 +653,7 @@ def finalize_creative(chat_id, campaign_id):
     description = db.query_db('SELECT service FROM ad_campaigns WHERE campaign_id = ?', (campaign_id,), one=True)[0]
 
     contract = db.query_db('SELECT ord_id, contractor_id FROM contracts WHERE chat_id = ? ORDER BY ROWID DESC LIMIT 1',
-                        (chat_id,), one=True)
+                           (chat_id,), one=True)
     if contract is None:
         bot.send_message(chat_id, "Ошибка: Не найден договор для данного пользователя.")
         return
@@ -679,7 +677,7 @@ def finalize_creative(chat_id, campaign_id):
         user_inn = user_info[1]
     else:
         contractor_info = db.query_db('SELECT fio, title, inn FROM contractors WHERE contractor_id = ?',
-                                   (contractor_id_part,), one=True)
+                                      (contractor_id_part,), one=True)
         fio_or_title = contractor_info[0] if contractor_info[0] else contractor_info[1]
         user_inn = contractor_info[2]
 
@@ -697,7 +695,7 @@ def finalize_creative(chat_id, campaign_id):
         marker = response['marker']
         db.query_db('UPDATE creatives SET token = ?, status = ? WHERE creative_id = ?', (marker, 'active', creative_id))
         db.query_db('INSERT OR REPLACE INTO creative_links (chat_id, ord_id, creative_id, token) VALUES (?, ?, ?, ?)',
-                 (chat_id, contract_external_id, creative_id, marker))
+                    (chat_id, contract_external_id, creative_id, marker))
 
     bot.send_message(chat_id,
                      f"Креативы успешно промаркированы. Ваш токен - {marker}.\n"
@@ -707,7 +705,7 @@ def finalize_creative(chat_id, campaign_id):
     # Сохранение данных в таблицу statistics
     date_start_actual = datetime.now().strftime('%Y-%m-%d')
     db.query_db('INSERT INTO statistics (chat_id, campaign_id, creative_id, date_start_actual) VALUES (?, ?, ?, ?)',
-             (chat_id, campaign_id, creative_id, date_start_actual))
+                (chat_id, campaign_id, creative_id, date_start_actual))
 
     # Запрос ссылки на креатив
     ask_for_creative_link(chat_id, contract_external_id)
@@ -795,7 +793,7 @@ def handle_creative_link(message, ord_id):
         return
     creative_id = creative_id[0]
     db.query_db('UPDATE creative_links SET link = ? WHERE chat_id = ? AND ord_id = ? AND creative_id = ?',
-             (link, chat_id, ord_id, creative_id))
+                (link, chat_id, ord_id, creative_id))
     bot.send_message(chat_id, "Вы успешно добавили ссылку на ваш рекламный креатив.")
 
     bot.send_message(
@@ -808,7 +806,7 @@ def handle_creative_link(message, ord_id):
 # Функция для проверки и напоминания о ссылке на креатив
 def check_and_remind_link(chat_id, ord_id):
     if not db.query_db('SELECT * FROM creative_links WHERE chat_id = ? AND ord_id = ? AND link IS NOT NULL',
-                    (chat_id, ord_id)):
+                       (chat_id, ord_id)):
         remind_link(chat_id)
 
 
@@ -1039,7 +1037,7 @@ def submit_statistics_auto(chat_id):
     active_creatives = db.query_db('SELECT campaign_id, creative_id FROM creatives WHERE chat_id = ?', (chat_id,))
     for campaign_id, creative_id in active_creatives:
         platform_url = db.query_db('SELECT link FROM creative_links WHERE chat_id = ? AND creative_id = ?',
-                                (chat_id, creative_id), one=True)
+                                   (chat_id, creative_id), one=True)
         if not platform_url:
             continue
 

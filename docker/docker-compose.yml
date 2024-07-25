@@ -1,0 +1,42 @@
+
+services:
+  db:
+    image: postgres:16
+    container_name: db_ads
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - ../docker/.env
+
+
+  pgadmin:
+    image: elestio/pgadmin
+    container_name: pgadmin_ads
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    env_file:
+      - ../docker/.env
+
+
+  bot:
+    build:
+      context: ..
+      dockerfile: docker/dockerfiles/DockerfileBot
+      args:
+        - --no-cache
+    container_name: bot_ads
+    volumes:
+      - ../bot:/app
+    depends_on:
+      - db
+    env_file:
+      - ../docker/.env
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+

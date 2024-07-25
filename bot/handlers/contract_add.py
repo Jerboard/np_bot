@@ -1,12 +1,9 @@
 from telebot import types
 from telebot.types import CallbackQuery
-from datetime import datetime
 
 import logging
-import requests
 
 import db
-import keyboards as kb
 from init import bot
 from utils import get_ord_id
 from . import common as cf

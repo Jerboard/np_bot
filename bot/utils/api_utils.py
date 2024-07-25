@@ -1,18 +1,5 @@
-from telebot import types
-from datetime import datetime, timedelta
-from moviepy.editor import VideoFileClip
-from PIL import Image
-
-import logging
-import re
-import os
-import json
-import hashlib
 import sqlite3
-import requests
-import threading
-from urllib import parse
-from flask import Flask, request, redirect
+from flask import request
 
 import db
 import config

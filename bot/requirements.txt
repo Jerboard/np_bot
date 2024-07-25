@@ -1,4 +1,4 @@
-telebot
+pyTelegramBotAPI
 moviepy
 pillow
 requests
@@ -7,3 +7,5 @@ flask
 psycopg2
 aiogram
 pytz
+apscheduler
+uvloop
