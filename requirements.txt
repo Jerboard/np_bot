@@ -1,0 +1,9 @@
+telebot
+moviepy
+pillow
+requests
+cachetools
+flask
+psycopg2
+aiogram
+pytz
