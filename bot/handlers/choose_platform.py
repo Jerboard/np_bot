@@ -34,13 +34,18 @@ def choose_platform(call: CallbackQuery):
 def collect_platform(call: CallbackQuery):
     chat_id = call.message.chat.id
 
+    # user_data = {}
+    # user_data['chat_id'] = call.from_user.id
+
     # убрать глобальную переменную, использовать машину состояний
     global platform_name
     if call.data == 'vk':
         platform_name = 'ВКонтакте'
         bot.send_message(chat_id, "Пришлите ссылку на аккаунт рекламораспространителя.")
-        bot.register_next_step_handler(call.message,
-                                       lambda message: cf.collect_advertiser_link(message, "https://vk.com/"))
+        bot.register_next_step_handler(
+            call.message,
+            lambda message: cf.collect_advertiser_link(message, "https://vk.com/")
+        )
     elif call.data == 'instagram':
         platform_name = 'Instagram'
         bot.send_message(chat_id, "Пришлите ссылку на аккаунт рекламораспространителя.")

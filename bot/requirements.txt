@@ -9,3 +9,4 @@ aiogram
 pytz
 apscheduler
 uvloop
+redis
