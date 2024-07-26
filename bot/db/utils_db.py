@@ -60,7 +60,7 @@ def insert_user_data(chat_id, agreed, role, fio, inn, title, juridical_type):
 
 
 # Вставляет контрагента
-def insert_contractors_data(chat_id, agreed, role, fio, inn, title, juridical_type):
+def insert_contractors_data(chat_id, contractor_id, role, juridical_type, ord_id):
     with begin_conn() as conn:
         with conn.cursor() as cursor:
             cursor.execute(
@@ -72,9 +72,9 @@ def insert_contractors_data(chat_id, agreed, role, fio, inn, title, juridical_ty
                         contractor_id = EXCLUDED.contractor_id,
                         role = EXCLUDED.role,
                         juridical_type = EXCLUDED.juridical_type,
-                        ord_id = EXCLUDED.ord_id,
+                        ord_id = EXCLUDED.ord_id
                 ''',
-                (chat_id, agreed, role, fio, inn, title, juridical_type)
+                (chat_id, contractor_id, role, juridical_type, ord_id)
             )
 
 
@@ -92,7 +92,7 @@ def insert_platforms_data(chat_id, platform_name, platform_url, average_views, o
                         platform_name = EXCLUDED.platform_name,
                         platform_url = EXCLUDED.platform_url,
                         average_views = EXCLUDED.average_views,
-                        ord_id = EXCLUDED.ord_id,
+                        ord_id = EXCLUDED.ord_id
                 ''',
                 (chat_id, platform_name, platform_url, average_views, ord_id)
             )
@@ -126,8 +126,8 @@ def insert_creative_links_data(chat_id, contract_external_id, creative_id, marke
                     VALUES (%s, %s, %s, %s)
                     ON CONFLICT (chat_id) 
                     DO UPDATE SET
-                        ord_id = EXCLUDED.ord_id
-                        creative_id = EXCLUDED.creative_id
+                        ord_id = EXCLUDED.ord_id,
+                        creative_id = EXCLUDED.creative_id,
                         token = EXCLUDED.token
                 ''',
                 (chat_id, contract_external_id, creative_id, marker)

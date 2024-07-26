@@ -159,15 +159,14 @@ def create_tables():
         ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS contractors (
-            chat_id INTEGER,
+            chat_id INTEGER PRIMARY KEY,
             contractor_id INTEGER,
             fio TEXT,
             title TEXT,
             inn TEXT,
             juridical_type TEXT,
             role TEXT,
-            ord_id TEXT,
-            PRIMARY KEY (chat_id, contractor_id)
+            ord_id TEXT
         )
         ''')
         conn.commit()
