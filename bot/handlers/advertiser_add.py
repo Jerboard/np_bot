@@ -71,7 +71,6 @@ def collect_advertiser_info(call: CallbackQuery):
         bot.register_next_step_handler(call.message, lambda m: cf.fio_collector_advertiser(m, contractor_id))
 
 
-
 # Обработчик для кнопок после успешного добавления контрагента
 @bot.callback_query_handler(func=lambda call: call.data in ['add_another_distributor', 'continue'])
 def handle_success_add_distributor(call: CallbackQuery):

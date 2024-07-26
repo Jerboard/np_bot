@@ -1,7 +1,6 @@
 from telebot.types import CallbackQuery
 
 import logging
-import sqlite3
 
 import db
 import keyboards as kb
@@ -32,18 +31,26 @@ from .base import ask_amount
 @bot.message_handler(commands=['creative'])
 def start_creative_process(message):
     chat_id = message.chat.id
-    conn = sqlite3.connect('bot_database2.db')
-    cursor = conn.cursor()
-    cursor.execute('SELECT balance FROM users WHERE chat_id = ?', (chat_id,))
-    result = cursor.fetchone()
+
+    # сменил запрос на query_db
+    # conn = sqlite3.connect('bot_database2.db')
+    # cursor = conn.cursor()
+    # cursor.execute('SELECT balance FROM users WHERE chat_id = ?', (chat_id,))
+    # result = cursor.fetchone()
+    result = db.query_db('SELECT balance FROM users WHERE chat_id = ?', (chat_id,), one=True)
+
     if result is None or result[0] < 400:
         bot.send_message(chat_id, "Недостаточно средств на балансе. Пожалуйста, пополните баланс.")
         ask_amount(message)
     else:
         balance = result[0]
-        cursor.execute('UPDATE users SET balance = ? WHERE chat_id = ?', (balance - 400, chat_id))
-        conn.commit()
-        conn.close()
+
+        # сменил запрос на query_db
+        # cursor.execute('UPDATE users SET balance = ? WHERE chat_id = ?', (balance - 400, chat_id))
+        # conn.commit()
+        # conn.close()
+        db.query_db('UPDATE users SET balance = ? WHERE chat_id = ?', (balance - 400, chat_id))
+
         # Продолжение процесса добавления креатива
         add_creative(message)
 

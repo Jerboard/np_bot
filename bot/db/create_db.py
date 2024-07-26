@@ -21,7 +21,7 @@ def create_tables():
         ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS platforms (
-            chat_id INTEGER,
+            chat_id INTEGER PRIMARY KEY,
             platform_name TEXT,
             platform_url TEXT,
             advertiser_link TEXT,
@@ -33,37 +33,35 @@ def create_tables():
         ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS contracts (
-            chat_id INTEGER,
+            chat_id INTEGER PRIMARY KEY,
             contractor_id INTEGER,
             contract_date TEXT,
             end_date TEXT,
             serial TEXT,
             amount REAL,
             vat_included INTEGER,
-            ord_id TEXT,
-            PRIMARY KEY (chat_id, contractor_id, ord_id)
+            ord_id TEXT
         )
         ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS ad_campaigns (
-            chat_id INTEGER,
+            chat_id INTEGER PRIMARY KEY,
             campaign_id TEXT,
             brand TEXT,
             service TEXT,
-            ord_id TEXT,
-            PRIMARY KEY (chat_id, campaign_id, ord_id)
+            ord_id TEXT
         )
         ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS target_links (
-            chat_id INTEGER,
+            chat_id INTEGER PRIMARY KEY,
             campaign_id TEXT,
             link TEXT
         )
         ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS files (
-            chat_id INTEGER,
+            chat_id INTEGER PRIMARY KEY,
             file_type TEXT,
             original_path TEXT,
             resized_path TEXT
@@ -71,25 +69,23 @@ def create_tables():
         ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS creatives (
-            chat_id INTEGER,
+            chat_id INTEGER PRIMARY KEY,
             campaign_id TEXT,
             creative_id TEXT,
             content_type TEXT,
             content TEXT,
             token TEXT,
             ord_id INTEGER,
-            status TEXT DEFAULT 'pending',
-            PRIMARY KEY (chat_id, campaign_id, creative_id, ord_id)
+            status TEXT DEFAULT 'pending'
         )
         ''')
         # Добавление таблицы для оплаты
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS payments (
-            chat_id INTEGER,
+            chat_id INTEGER PRIMARY KEY,
             inv_id TEXT,
             amount DECIMAL,
-            status TEXT,
-            PRIMARY KEY (chat_id, inv_id)
+            status TEXT
         )
         ''')
         # Добавление таблицы user_creatives
@@ -123,7 +119,7 @@ def create_tables():
         # Добавление таблицы creative_links
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS creative_links (
-                chat_id INTEGER,
+                chat_id INTEGER PRIMARY KEY,
                 link TEXT,
                 ord_id TEXT,
                 creative_id TEXT,
@@ -132,24 +128,25 @@ def create_tables():
         """)
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS selected_contractors (
-                chat_id INTEGER,
+                chat_id INTEGER PRIMARY KEY,
                 contractor_id INTEGER
-            )''')
+            )
+            ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS links (
-            chat_id INTEGER,
+            chat_id INTEGER PRIMARY KEY,
             link TEXT
         )
         ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS reminders (
-            chat_id INTEGER,
+            chat_id INTEGER PRIMARY KEY,
             reminder_time TEXT
         )
         ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS statistics (
-            chat_id INTEGER,
+            chat_id INTEGER PRIMARY KEY,
             campaign_id TEXT,
             creative_id TEXT,
             platform_url TEXT,
@@ -171,14 +168,3 @@ def create_tables():
         ''')
         conn.commit()
         cursor.close()
-
-# cursor.execute("""
-#     CREATE TABLE IF NOT EXISTS creatives (
-#         id SERIAL PRIMARY KEY,
-#         chat_id INTEGER,
-#         campaign_id INTEGER,
-#         type TEXT,
-#         content TEXT,
-#         resized_path TEXT
-#     )
-# """)

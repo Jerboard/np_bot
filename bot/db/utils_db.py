@@ -22,9 +22,10 @@ def query_db(query, args=(), one=False) -> tuple:
         cursor = conn.cursor()
         cursor.execute(query, args)
         conn.commit()
-        r = cursor.fetchall()
-        cursor.close()
-        return (r[0] if r else None) if one else r
+        if query.strip().upper().startswith("SELECT"):
+            r = cursor.fetchall()
+            cursor.close()
+            return (r[0] if r else None) if one else r
 
 
 # Функция для создания директории, если она не существует

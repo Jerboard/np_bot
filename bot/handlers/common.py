@@ -29,8 +29,11 @@ def fio_i_collector_advertiser(message, contractor_id):
     fio_i_advertiser = message.text
     db.query_db('UPDATE contractors SET fio = ? WHERE chat_id = ? AND contractor_id = ?',
                 (fio_i_advertiser, chat_id, contractor_id))
-    bot.send_message(message.chat.id,
-                     "Введите ИНН вашего контрагента. Например, 563565286576. ИНН индивидуального предпринимателя совпадает с ИНН физического лица.")
+    bot.send_message(
+        message.chat.id,
+        "Введите ИНН вашего контрагента. Например, 563565286576. "
+        "ИНН индивидуального предпринимателя совпадает с ИНН физического лица."
+    )
     bot.register_next_step_handler(message, lambda m: inn_collector_advertiser(m, contractor_id))
 
 
@@ -1138,13 +1141,16 @@ def process_amount(message):
 
         payment_link = generate_payment_link(config.mrh_login, config.mrh_pass1, amount, inv_id, description)
 
+        # сменил запрос на query_db
         # Вставка данных в базу данных
-        conn = sqlite3.connect('bot_database2.db')
-        cursor = conn.cursor()
-        cursor.execute('INSERT INTO payments (chat_id, inv_id, amount, status) VALUES (?, ?, ?, ?)',
-                       (chat_id, inv_id, amount, 'pending'))
-        conn.commit()
-        conn.close()
+        # conn = sqlite3.connect('bot_database2.db')
+        # cursor = conn.cursor()
+        # cursor.execute('INSERT INTO payments (chat_id, inv_id, amount, status) VALUES (?, ?, ?, ?)',
+        #                (chat_id, inv_id, amount, 'pending'))
+        # conn.commit()
+        # conn.close()
+        db.query_db('INSERT INTO payments (chat_id, inv_id, amount, status) VALUES (?, ?, ?, ?)',
+                             (chat_id, inv_id, amount, 'pending'))
 
         markup = types.InlineKeyboardMarkup()
         button = types.InlineKeyboardButton(text="Оплатить", url=payment_link)
