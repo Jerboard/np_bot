@@ -124,6 +124,9 @@ def insert_users_juridical_type_data(chat_id, juridical_type):
                 '''
                 INSERT INTO users (chat_id, juridical_type)
                     VALUES (%s, %s)
+                    ON CONFLICT (chat_id)
+                    DO UPDATE SET
+                        juridical_type = EXCLUDED.juridical_type
                 ''',
                 (chat_id, juridical_type)
             )

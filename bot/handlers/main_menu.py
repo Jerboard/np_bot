@@ -6,8 +6,9 @@ import re
 import requests
 
 import db
+import config
 import keyboards as kb
-from init import bot
+from init import bot, log_error
 from .base import preloader_choose_platform, preloader_advertiser_entity
 
 
@@ -20,7 +21,7 @@ def start(message):
         (chat_id,),
         one=True
     )
-
+    user_data = None
     if user_data:
         # Если пользователь найден в базе данных, выводим информацию о нем
         fio, title, inn, juridical_type, balance, role = user_data
@@ -121,6 +122,7 @@ def collect_info(call: CallbackQuery):
     # db.query_db('INSERT OR REPLACE INTO users (chat_id, juridical_type) VALUES (?, ?)', (chat_id, juridical_type))
 
     logging.debug(f"Saved juridical_type: {juridical_type} for chat_id: {chat_id}")
+    log_error(juridical_type, wt=False)
     if juridical_type == 'ip':
         bot.send_message(chat_id, "Укажите ваши фамилию, имя и отчество. \nНапример, Иванов Иван Иванович.")
         bot.register_next_step_handler(call.message, fio_i_collector)
@@ -166,6 +168,9 @@ def title_collector(message):
 # Валидатор ИНН
 def validate_inn(inn, juridical_type):
     inn = str(inn)
+
+    if config.DEBUG:
+        return True
 
     if juridical_type in ['ip', 'physical']:
         if len(inn) != 12:

@@ -34,14 +34,14 @@ Configuration.secret_key = config.YOO_SECRET_KEY
 def set_main_menu():
     main_menu_commands = [
         BotCommand(command='/start', description='Главный экран'),
-        BotCommand(command='/preloader_advertiser_entity', description='Рекламодатель'),
+        BotCommand(command='/preloader_advertiser_entity', description='Контрагент'),
         BotCommand(command='/preloader_choose_platform', description='Выбор платформы'),
         BotCommand(command='/start_contract', description='Контракт'),
         BotCommand(command='/start_campaign', description='Начать компанию'),
         # BotCommand(command='/creative', description='Креатив'),
         BotCommand(command='/add_creative', description='Добавить креатив'),
         BotCommand(command='/start_statistics', description='Статистика'),
-        BotCommand(command='/pay', description='Оплата'),
+        # BotCommand(command='/pay', description='Оплата'),
     ]
 
     bot.set_my_commands(main_menu_commands)

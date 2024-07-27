@@ -83,7 +83,11 @@ def pay_yk(call: CallbackQuery):
     )
     pay_id = ut.create_pay_link(campaign_id)
     bot.delete_message(chat_id=sent.chat.id, message_id=sent.message_id)
-    bot.send_message(call.from_user.id, 'Дай деняк!', reply_markup=kb.get_yk_pay_kb(pay_id, save_cards))
+    bot.send_message(
+        call.from_user.id,
+        'Для получения маркировки необходимо осуществить оплату',
+        reply_markup=kb.get_yk_pay_kb(pay_id, save_cards)
+    )
 
 
 # Обработчик кнопки "Продолжить"
@@ -92,11 +96,12 @@ def choose_campaign(call: CallbackQuery):
     _, pay_id = call.data.split(':')
 
     sent = bot.send_message(call.message.chat.id, '⏳')
-    card_info, campaign_id = ut.check_pay_yoo(pay_id)
+    pay_data = ut.check_pay_yoo(pay_id)
     bot.delete_message(chat_id=sent.chat.id, message_id=sent.message_id)
 
-    log_error(campaign_id, wt=False)
-    if card_info:
+    log_error(pay_data, wt=False)
+    if pay_data:
+        card_info, campaign_id = pay_data
         # сохраняем данные платежа
         db.query_db(
             'INSERT INTO payment_yk (user_id, pay_id, card) VALUES (%s, %s, %s)',
@@ -106,7 +111,7 @@ def choose_campaign(call: CallbackQuery):
         cf.finalize_creative(chat_id, campaign_id)
 
     else:
-        bot.answer_callback_query(call.id, '❗️  Вы забыли скинуть деняк', show_alert=True)
+        bot.answer_callback_query(call.id, '❗️  Оплата не прошла нажмите оплатить и совершите платёж', show_alert=True)
 
 
 # Добавление ссылки на креатив

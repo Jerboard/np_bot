@@ -51,9 +51,10 @@ def check_pay_yoo(pay_id: str) -> tuple:
     if payment.paid:
         pay_data = json.loads(payment.payment_method.json())
 
-        log_error(f'{pay_data}', wt=False)
-        log_error(f'{pay_data["card"]["card_type"]} *{pay_data["card"]["last4"]}', wt=False)
+        # log_error(f'{pay_data}', wt=False)
+        # log_error(f'{pay_data["card"]["card_type"]} *{pay_data["card"]["last4"]}', wt=False)
         return f'{pay_data["card"]["card_type"]} **{pay_data["card"]["last4"]}', payment.description
+
 
 
 '''

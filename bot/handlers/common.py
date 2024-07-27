@@ -676,6 +676,16 @@ def download_and_save_file(file_info, file_type, chat_id):
 
 # Завершение процесса добавления креатива
 def finalize_creative(chat_id, campaign_id):
+    if config.DEBUG:
+        bot.send_message(chat_id,
+                         f"Креативы успешно промаркированы. Ваш токен - test.\n"
+                         f"Для копирования нажмите на текст ниже👇\n\n"
+                         f"`Реклама. test. ИНН: test. erid: test`",
+                         parse_mode="MARKDOWN")
+
+        ask_for_creative_link(chat_id, 111111111)
+        return
+
     creatives = db.query_db(
         'SELECT creative_id, content_type, content FROM creatives WHERE chat_id = ? AND campaign_id = ?',
         (chat_id, campaign_id))
