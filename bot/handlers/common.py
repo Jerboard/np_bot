@@ -778,7 +778,7 @@ def register_media_file(file_path, campaign_id, creative_type):
 
 def send_creative_to_ord(chat_id, campaign_id, creatives, description, media_ids, contract_external_id, user_inn):
     creative_id = db.query_db(
-        'SELECT creative_id FROM creatives WHERE chat_id = ? AND campaign_id = ? ORDER BY rowid DESC LIMIT 1',
+        'SELECT creative_id FROM creatives WHERE chat_id = ? AND campaign_id = ? ORDER BY id DESC LIMIT 1',
         (chat_id, campaign_id), one=True)
     if creative_id is None:
         bot.send_message(chat_id, "Ошибка: Не найден creative_id для указанной кампании.")
