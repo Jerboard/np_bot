@@ -10,3 +10,4 @@ pytz
 apscheduler
 uvloop
 redis
+yookassa
