@@ -2,6 +2,7 @@ from telebot import types
 from telebot.types import CallbackQuery
 
 import db
+import utils as ut
 import keyboards as kb
 from init import bot
 from . import common as cf
@@ -34,11 +35,12 @@ def choose_platform(call: CallbackQuery):
 def collect_platform(call: CallbackQuery):
     chat_id = call.message.chat.id
 
-    # user_data = {}
-    # user_data['chat_id'] = call.from_user.id
+    user_data = {'platform_name': call.data}
+    ut.save_user_data(chat_id=chat_id, data=user_data)
 
     # убрать глобальную переменную, использовать машину состояний
-    global platform_name
+    # global platform_name
+
     if call.data == 'vk':
         platform_name = 'ВКонтакте'
         bot.send_message(chat_id, "Пришлите ссылку на аккаунт рекламораспространителя.")
@@ -70,6 +72,13 @@ def collect_platform(call: CallbackQuery):
         platform_name = 'Другое'
         bot.send_message(chat_id, "Пришлите ссылку на площадку рекламораспространителя.")
         bot.register_next_step_handler(call.message, cf.platform_url_collector)
+
+    else:
+        # добавил чтоб не было предупреждения
+        platform_name = 'error'
+
+    user_data = {'platform_name': platform_name}
+    ut.save_user_data(chat_id=chat_id, data=user_data)
 
 
 @bot.callback_query_handler(

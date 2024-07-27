@@ -39,7 +39,7 @@ services:
 
   redis:
     image: redis:latest
-    container_name: redis_ks
+    container_name: redis_ads
     ports:
       - "6379:6379"
 

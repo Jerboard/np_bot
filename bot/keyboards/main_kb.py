@@ -1,10 +1,14 @@
 from telebot import types
 
+from config import PAY_LINK
+from init import log_error
+
 
 # стартовая клавиатура
 def get_start_kb() -> types.InlineKeyboardMarkup:
     markup = types.InlineKeyboardMarkup()
     confirm_button = types.InlineKeyboardButton('Подтвердить', callback_data='confirm_user')
+    # confirm_button = types.InlineKeyboardButton('Тест', callback_data='pay_yk:12345')
     change_role_button = types.InlineKeyboardButton('Сменить роль', callback_data='change_role')
     return markup.row(confirm_button, change_role_button)
 
@@ -69,7 +73,8 @@ def get_choose_platform_kb() -> types.InlineKeyboardMarkup:
     youtube_button = types.InlineKeyboardButton('YouTube', callback_data='youtube')
     telegram_channel_button = types.InlineKeyboardButton('Telegram-канал', callback_data='telegram_channel')
     personal_telegram_button = types.InlineKeyboardButton('Личный Telegram', callback_data='personal_telegram')
-    other_button = types.InlineKeyboardButton('Другое', callback_data='other')
+    # other_button = types.InlineKeyboardButton('Другое', callback_data='other')
+    other_button = types.InlineKeyboardButton('Другое', callback_data='in_dev')
     markup.row(vk_button, instagram_button)
     markup.row(telegram_channel_button, youtube_button)
     return markup.row(personal_telegram_button, other_button)
@@ -139,7 +144,8 @@ def get_add_creative_kb(campaigns) -> types.InlineKeyboardMarkup:
 def get_handle_creative_upload_kb(campaign_id) -> types.InlineKeyboardMarkup:
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("Добавить файл или текст", callback_data=f"add_more_{campaign_id}"))
-    markup.add(types.InlineKeyboardButton("Продолжить", callback_data=f"continue_creative_{campaign_id}"))
+    # markup.add(types.InlineKeyboardButton("Продолжить", callback_data=f"continue_creative_{campaign_id}"))
+    markup.add(types.InlineKeyboardButton("Продолжить", callback_data=f"pay_yk:{campaign_id}"))
     return markup
 
 
@@ -153,8 +159,21 @@ def get_handle_creative_link_kb(ord_id) -> types.InlineKeyboardMarkup:
 
 
 # кб для generate_link
-def generate_link_markup():
+def generate_link_markup() -> types.InlineKeyboardMarkup:
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("Добавить ссылку на другую площадку", callback_data="add_link"))
     markup.add(types.InlineKeyboardButton("Готово", callback_data="link_done"))
+    return markup
+
+
+# кб со ссылкой на оплату в юкассе
+# def get_yk_pay_kb(pay_id: str, campaign_id: str, save_cards: tuple) -> types.InlineKeyboardMarkup:
+def get_yk_pay_kb(pay_id: str,save_cards: tuple) -> types.InlineKeyboardMarkup:
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton("Оплатить 400 р.", url=PAY_LINK.format(payment_id=pay_id)))
+    for card in save_cards:
+        markup.add(types.InlineKeyboardButton(f"Оплатить {card[0]}", callback_data=f"in_dev"))
+
+    # markup.add(types.InlineKeyboardButton("Продолжить", callback_data=f"continue_creative_:{pay_id}:{campaign_id}"))
+    markup.add(types.InlineKeyboardButton("Продолжить", callback_data=f"continue_creative_:{pay_id}"))
     return markup

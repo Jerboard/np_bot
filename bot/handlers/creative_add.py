@@ -4,55 +4,40 @@ import logging
 
 import db
 import keyboards as kb
-from init import bot
+import utils as ut
+from init import bot, log_error
 from . import common as cf
 from .base import ask_amount
 
 
 ####  Добавление креативов ####
-# Настройка логирования
-# logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-
-
-# # Функция для выполнения запросов к базе данных с логированием
-# def query_db(query, args=(), one=False):
-#     logging.debug(f"Выполнение запроса: {query} с аргументами {args}")
-#     with sqlite3.connect('bot_database2.db', check_same_thread=False) as conn:
-#         cursor = conn.cursor()
-#         cursor.execute(query, args)
-#         conn.commit()
-#         r = cursor.fetchall()
-#         cursor.close()
-#         logging.debug(f"Результат запроса: {r}")
-#         return (r[0] if r else None) if one else r
-
 
 # Команда /creative для Telegram бота
-@bot.message_handler(commands=['creative'])
-def start_creative_process(message):
-    chat_id = message.chat.id
-
-    # сменил запрос на query_db
-    # conn = sqlite3.connect('bot_database2.db')
-    # cursor = conn.cursor()
-    # cursor.execute('SELECT balance FROM users WHERE chat_id = ?', (chat_id,))
-    # result = cursor.fetchone()
-    result = db.query_db('SELECT balance FROM users WHERE chat_id = ?', (chat_id,), one=True)
-
-    if result is None or result[0] < 400:
-        bot.send_message(chat_id, "Недостаточно средств на балансе. Пожалуйста, пополните баланс.")
-        ask_amount(message)
-    else:
-        balance = result[0]
-
-        # сменил запрос на query_db
-        # cursor.execute('UPDATE users SET balance = ? WHERE chat_id = ?', (balance - 400, chat_id))
-        # conn.commit()
-        # conn.close()
-        db.query_db('UPDATE users SET balance = ? WHERE chat_id = ?', (balance - 400, chat_id))
-
-        # Продолжение процесса добавления креатива
-        add_creative(message)
+# @bot.message_handler(commands=['creative'])
+# def start_creative_process(message):
+#     chat_id = message.chat.id
+#
+#     # сменил запрос на query_db
+#     # conn = sqlite3.connect('bot_database2.db')
+#     # cursor = conn.cursor()
+#     # cursor.execute('SELECT balance FROM users WHERE chat_id = ?', (chat_id,))
+#     # result = cursor.fetchone()
+#     result = db.query_db('SELECT balance FROM users WHERE chat_id = ?', (chat_id,), one=True)
+#
+#     if result is None or result[0] < 400:
+#         bot.send_message(chat_id, "Недостаточно средств на балансе. Пожалуйста, пополните баланс.")
+#         ask_amount(message)
+#     else:
+#         balance = result[0]
+#
+#         # сменил запрос на query_db
+#         # cursor.execute('UPDATE users SET balance = ? WHERE chat_id = ?', (balance - 400, chat_id))
+#         # conn.commit()
+#         # conn.close()
+#         db.query_db('UPDATE users SET balance = ? WHERE chat_id = ?', (balance - 400, chat_id))
+#
+#         # Продолжение процесса добавления креатива
+#         add_creative(message)
 
 
 # Обработчик для команды /add_creative
@@ -87,20 +72,51 @@ def add_more_creative(call: CallbackQuery):
     cf.add_creative_start(call.message.chat.id, campaign_id)
 
 
+# создаёт ссылку на оплату
+@bot.callback_query_handler(func=lambda call: call.data.startswith('pay_yk'))
+def pay_yk(call: CallbackQuery):
+    _, campaign_id = call.data.split(':')
+    # ищем карточки для быстрой оплаты
+    sent = bot.send_message(call.message.chat.id, '⏳')
+    save_cards = db.query_db(
+        'SELECT DISTINCT card FROM payment_yk WHERE user_id = %s', (call.from_user.id,)
+    )
+    pay_id = ut.create_pay_link(campaign_id)
+    bot.delete_message(chat_id=sent.chat.id, message_id=sent.message_id)
+    bot.send_message(call.from_user.id, 'Дай деняк!', reply_markup=kb.get_yk_pay_kb(pay_id, save_cards))
+
+
 # Обработчик кнопки "Продолжить"
 @bot.callback_query_handler(func=lambda call: call.data.startswith('continue_creative_'))
 def choose_campaign(call: CallbackQuery):
-    chat_id = call.message.chat.id
-    campaign_id = call.data.split('_')[2]
-    cf.finalize_creative(chat_id, campaign_id)
+    _, pay_id = call.data.split(':')
+
+    sent = bot.send_message(call.message.chat.id, '⏳')
+    card_info, campaign_id = ut.check_pay_yoo(pay_id)
+    bot.delete_message(chat_id=sent.chat.id, message_id=sent.message_id)
+
+    log_error(campaign_id, wt=False)
+    if card_info:
+        # сохраняем данные платежа
+        db.query_db(
+            'INSERT INTO payment_yk (user_id, pay_id, card) VALUES (%s, %s, %s)',
+            (call.from_user.id, pay_id, card_info)
+                    )
+        chat_id = call.message.chat.id
+        cf.finalize_creative(chat_id, campaign_id)
+
+    else:
+        bot.answer_callback_query(call.id, '❗️  Вы забыли скинуть деняк', show_alert=True)
 
 
 # Добавление ссылки на креатив
 @bot.callback_query_handler(func=lambda call: call.data.startswith('add_link_'))
 def add_link(call: CallbackQuery):
     ord_id = call.data.split('_')[2]
-    msg = bot.send_message(call.message.chat.id,
-                           "Опубликуйте ваш креатив и пришлите ссылку на него. Если вы публикуете один креатив на разных площадках - пришлите ссылку на каждую площадку.")
+    msg = bot.send_message(
+        call.message.chat.id,
+        "Опубликуйте ваш креатив и пришлите ссылку на него. Если вы публикуете один креатив на разных площадках - "
+        "пришлите ссылку на каждую площадку.")
     bot.register_next_step_handler(msg, lambda message: cf.handle_creative_link(message, ord_id))
 
 

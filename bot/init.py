@@ -6,9 +6,11 @@ import re
 import traceback
 import logging
 import telebot
+import redis
 
 from cachetools import TTLCache
 from flask import Flask
+from yookassa import Configuration
 
 import config
 
@@ -17,11 +19,16 @@ bot = telebot.TeleBot(config.TOKEN)
 
 
 # Настройка логирования
-logging.basicConfig(filename='../bot_errors.log', level=logging.WARNING,
-                    format='%(asctime)s %(levelname)s:%(message)s')
+# logging.basicConfig(filename='../bot_errors.log', level=logging.WARNING,
+#                     format='%(asctime)s %(levelname)s:%(message)s')
 
 # Настройка кэша
 cache = TTLCache(maxsize=100, ttl=300)
+
+redis_db = redis.Redis(host=config.redis_host, port=config.redis_port, db=config.redis_db)
+
+Configuration.account_id = config.YOO_ACCOUNT_ID
+Configuration.secret_key = config.YOO_SECRET_KEY
 
 
 def set_main_menu():
@@ -31,7 +38,7 @@ def set_main_menu():
         BotCommand(command='/preloader_choose_platform', description='Выбор платформы'),
         BotCommand(command='/start_contract', description='Контракт'),
         BotCommand(command='/start_campaign', description='Начать компанию'),
-        BotCommand(command='/creative', description='Креатив'),
+        # BotCommand(command='/creative', description='Креатив'),
         BotCommand(command='/add_creative', description='Добавить креатив'),
         BotCommand(command='/start_statistics', description='Статистика'),
         BotCommand(command='/pay', description='Оплата'),
@@ -41,7 +48,7 @@ def set_main_menu():
 
 
 # запись ошибок
-def log_error(message, with_traceback: bool = True):
+def log_error(message, wt: bool = True):
     now = datetime.now()
     log_folder = now.strftime ('%m-%Y')
     log_path = os.path.join('logs', log_folder)
@@ -52,7 +59,7 @@ def log_error(message, with_traceback: bool = True):
     log_file_path = os.path.join(log_path, f'{now.day}.log')
     logging.basicConfig (level=logging.WARNING, filename=log_file_path, encoding='utf-8')
 
-    if with_traceback:
+    if wt:
         ex_traceback = traceback.format_exc()
         tb = ''
         msg = ''

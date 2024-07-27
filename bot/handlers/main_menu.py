@@ -285,3 +285,9 @@ def handle_ord_response(response, message, next_step_function, *args):
         next_step_function(*args)
     else:
         bot.send_message(message.chat.id, "Произошла ошибка при регистрации в ОРД")
+
+
+# пишет что функция в разработке
+@bot.callback_query_handler(func=lambda call: call.data == 'in_dev')
+def in_dev_handler(call: types.CallbackQuery):
+    bot.answer_callback_query(call.id, '🛠 Функция в разработке 🛠', show_alert=True)

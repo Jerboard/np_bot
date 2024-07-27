@@ -68,12 +68,6 @@ def insert_contractors_data(chat_id, contractor_id, role, juridical_type, ord_id
                 '''
                 INSERT INTO contractors (chat_id, contractor_id, role, juridical_type, ord_id)
                     VALUES (%s, %s, %s, %s, %s)
-                    ON CONFLICT (chat_id) 
-                    DO UPDATE SET
-                        contractor_id = EXCLUDED.contractor_id,
-                        role = EXCLUDED.role,
-                        juridical_type = EXCLUDED.juridical_type,
-                        ord_id = EXCLUDED.ord_id
                 ''',
                 (chat_id, contractor_id, role, juridical_type, ord_id)
             )
@@ -88,12 +82,6 @@ def insert_platforms_data(chat_id, platform_name, platform_url, average_views, o
                 '''
                 INSERT INTO platforms (chat_id, platform_name, platform_url, average_views, ord_id)
                     VALUES (%s, %s, %s, %s, %s)
-                    ON CONFLICT (chat_id) 
-                    DO UPDATE SET
-                        platform_name = EXCLUDED.platform_name,
-                        platform_url = EXCLUDED.platform_url,
-                        average_views = EXCLUDED.average_views,
-                        ord_id = EXCLUDED.ord_id
                 ''',
                 (chat_id, platform_name, platform_url, average_views, ord_id)
             )
@@ -108,9 +96,6 @@ def insert_selected_contractors_data(chat_id, contractor_id):
                 '''
                 INSERT INTO selected_contractors (chat_id, contractor_id)
                     VALUES (%s, %s)
-                    ON CONFLICT (chat_id) 
-                    DO UPDATE SET
-                        contractor_id = EXCLUDED.contractor_id
                 ''',
                 (chat_id, contractor_id)
             )
@@ -125,11 +110,6 @@ def insert_creative_links_data(chat_id, contract_external_id, creative_id, marke
                 '''
                 INSERT INTO creative_links (chat_id, ord_id, creative_id, token)
                     VALUES (%s, %s, %s, %s)
-                    ON CONFLICT (chat_id) 
-                    DO UPDATE SET
-                        ord_id = EXCLUDED.ord_id,
-                        creative_id = EXCLUDED.creative_id,
-                        token = EXCLUDED.token
                 ''',
                 (chat_id, contract_external_id, creative_id, marker)
             )
@@ -144,9 +124,132 @@ def insert_users_juridical_type_data(chat_id, juridical_type):
                 '''
                 INSERT INTO users (chat_id, juridical_type)
                     VALUES (%s, %s)
-                    ON CONFLICT (chat_id) 
-                    DO UPDATE SET
-                        juridical_type = EXCLUDED.juridical_type
                 ''',
                 (chat_id, juridical_type)
             )
+
+
+# 'INSERT OR IGNORE INTO contracts (chat_id, contractor_id, ord_id) VALUES (?, ?, ?)',
+# Вставляет contracts
+def insert_contracts_data(chat_id, contractor_id, ord_id):
+    with begin_conn() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                '''
+                INSERT INTO contracts (chat_id, contractor_id, ord_id)
+                    VALUES (%s, %s, %s)
+                '''
+                ,
+                (chat_id, contractor_id, ord_id)
+            )
+
+
+# # Вставляет контрагента
+# def insert_contractors_data(chat_id, contractor_id, role, juridical_type, ord_id):
+#     with begin_conn() as conn:
+#         with conn.cursor() as cursor:
+#             cursor.execute(
+#                 '''
+#                 INSERT INTO contractors (chat_id, contractor_id, role, juridical_type, ord_id)
+#                     VALUES (%s, %s, %s, %s, %s)
+#                     ON CONFLICT (chat_id)
+#                     DO UPDATE SET
+#                         contractor_id = EXCLUDED.contractor_id,
+#                         role = EXCLUDED.role,
+#                         juridical_type = EXCLUDED.juridical_type,
+#                         ord_id = EXCLUDED.ord_id
+#                 ''',
+#                 (chat_id, contractor_id, role, juridical_type, ord_id)
+#             )
+#
+#
+# # 'INSERT OR REPLACE INTO platforms (chat_id, platform_name, platform_url, average_views, ord_id) VALUES (?, ?, ?, ?, ?)'
+# # Вставляет платформу
+# def insert_platforms_data(chat_id, platform_name, platform_url, average_views, ord_id):
+#     with begin_conn() as conn:
+#         with conn.cursor() as cursor:
+#             cursor.execute(
+#                 '''
+#                 INSERT INTO platforms (chat_id, platform_name, platform_url, average_views, ord_id)
+#                     VALUES (%s, %s, %s, %s, %s)
+#                     ON CONFLICT (chat_id)
+#                     DO UPDATE SET
+#                         platform_name = EXCLUDED.platform_name,
+#                         platform_url = EXCLUDED.platform_url,
+#                         average_views = EXCLUDED.average_views,
+#                         ord_id = EXCLUDED.ord_id
+#                 ''',
+#                 (chat_id, platform_name, platform_url, average_views, ord_id)
+#             )
+#
+#
+# # 'INSERT OR REPLACE INTO selected_contractors (chat_id, contractor_id) VALUES (?, ?)'
+# # Вставляет контрагента
+# def insert_selected_contractors_data(chat_id, contractor_id):
+#     with begin_conn() as conn:
+#         with conn.cursor() as cursor:
+#             cursor.execute(
+#                 '''
+#                 INSERT INTO selected_contractors (chat_id, contractor_id)
+#                     VALUES (%s, %s)
+#                     ON CONFLICT (chat_id)
+#                     DO UPDATE SET
+#                         contractor_id = EXCLUDED.contractor_id
+#                 ''',
+#                 (chat_id, contractor_id)
+#             )
+#
+#
+# # 'INSERT OR REPLACE INTO creative_links (chat_id, ord_id, creative_id, token) VALUES (?, ?, ?, ?)'
+# # Вставляет платформу
+# def insert_creative_links_data(chat_id, contract_external_id, creative_id, marker):
+#     with begin_conn() as conn:
+#         with conn.cursor() as cursor:
+#             cursor.execute(
+#                 '''
+#                 INSERT INTO creative_links (chat_id, ord_id, creative_id, token)
+#                     VALUES (%s, %s, %s, %s)
+#                     ON CONFLICT (chat_id)
+#                     DO UPDATE SET
+#                         ord_id = EXCLUDED.ord_id,
+#                         creative_id = EXCLUDED.creative_id,
+#                         token = EXCLUDED.token
+#                 ''',
+#                 (chat_id, contract_external_id, creative_id, marker)
+#             )
+#
+#
+# #  'INSERT OR REPLACE INTO users (chat_id, juridical_type) VALUES (?, ?)', (chat_id, juridical_type)'
+# # Вставляет Тип пользователя
+# def insert_users_juridical_type_data(chat_id, juridical_type):
+#     with begin_conn() as conn:
+#         with conn.cursor() as cursor:
+#             cursor.execute(
+#                 '''
+#                 INSERT INTO users (chat_id, juridical_type)
+#                     VALUES (%s, %s)
+#                     ON CONFLICT (chat_id)
+#                     DO UPDATE SET
+#                         juridical_type = EXCLUDED.juridical_type
+#                 ''',
+#                 (chat_id, juridical_type)
+#             )
+#
+#
+# # 'INSERT OR IGNORE INTO contracts (chat_id, contractor_id, ord_id) VALUES (?, ?, ?)',
+# # Вставляет contracts
+# def insert_contracts_data(chat_id, contractor_id, ord_id):
+#     with begin_conn() as conn:
+#         with conn.cursor() as cursor:
+#             cursor.execute(
+#                 '''
+#                 INSERT INTO contracts (chat_id, contractor_id, ord_id)
+#                     VALUES (%s, %s, %s)
+#                     ON CONFLICT (chat_id)
+#                     DO UPDATE SET
+#                         contractor_id = EXCLUDED.contractor_id,
+#                         ord_id = EXCLUDED.ord_id
+#                 '''
+#                 ,
+#                 (chat_id, contractor_id, ord_id)
+#             )

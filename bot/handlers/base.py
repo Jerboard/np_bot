@@ -19,10 +19,15 @@ def start_contract(message: types.Message):
     if selected_contractor:
         contractor_id = selected_contractor[0]
         ord_id = get_ord_id(chat_id, contractor_id)
-        db.query_db(
-            'INSERT OR IGNORE INTO contracts (chat_id, contractor_id, ord_id) VALUES (?, ?, ?)',
-            (chat_id, contractor_id, ord_id)
-        )
+
+        # поменял на постгре
+        db.insert_contracts_data(chat_id, contractor_id, ord_id)
+        # старый код
+        # db.query_db(
+        #     # 'INSERT OR IGNORE INTO contracts (chat_id, contractor_id, ord_id) VALUES (?, ?, ?)',
+        #     'INSERT contracts (chat_id, contractor_id, ord_id) VALUES (?, ?, ?)',
+        #     (chat_id, contractor_id, ord_id)
+        # )
         logging.debug(f"Selected contractor: {contractor_id} for chat_id: {chat_id}")
         bot.send_message(chat_id, f"Выбранный ранее контрагент будет использован: № {contractor_id}")
         bot.send_message(chat_id, "Введите дату начала договора (дд.мм.гггг):")

@@ -12,12 +12,12 @@ if __name__ == '__main__':
     if DEBUG:
         logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     else:
-        log_error('start_bot', with_traceback=False)
+        log_error('start_bot', wt=False)
 
     set_main_menu()
     create_tables()
     # Вызов функции для автоматической подачи статистики
     auto_submit_statistics()
     print('start_bot')
-    bot.polling(none_stop=True, logger_level=logging.INFO)
+    bot.polling(none_stop=True)
     # app.run()

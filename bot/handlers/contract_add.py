@@ -4,7 +4,7 @@ from telebot.types import CallbackQuery
 import logging
 
 import db
-from init import bot
+from init import bot, log_error
 from utils import get_ord_id
 from . import common as cf
 from .base import start_contract
@@ -53,7 +53,7 @@ def handle_vat_selection(call: CallbackQuery):
     ord_id = get_ord_id(chat_id, contractor_id)
     db.query_db(
         'UPDATE contracts SET vat_included = ? WHERE chat_id = ? AND contractor_id = ? AND ord_id = ?',
-        (vat_included, chat_id, contractor_id, ord_id)
+        (int(vat_included), chat_id, contractor_id, ord_id)
     )
     logging.debug(f"Updated VAT included for ord_id: {ord_id}")
     user_role = db.query_db('SELECT role FROM users WHERE chat_id = ?', (chat_id,), one=True)[0]

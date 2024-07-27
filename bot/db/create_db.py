@@ -7,7 +7,7 @@ def create_tables():
         cursor = conn.cursor()
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
-            chat_id INTEGER PRIMARY KEY,
+            chat_id BIGINT PRIMARY KEY,
             agreed BOOLEAN,
             role TEXT,
             fio TEXT,
@@ -21,7 +21,8 @@ def create_tables():
         ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS platforms (
-            chat_id INTEGER PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
+            chat_id INTEGER,
             platform_name TEXT,
             platform_url TEXT,
             advertiser_link TEXT,
@@ -33,8 +34,9 @@ def create_tables():
         ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS contracts (
-            chat_id INTEGER PRIMARY KEY,
-            contractor_id INTEGER,
+            id SERIAL PRIMARY KEY,
+            chat_id INTEGER,
+            contractor_id BIGINT,
             contract_date TEXT,
             end_date TEXT,
             serial TEXT,
@@ -45,7 +47,8 @@ def create_tables():
         ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS ad_campaigns (
-            chat_id INTEGER PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
+            chat_id BIGINT,
             campaign_id TEXT,
             brand TEXT,
             service TEXT,
@@ -54,14 +57,16 @@ def create_tables():
         ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS target_links (
-            chat_id INTEGER PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
+            chat_id BIGINT,
             campaign_id TEXT,
             link TEXT
         )
         ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS files (
-            chat_id INTEGER PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
+            chat_id BIGINT,
             file_type TEXT,
             original_path TEXT,
             resized_path TEXT
@@ -69,20 +74,22 @@ def create_tables():
         ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS creatives (
-            chat_id INTEGER PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
+            chat_id BIGINT,
             campaign_id TEXT,
             creative_id TEXT,
             content_type TEXT,
             content TEXT,
             token TEXT,
-            ord_id INTEGER,
+            ord_id TEXT,
             status TEXT DEFAULT 'pending'
         )
         ''')
         # Добавление таблицы для оплаты
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS payments (
-            chat_id INTEGER PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
+            chat_id BIGINT,
             inv_id TEXT,
             amount DECIMAL,
             status TEXT
@@ -91,7 +98,8 @@ def create_tables():
         # Добавление таблицы user_creatives
         cursor.execute("""
                    CREATE TABLE IF NOT EXISTS user_creatives (
-                       chat_id INTEGER PRIMARY KEY,
+                        id SERIAL PRIMARY KEY,
+                       chat_id BIGINT,
                        creatives TEXT
                    )
                """)
@@ -99,8 +107,9 @@ def create_tables():
         # Добавление таблицы user_state
         cursor.execute("""
                    CREATE TABLE IF NOT EXISTS user_state (
-                       chat_id INTEGER PRIMARY KEY,
-                       current_campaign INTEGER
+                        id SERIAL PRIMARY KEY,
+                        chat_id BIGINT,
+                        current_campaign BIGINT
                    )
                """)
 
@@ -108,8 +117,8 @@ def create_tables():
         cursor.execute("""
                    CREATE TABLE IF NOT EXISTS creatives (
                        id SERIAL PRIMARY KEY,
-                       chat_id INTEGER,
-                       campaign_id INTEGER,
+                       chat_id BIGINT,
+                       campaign_id BIGINT,
                        type TEXT,
                        content TEXT,
                        resized_path TEXT
@@ -119,7 +128,8 @@ def create_tables():
         # Добавление таблицы creative_links
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS creative_links (
-                chat_id INTEGER PRIMARY KEY,
+                id SERIAL PRIMARY KEY,
+                chat_id BIGINT,
                 link TEXT,
                 ord_id TEXT,
                 creative_id TEXT,
@@ -128,25 +138,29 @@ def create_tables():
         """)
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS selected_contractors (
-                chat_id INTEGER PRIMARY KEY,
-                contractor_id INTEGER
+                id SERIAL PRIMARY KEY,
+                chat_id BIGINT,
+                contractor_id BIGINT
             )
             ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS links (
-            chat_id INTEGER PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
+            chat_id BIGINT,
             link TEXT
         )
         ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS reminders (
-            chat_id INTEGER PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
+            chat_id BIGINT,
             reminder_time TEXT
         )
         ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS statistics (
-            chat_id INTEGER PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
+            chat_id BIGINT,
             campaign_id TEXT,
             creative_id TEXT,
             platform_url TEXT,
@@ -156,8 +170,9 @@ def create_tables():
         ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS contractors (
-            chat_id INTEGER PRIMARY KEY,
-            contractor_id INTEGER,
+            id SERIAL PRIMARY KEY,
+            chat_id BIGINT,
+            contractor_id BIGINT,
             fio TEXT,
             title TEXT,
             inn TEXT,
@@ -166,5 +181,14 @@ def create_tables():
             ord_id TEXT
         )
         ''')
+        cursor.execute('''
+               CREATE TABLE IF NOT EXISTS payment_yk (
+                    id SERIAL PRIMARY KEY,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    user_id BIGINT,
+                    pay_id VARCHAR(255),
+                    card VARCHAR(255)
+                );
+               ''')
         conn.commit()
         cursor.close()

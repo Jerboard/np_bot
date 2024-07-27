@@ -1,7 +1,9 @@
 import logging
+from telebot.types import Message, CallbackQuery
 
 import db
 import keyboards as kb
+import utils as ut
 from init import bot
 from . import common as cf
 
@@ -11,8 +13,9 @@ from . import common as cf
 
 # Обработка команды /start_statistics
 @bot.message_handler(commands=['start_statistics'])
-def send_welcome(message):
+def send_welcome(message: Message):
     user_id = message.from_user.id
+    user_state = {}
     # Получаем первый доступный campaign_id для пользователя
     campaign_ids = db.query_db('SELECT campaign_id FROM ad_campaigns WHERE chat_id = ?', (user_id,))
     if campaign_ids:
@@ -20,14 +23,20 @@ def send_welcome(message):
         user_state[str(user_id) + "_current"] = 0  # Текущий индекс campaign_id
         message_text, markup = cf.create_message_text(user_state[user_id][0])
         bot.send_message(message.chat.id, message_text, reply_markup=markup, parse_mode='HTML')
+
+    #     добавляем данные в редис
+        ut.save_user_data(message.chat.id, user_state)
     else:
         bot.send_message(message.chat.id, "У вас нет активных кампаний.")
 
 
 # Обработка нажатий на кнопки
 @bot.callback_query_handler(func=lambda call: call.data in ['back', 'forward'] or call.data.startswith('select_'))
-def callback_query(call):
+def callback_query(call: CallbackQuery):
     user_id = call.from_user.id
+
+    # получаем данные из редиса
+    user_state = ut.get_user_data(user_id)
     current_index = user_state.get(str(user_id) + "_current", 0)  # Получаем текущий индекс креатива для пользователя
     total_creatives = cf.get_total_creatives(user_id)
 
@@ -50,6 +59,9 @@ def callback_query(call):
     message_text, markup = cf.create_message_text(current_campaign_id)
     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                           text=message_text, reply_markup=markup, parse_mode='HTML')
+
+#     обновляем данные в редис
+#     ut.save_user_data(user_id, user_state)
 
 
 # Обработка подтверждения
