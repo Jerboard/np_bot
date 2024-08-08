@@ -177,3 +177,20 @@ def get_yk_pay_kb(pay_id: str,save_cards: tuple) -> types.InlineKeyboardMarkup:
     # markup.add(types.InlineKeyboardButton("Продолжить", callback_data=f"continue_creative_:{pay_id}:{campaign_id}"))
     markup.add(types.InlineKeyboardButton("Продолжить", callback_data=f"continue_creative_:{pay_id}"))
     return markup
+
+
+def get_nds_kb(contractor_id) -> types.InlineKeyboardMarkup:
+    markup = types.InlineKeyboardMarkup()
+    vat_yes_button = types.InlineKeyboardButton("Да", callback_data=f"vat_yes_{contractor_id}")
+    vat_no_button = types.InlineKeyboardButton("Нет", callback_data=f"vat_no_{contractor_id}")
+    return markup.add(vat_yes_button, vat_no_button)
+
+
+# запрашивает есть ли часть договора
+def get_check_next_step_contract_kb(step: str) -> types.InlineKeyboardMarkup:
+    markup = types.InlineKeyboardMarkup()
+    return markup.add(
+        types.InlineKeyboardButton("Да", callback_data=f'add_contract_next_step_check:{step}:1'),
+        types.InlineKeyboardButton("Нет", callback_data=f'add_contract_next_step_check:{step}:0')
+    )
+

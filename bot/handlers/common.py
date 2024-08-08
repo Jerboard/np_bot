@@ -21,6 +21,7 @@ import utils as ut
 import config
 import keyboards as kb
 from init import bot, log_error
+from enums import AddContractStep
 
 
 # Обработчик для сбора ФИО ИП контрагента
@@ -406,8 +407,15 @@ def process_contract_start_date(message, contractor_id):
         db.query_db('UPDATE contracts SET contract_date = ? WHERE chat_id = ? AND contractor_id = ? AND ord_id = ?',
                     (formatted_date, chat_id, contractor_id, ord_id))
         logging.debug(f"Updated contract start date for ord_id: {ord_id}")
-        bot.send_message(chat_id, "Введите дату завершения договора (дд.мм.гггг):")
-        bot.register_next_step_handler(message, process_contract_end_date, contractor_id)
+        # bot.send_message(chat_id, "Введите дату завершения договора (дд.мм.гггг):")
+        # сохраняем contractor_id
+        ut.save_user_data(chat_id, {'contractor_id': contractor_id})
+        bot.send_message(
+            chat_id,
+            "Указана ли в договоре дата завершения?",
+            reply_markup=kb.get_check_next_step_contract_kb(AddContractStep.END_DATE.value)
+        )
+        # bot.register_next_step_handler(message, process_contract_end_date, contractor_id)
     except ValueError:
         logging.error(f"Invalid date format for start date: {contract_date}")
         bot.send_message(chat_id, "Неверный формат даты. Пожалуйста, введите дату в формате дд.мм.гггг:")
@@ -427,8 +435,16 @@ def process_contract_end_date(message, contractor_id):
         db.query_db('UPDATE contracts SET end_date = ? WHERE chat_id = ? AND contractor_id = ? AND ord_id = ?',
                     (formatted_date, chat_id, contractor_id, ord_id))
         logging.debug(f"Updated contract end date for ord_id: {ord_id}")
-        bot.send_message(chat_id, "Введите номер договора:")
-        bot.register_next_step_handler(message, process_contract_serial, contractor_id)
+
+        ut.save_user_data(chat_id, {'contractor_id': contractor_id})
+        bot.send_message(
+            chat_id,
+            "Есть ли номер у вашего договора?",
+            reply_markup=kb.get_check_next_step_contract_kb(AddContractStep.NUM.value)
+        )
+
+        # bot.send_message(chat_id, "Введите номер договора:")
+        # bot.register_next_step_handler(message, process_contract_serial, contractor_id)
     except ValueError:
         logging.error(f"Invalid date format for end date: {end_date}")
         bot.send_message(chat_id, "Неверный формат даты. Пожалуйста, введите дату в формате дд.мм.гггг:")
@@ -443,8 +459,13 @@ def process_contract_serial(message, contractor_id):
     db.query_db('UPDATE contracts SET serial = ? WHERE chat_id = ? AND contractor_id = ? AND ord_id = ?',
                 (serial, chat_id, contractor_id, ord_id))
     logging.debug(f"Updated contract serial for ord_id: {ord_id}")
-    bot.send_message(chat_id, "Введите сумму договора:")
-    bot.register_next_step_handler(message, process_contract_amount, contractor_id)
+
+    ut.save_user_data(chat_id, {'contractor_id': contractor_id})
+    bot.send_message(
+        chat_id,
+        "Указана ли в договоре сумма?",
+        reply_markup=kb.get_check_next_step_contract_kb(AddContractStep.SUM.value)
+    )
 
 
 # Обработчик для обработки суммы договора
@@ -459,11 +480,11 @@ def process_contract_amount(message, contractor_id):
         logging.debug(f"Updated contract amount for ord_id: {ord_id}")
 
         # Спросить про НДС
-        markup = types.InlineKeyboardMarkup()
-        vat_yes_button = types.InlineKeyboardButton("Да", callback_data=f"vat_yes_{contractor_id}")
-        vat_no_button = types.InlineKeyboardButton("Нет", callback_data=f"vat_no_{contractor_id}")
-        markup.add(vat_yes_button, vat_no_button)
-        bot.send_message(chat_id, "Сумма по договору указана с НДС?", reply_markup=markup)
+        # markup = types.InlineKeyboardMarkup()
+        # vat_yes_button = types.InlineKeyboardButton("Да", callback_data=f"vat_yes_{contractor_id}")
+        # vat_no_button = types.InlineKeyboardButton("Нет", callback_data=f"vat_no_{contractor_id}")
+        # markup.add(vat_yes_button, vat_no_button)
+        bot.send_message(chat_id, "Сумма по договору указана с НДС?", reply_markup=kb.get_nds_kb(contractor_id))
     except ValueError:
         logging.error(f"Invalid amount format: {amount}")
         bot.send_message(chat_id, "Неверный формат суммы. Пожалуйста, введите сумму договора:")
@@ -475,8 +496,12 @@ def finalize_contract_data(message, user_role, contractor_id):
     chat_id = message.chat.id
     ord_id = ut.get_ord_id(chat_id, contractor_id)
     contract_data = db.query_db(
-        'SELECT contract_date, end_date, serial, amount, vat_included FROM contracts WHERE chat_id = ? AND contractor_id = ? AND ord_id = ?',
-        (chat_id, contractor_id, ord_id), one=True)
+        'SELECT '
+        'contract_date, end_date, serial, amount, vat_included '
+        'FROM contracts WHERE chat_id = ? AND contractor_id = ? AND ord_id = ?',
+        (chat_id, contractor_id, ord_id),
+        one=True
+    )
     if contract_data:
         contract_date, end_date, serial, amount, vat_included = contract_data
         vat_flag = ["vat_included"] if vat_included else []
@@ -495,7 +520,7 @@ def finalize_contract_data(message, user_role, contractor_id):
             "serial": str(serial),
             "subject_type": "org_distribution",
             "flags": vat_flag,
-            "amount": str(amount)
+            "amount": str(amount) if amount else '0'
         }
         response = send_contract_to_ord(ord_id, chat_id, data)
         if response in [200, 201]:
@@ -524,7 +549,7 @@ def send_contract_to_ord(ord_id, chat_id, data):
         url = f"https://api-sandbox.ord.vk.com/v1/contract/{contract_id}"
 
         headers = {
-            "Authorization": "Bearer 633962f71ade453f997d179af22e2532",
+            "Authorization": f"Bearer {config.VK_API_KEY}",
             "Content-Type": "application/json"
         }
 

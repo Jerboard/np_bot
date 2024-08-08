@@ -19,8 +19,12 @@ else:
     TOKEN = os.getenv('TEST_TOKEN')
     # TOKEN = os.getenv('TOKEN')
 
-VK_API_KEY = os.getenv('VK_API_KEY')
-VK_TEST_API_KEY = os.getenv('VK_TEST_API_KEY')
+if DEBUG:
+    VK_API_KEY = os.getenv('VK_TEST_API_KEY')
+else:
+    # VK_API_KEY = os.getenv('VK_API_KEY')
+    VK_API_KEY = os.getenv('VK_TEST_API_KEY')
+
 connect_data = {
     'host': os.getenv('DB_HOST'),
     'user': os.getenv('POSTGRES_USER'),

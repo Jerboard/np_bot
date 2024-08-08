@@ -4,10 +4,12 @@ from telebot.types import CallbackQuery
 import logging
 
 import db
+import utils as ut
+import keyboards as kb
 from init import bot, log_error
-from utils import get_ord_id
 from . import common as cf
 from .base import start_contract
+from enums import AddContractStep
 
 
 ### Добавление договоров ####
@@ -28,12 +30,62 @@ def start_contract_hnd(message: types.Message):
     start_contract(message)
 
 
+# следующий шаг
+@bot.callback_query_handler(func=lambda call: call.data.startswith('add_contract_next_step_check'))
+def add_contract_next_step_check(call: CallbackQuery):
+    _, step, answer_str = call.data.split(':')
+    answer = bool(int(answer_str))
+
+    if answer:
+        data = ut.get_user_data(call.message.chat.id)
+        if step == AddContractStep.END_DATE:
+            bot.send_message(call.message.chat.id, "Введите дату завершения договора (дд.мм.гггг):")
+            bot.register_next_step_handler(call.message, cf.process_contract_end_date, data['contractor_id'])
+
+        elif step == AddContractStep.NUM:
+            bot.send_message(call.message.chat.id, "Введите номер договора:")
+            bot.register_next_step_handler(call.message, cf.process_contract_serial, data['contractor_id'])
+
+        elif step == AddContractStep.SUM:
+            bot.send_message(call.message.chat.id, "Введите сумму договора:")
+            bot.register_next_step_handler(call.message, cf.process_contract_amount, data['contractor_id'])
+
+        else:
+            bot.send_message(call.message.chat.id, "❗️Что-то сломалось. Перезапустите бот \n\n/start")
+
+    else:
+        if step == AddContractStep.END_DATE:
+            bot.send_message(
+                call.message.chat.id,
+                "Есть ли номер у вашего договора?",
+                reply_markup=kb.get_check_next_step_contract_kb(AddContractStep.NUM.value)
+            )
+
+        elif step == AddContractStep.NUM:
+            bot.send_message(
+                call.message.chat.id,
+                "Указана ли в договоре сумма?",
+                reply_markup=kb.get_check_next_step_contract_kb(AddContractStep.SUM.value)
+            )
+
+        elif step == AddContractStep.SUM:
+            data = ut.get_user_data(call.message.chat.id)
+            bot.send_message(
+                call.message.chat.id,
+                "Сумма по договору указана с НДС?",
+                reply_markup=kb.get_nds_kb(data['contractor_id'])
+            )
+
+        else:
+            bot.send_message(call.message.chat.id, "❗️Что-то сломалось. Перезапустите бот \n\n/start")
+
+
 # Обработчик для выбора контрагента
 @bot.callback_query_handler(func=lambda call: call.data.startswith('contractor_'))
 def handle_contract_contractor_selection(call: CallbackQuery):
     chat_id = call.message.chat.id
     contractor_id = call.data.split('_')[1]
-    ord_id = get_ord_id(chat_id, contractor_id)
+    ord_id = ut.get_ord_id(chat_id, contractor_id)
     db.query_db(
         'INSERT OR IGNORE INTO contracts (chat_id, contractor_id, ord_id) VALUES (?, ?, ?)',
         (chat_id, contractor_id, ord_id)
@@ -50,7 +102,7 @@ def handle_vat_selection(call: CallbackQuery):
     chat_id = call.message.chat.id
     contractor_id = call.data.split('_')[2]
     vat_included = call.data.startswith("vat_yes")
-    ord_id = get_ord_id(chat_id, contractor_id)
+    ord_id = ut.get_ord_id(chat_id, contractor_id)
     db.query_db(
         'UPDATE contracts SET vat_included = ? WHERE chat_id = ? AND contractor_id = ? AND ord_id = ?',
         (int(vat_included), chat_id, contractor_id, ord_id)
