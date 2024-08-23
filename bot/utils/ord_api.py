@@ -1,9 +1,41 @@
 import logging
 import requests
+import httpx
+
+import db
+from config import Config
+from init import log_error
+from enums import JStatus
+
+
+# Функция для отправки данных в ОРД API
+async def send_to_ord(user_id: int, name: str, role: str, j_type: str, inn: int, phone: str = None, rs_url=None) -> int:
+    url = f"https://api-sandbox.ord.vk.com/v1/person/{user_id}"
+    headers = {
+        "Authorization": f"Bearer {Config.bearer}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "name": name,
+        "roles": [role],
+        "juridical_details": {
+            "type": j_type,
+            "inn": inn,
+            "phone": phone or "+7(495)709-56-39"  # Используем заглушку, если номер телефона пуст
+        }
+    }
+
+    if rs_url:
+        data["rs_url"] = rs_url
+
+    async with httpx.AsyncClient() as client:
+        response = await client.put(url, headers=headers, json=data)
+
+    return response.status_code
 
 
 # Функция для отправки данных о контрагенте в ОРД API
-def send_contractor_to_ord(ord_id, name, role, juridical_type, inn, phone, rs_url):
+async def send_contractor_to_ord(ord_id, name, role, juridical_type, inn, phone, rs_url):
     try:
         assert juridical_type in ['physical', 'juridical', 'ip'], f"Invalid juridical_type: {juridical_type}"
 

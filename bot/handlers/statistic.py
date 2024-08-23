@@ -1,10 +1,10 @@
 import logging
-from telebot.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery
 
 import db
 import keyboards as kb
 import utils as ut
-from init import bot
+from init import dp
 from . import common as cf
 
 
@@ -12,8 +12,8 @@ from . import common as cf
 
 
 # Обработка команды /start_statistics
-@bot.message_handler(commands=['start_statistics'])
-def send_welcome(message: Message):
+@dp.message(commands=['start_statistics'])
+async def send_welcome(message: Message):
     user_id = message.from_user.id
     user_state = {}
     # Получаем первый доступный campaign_id для пользователя
@@ -22,18 +22,18 @@ def send_welcome(message: Message):
         user_state[user_id] = [cid[0] for cid in campaign_ids]  # Сохраняем все доступные campaign_id для пользователя
         user_state[str(user_id) + "_current"] = 0  # Текущий индекс campaign_id
         message_text, markup = cf.create_message_text(user_state[user_id][0])
-        bot.send_message(message.chat.id, message_text, reply_markup=markup, parse_mode='HTML')
+        await message.answer(message.chat.id, message_text, reply_markup=markup, parse_mode='HTML')
 
     #     добавляем данные в редис
         ut.save_user_data(message.chat.id, user_state)
     else:
-        bot.send_message(message.chat.id, "У вас нет активных кампаний.")
+        await message.answer(message.chat.id, "У вас нет активных кампаний.")
 
 
 # Обработка нажатий на кнопки
-@bot.callback_query_handler(func=lambda call: call.data in ['back', 'forward'] or call.data.startswith('select_'))
-def callback_query(call: CallbackQuery):
-    user_id = call.from_user.id
+@dp.callback_query(lambda cb: cb.data in ['back', 'forward'] or cb.data.startswith('select_'))
+async def callback_query(cb: CallbackQuery):
+    user_id = cb.from_user.id
 
     # получаем данные из редиса
     user_state = ut.get_user_data(user_id)
@@ -41,37 +41,37 @@ def callback_query(call: CallbackQuery):
     total_creatives = cf.get_total_creatives(user_id)
 
     logging.debug(
-        f"callback_query: call.data = {call.data}, current_index = {current_index}, total_creatives = {total_creatives}")
+        f"callback_query: cb.data = {cb.data}, current_index = {current_index}, total_creatives = {total_creatives}")
 
-    if call.data == 'back':
+    if cb.data == 'back':
         current_index = (current_index - 1) % total_creatives
-    elif call.data == 'forward':
+    elif cb.data == 'forward':
         current_index = (current_index + 1) % total_creatives
-    elif call.data.startswith('select_'):
-        selected_campaign_id = call.data.split('_')[1]
+    elif cb.data.startswith('select_'):
+        selected_campaign_id = cb.data.split('_')[1]
         user_state[str(user_id) + "_selected"] = selected_campaign_id
-        bot.send_message(call.message.chat.id, "Укажите количество показов по данному креативу:")
-        bot.register_next_step_handler(call.message, cf.handle_statistics_input)
+        await message.answer(cb.message.chat.id, "Укажите количество показов по данному креативу:")
+        dp.register_next_step(cb.message, cf.handle_statistics_input)
         return
 
     user_state[str(user_id) + "_current"] = current_index
     current_campaign_id = user_state[user_id][current_index]
     message_text, markup = cf.create_message_text(current_campaign_id)
-    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                          text=message_text, reply_markup=markup, parse_mode='HTML')
+    dp.edit_message_text(chat_id=cb.message.chat.id, message_id=cb.message.message_id,
+                         text=message_text, reply_markup=markup, parse_mode='HTML')
 
 #     обновляем данные в редис
 #     ut.save_user_data(user_id, user_state)
 
 
 # Обработка подтверждения
-@bot.callback_query_handler(func=lambda call: call.data in ['confirm_yes', 'confirm_no'])
-def handle_confirm(call):
-    chat_id = call.message.chat.id
-    logging.debug(f"handle_confirm: call.data = {call.data}")
-    if call.data == 'confirm_yes':
-        logging.debug("Обработка подтверждения: call.data = confirm_yes")
+@dp.callback_query(lambda cb: cb.data in ['confirm_yes', 'confirm_no'])
+async def handle_confirm(call):
+    chat_id = cb.message.chat.id
+    logging.debug(f"handle_confirm: cb.data = {cb.data}")
+    if cb.data == 'confirm_yes':
+        logging.debug("Обработка подтверждения: cb.data = confirm_yes")
         cf.send_statistics_to_ord(chat_id)
-    elif call.data == 'confirm_no':
-        bot.send_message(chat_id, "Введите корректное количество показов:")
-        bot.register_next_step_handler(call.message, cf.handle_statistics_input)
+    elif cb.data == 'confirm_no':
+        await message.answer(chat_id, "Введите корректное количество показов:")
+        dp.register_next_step(cb.message, cf.handle_statistics_input)

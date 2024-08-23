@@ -6,7 +6,7 @@ from init import log_error
 from config import SERVICE_PRICE, BOT_LINK
 
 
-def create_pay_link(campaign_id: str) -> str:
+async def create_pay_link(campaign_id: str) -> str:
     payment = Payment.create({
         "amount": {
             "value": SERVICE_PRICE,
@@ -46,7 +46,7 @@ def create_pay_link(campaign_id: str) -> str:
 
 
 # проверка оплаты по ю кассе
-def check_pay_yoo(pay_id: str) -> tuple:
+async def check_pay_yoo(pay_id: str) -> tuple:
     payment = Payment.find_one(pay_id)
     if payment.paid:
         pay_data = json.loads(payment.payment_method.json())

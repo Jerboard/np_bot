@@ -1,8 +1,8 @@
-from init import bot, log_error
+from init import dp, log_error
 
 
-@bot.exception_handler()
-def log_exception(ex):
+@dp.exception()
+async def log_exception(ex):
     print(type(ex))
     print(ex)
     log_error(ex)
@@ -16,7 +16,7 @@ def log_exception(ex):
     # from init import dp, bot, log_error
     #
     # @dp.errors()
-    # async def errors_handler(ex: ErrorEvent):
+    # async async def errors(ex: ErrorEvent):
     #     msg = log_error(ex)
     #
     #     user_id = ex.update.message.chat.id if ex.update.message else 0

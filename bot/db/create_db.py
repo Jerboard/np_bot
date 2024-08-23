@@ -2,7 +2,7 @@ from .base_db import begin_conn
 
 
 # Создание таблиц в базе данных
-def create_tables():
+async def create_tables():
     with begin_conn() as conn:
         cursor = conn.cursor()
         cursor.execute('''

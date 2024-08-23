@@ -3,12 +3,12 @@ from flask import request
 
 import db
 import config
-from init import bot, app
+from init import dp, app
 from handlers.common import result_payment, check_success_payment
 
 
 @app.route('/result', methods=['GET'])
-def payment_result():
+async def payment_result():
     request_data = request.query_string.decode('utf-8')
     result = result_payment(config.mrh_pass2, request_data)
 
@@ -31,19 +31,19 @@ def payment_result():
         conn.close()
 
         # Оповещение пользователя о подтверждении оплаты
-        bot.send_message(chat_id, f"Оплата подтверждена для счета: {inv_id}. Спасибо за ваш платеж!")
+        await message.answer(chat_id, f"Оплата подтверждена для счета: {inv_id}. Спасибо за ваш платеж!")
 
     return result
 
 
 @app.route('/success', methods=['GET'])
-def payment_success():
+async def payment_success():
     request_data = request.query_string.decode('utf-8')
     result = check_success_payment(config.mrh_pass1, request_data)
     return result
 
 
-def get_next_inv_id(chat_id):
+async def get_next_inv_id(chat_id):
     # Логика для получения следующего уникального inv_id
     last_inv_id = db.query_db('SELECT MAX(inv_id) FROM payments WHERE chat_id = ?', (chat_id,), one=True)
     return (int(last_inv_id[0]) if last_inv_id[0] is not None else 0) + 1

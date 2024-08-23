@@ -1,50 +1,55 @@
-from telebot.types import BotCommand
+from aiogram import Dispatcher, Bot
+from aiogram.bot_command import BotCommand
+from aiogram.enums import ParseMode
+from aiogram.client.default import DefaultBotProperties
+from yookassa import Configuration
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from sqlalchemy.ext.asyncio import create_async_engine
 from datetime import datetime
 
-import os
-import re
-import traceback
 import logging
-import telebot
+import traceback
+import os
+import asyncio
+import re
 import redis
 
-from cachetools import TTLCache
-from flask import Flask
-from yookassa import Configuration
-
-import config
-
-app = Flask(__name__)
-bot = telebot.TeleBot(config.TOKEN)
+from config import Config
 
 
-# Настройка логирования
-# logging.basicConfig(filename='../bot_errors.log', level=logging.WARNING,
-#                     format='%(asctime)s %(levelname)s:%(message)s')
-
-# Настройка кэша
-cache = TTLCache(maxsize=100, ttl=300)
-
-redis_db = redis.Redis(host=config.redis_host, port=config.redis_port, db=config.redis_db)
-
-Configuration.account_id = config.YOO_ACCOUNT_ID
-Configuration.secret_key = config.YOO_SECRET_KEY
+try:
+    import uvloop
+    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+except:
+    pass
 
 
-def set_main_menu():
+loop = asyncio.get_event_loop()
+dp = Dispatcher()
+bot = Bot(Config.token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+
+scheduler = AsyncIOScheduler()
+ENGINE = create_async_engine(url=Config.db_url)
+
+redis_db = redis.Redis(host=Config.redis_host, port=Config.redis_port, db=Config.redis_db)
+
+Configuration.account_id = Config.yoo_account_id
+Configuration.secret_key = Config.yoo_secret_key
+
+
+async def set_main_menu():
     main_menu_commands = [
         BotCommand(command='/start', description='Главный экран'),
         BotCommand(command='/preloader_advertiser_entity', description='Контрагент'),
         BotCommand(command='/preloader_choose_platform', description='Выбор платформы'),
         BotCommand(command='/start_contract', description='Контракт'),
         BotCommand(command='/start_campaign', description='Начать компанию'),
-        # BotCommand(command='/creative', description='Креатив'),
         BotCommand(command='/add_creative', description='Добавить креатив'),
         BotCommand(command='/start_statistics', description='Статистика'),
         # BotCommand(command='/pay', description='Оплата'),
     ]
 
-    bot.set_my_commands(main_menu_commands)
+    await bot.set_my_commands(main_menu_commands)
 
 
 # запись ошибок

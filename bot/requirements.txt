@@ -1,13 +1,12 @@
-pyTelegramBotAPI
 moviepy
 pillow
 requests
 cachetools
-flask
-psycopg2
 aiogram
 pytz
 apscheduler
 uvloop
 redis
 yookassa
+sqlalchemy
+httpx

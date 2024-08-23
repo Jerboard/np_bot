@@ -1,10 +1,10 @@
-from telebot.types import CallbackQuery
+from aiogram.types import CallbackQuery
 
 import logging
 
 import db
 import keyboards as kb
-from init import bot
+from init import dp
 from . import common as cf
 
 
@@ -14,33 +14,33 @@ from . import common as cf
 
 
 # Обработчик для команды /start_campaign
-@bot.message_handler(commands=['start_campaign'])
-def start_campaign(message):
+@dp.message(commands=['start_campaign'])
+async def start_campaign(message):
     chat_id = message.chat.id
-    bot.send_message(chat_id, "Введите название бренда, который вы планируете рекламировать.")
+    await message.answer(chat_id, "Введите название бренда, который вы планируете рекламировать.")
     cf.ask_for_brand(chat_id)
 
 
-@bot.callback_query_handler(
-    func=lambda call: call.data.startswith('add_another_link') or call.data.startswith('continue_campaign'))
-def handle_additional_link(call: CallbackQuery):
-    chat_id = call.message.chat.id
-    campaign_id = call.data.split(':')[1]
-    if call.data.startswith('add_another_link'):
+@dp.callback_query(
+    lambda cb: cb.data.startswith('add_another_link') or cb.data.startswith('continue_campaign'))
+async def handle_additional_link(cb: CallbackQuery):
+    chat_id = cb.message.chat.id
+    campaign_id = cb.data.split(':')[1]
+    if cb.data.startswith('add_another_link'):
         cf.ask_for_target_link(chat_id, campaign_id)
-    elif call.data.startswith('continue_campaign'):
+    elif cb.data.startswith('continue_campaign'):
         confirm_ad_campaign(chat_id, campaign_id)
 
 
 # Подтверждение рекламной кампании
-def confirm_ad_campaign(chat_id, campaign_id):
+async def confirm_ad_campaign(chat_id, campaign_id):
     ad_campaign = db.query_db(
         'SELECT brand, service FROM ad_campaigns WHERE campaign_id = ?', (campaign_id,),
         one=True
     )
     target_links = db.query_db('SELECT link FROM target_links WHERE campaign_id = ?', (campaign_id,))
     links_str = "\n".join([f"Целевая ссылка {i + 1}: {link[0]}" for i, link in enumerate(target_links)])
-    bot.send_message(
+    await message.answer(
         chat_id,
         f"Проверьте, правильно ли указана информация о рекламной кампании:\n"
         f"Бренд: {ad_campaign[0]}\n"
@@ -50,23 +50,23 @@ def confirm_ad_campaign(chat_id, campaign_id):
 
 
 # Обработка выбора подтверждения, изменения или удаления рекламной кампании
-@bot.callback_query_handler(func=lambda call: call.data.startswith("confirm_ad_campaign") or call.data.startswith(
-    "change_ad_campaign") or call.data.startswith("delete_ad_campaign"))
-def handle_ad_campaign_callback(call: CallbackQuery):
-    chat_id = call.message.chat.id
-    campaign_id = call.data.split(':')[1]
-    if call.data.startswith("confirm_ad_campaign"):
-        bot.send_message(
+@dp.callback_query(lambda cb: cb.data.startswith("confirm_ad_campaign") or cb.data.startswith(
+    "change_ad_campaign") or cb.data.startswith("delete_ad_campaign"))
+async def handle_ad_campaign_callback(cb: CallbackQuery):
+    chat_id = cb.message.chat.id
+    campaign_id = cb.data.split(':')[1]
+    if cb.data.startswith("confirm_ad_campaign"):
+        await message.answer(
             chat_id,
             f"Рекламная кампания с брендом "
             f"{db.query_db('SELECT brand FROM ad_campaigns WHERE campaign_id = ?', (campaign_id,), one=True)[0]} "
             f"успешно создана!"
         )
         cf.add_creative_start(chat_id, campaign_id)
-    elif call.data.startswith("change_ad_campaign"):
+    elif cb.data.startswith("change_ad_campaign"):
         cf.ask_for_brand(chat_id)
-    elif call.data.startswith("delete_ad_campaign"):
+    elif cb.data.startswith("delete_ad_campaign"):
         db.query_db('DELETE FROM ad_campaigns WHERE campaign_id = ?', (campaign_id,))
         db.query_db('DELETE FROM target_links WHERE campaign_id = ?', (campaign_id,))
-        bot.answer_callback_query(call.id, "Рекламная кампания удалена")
+        dp.answer_callback_query(cb.id, "Рекламная кампания удалена")
         logging.debug(f"Deleted campaign_id: {campaign_id} and associated links")

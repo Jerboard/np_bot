@@ -10,12 +10,12 @@ cache = TTLCache(maxsize=100, ttl=300)
 
 # Функция для кэширования запросов к базе данных
 @cached(cache)
-def get_user(chat_id):
+async def get_user(chat_id):
     return query_db('SELECT * FROM users WHERE chat_id = ?', (chat_id,), one=True)
 
 
 # Функция для выполнения запросов к базе данных
-def query_db(query, args=(), one=False) -> tuple:
+async def query_db(query, args=(), one=False) -> tuple:
     # меняем '?' на '%s'
     query = query.replace('?', '%s')
     with begin_conn() as conn:
@@ -29,7 +29,7 @@ def query_db(query, args=(), one=False) -> tuple:
 
 
 # Функция для создания директории, если она не существует
-def create_directory(path):
+async def create_directory(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
@@ -37,7 +37,7 @@ def create_directory(path):
 # 'INSERT OR REPLACE INTO users (chat_id, agreed, role, fio, inn, title, juridical_type)
 # VALUES (%s, %s, %s, %s, %s, %s, %s)',
 # Функция для выполнения транзакций
-def insert_user_data(chat_id, agreed, role, fio, inn, title, juridical_type):
+async def insert_user_data(chat_id, agreed, role, fio, inn, title, juridical_type):
     with begin_conn() as conn:
         with conn.cursor() as cursor:
             cursor.execute(
@@ -61,7 +61,7 @@ def insert_user_data(chat_id, agreed, role, fio, inn, title, juridical_type):
 
 
 # Вставляет контрагента
-def insert_contractors_data(chat_id, contractor_id, role, juridical_type, ord_id):
+async def insert_contractors_data(chat_id, contractor_id, role, juridical_type, ord_id):
     with begin_conn() as conn:
         with conn.cursor() as cursor:
             cursor.execute(
@@ -75,7 +75,7 @@ def insert_contractors_data(chat_id, contractor_id, role, juridical_type, ord_id
 
 # 'INSERT OR REPLACE INTO platforms (chat_id, platform_name, platform_url, average_views, ord_id) VALUES (?, ?, ?, ?, ?)'
 # Вставляет платформу
-def insert_platforms_data(chat_id, platform_name, platform_url, average_views, ord_id):
+async def insert_platforms_data(chat_id, platform_name, platform_url, average_views, ord_id):
     with begin_conn() as conn:
         with conn.cursor() as cursor:
             cursor.execute(
@@ -89,7 +89,7 @@ def insert_platforms_data(chat_id, platform_name, platform_url, average_views, o
 
 # 'INSERT OR REPLACE INTO selected_contractors (chat_id, contractor_id) VALUES (?, ?)'
 # Вставляет контрагента
-def insert_selected_contractors_data(chat_id, contractor_id):
+async def insert_selected_contractors_data(chat_id, contractor_id):
     with begin_conn() as conn:
         with conn.cursor() as cursor:
             cursor.execute(
@@ -103,7 +103,7 @@ def insert_selected_contractors_data(chat_id, contractor_id):
 
 # 'INSERT OR REPLACE INTO creative_links (chat_id, ord_id, creative_id, token) VALUES (?, ?, ?, ?)'
 # Вставляет платформу
-def insert_creative_links_data(chat_id, contract_external_id, creative_id, marker):
+async def insert_creative_links_data(chat_id, contract_external_id, creative_id, marker):
     with begin_conn() as conn:
         with conn.cursor() as cursor:
             cursor.execute(
@@ -117,7 +117,7 @@ def insert_creative_links_data(chat_id, contract_external_id, creative_id, marke
 
 #  'INSERT OR REPLACE INTO users (chat_id, juridical_type) VALUES (?, ?)', (chat_id, juridical_type)'
 # Вставляет Тип пользователя
-def insert_users_juridical_type_data(chat_id, juridical_type):
+async def insert_users_juridical_type_data(chat_id, juridical_type):
     with begin_conn() as conn:
         with conn.cursor() as cursor:
             cursor.execute(
@@ -134,7 +134,7 @@ def insert_users_juridical_type_data(chat_id, juridical_type):
 
 # 'INSERT OR IGNORE INTO contracts (chat_id, contractor_id, ord_id) VALUES (?, ?, ?)',
 # Вставляет contracts
-def insert_contracts_data(chat_id, contractor_id, ord_id):
+async def insert_contracts_data(chat_id, contractor_id, ord_id):
     with begin_conn() as conn:
         with conn.cursor() as cursor:
             cursor.execute(
@@ -148,7 +148,7 @@ def insert_contracts_data(chat_id, contractor_id, ord_id):
 
 
 # # Вставляет контрагента
-# def insert_contractors_data(chat_id, contractor_id, role, juridical_type, ord_id):
+# async def insert_contractors_data(chat_id, contractor_id, role, juridical_type, ord_id):
 #     with begin_conn() as conn:
 #         with conn.cursor() as cursor:
 #             cursor.execute(
@@ -168,7 +168,7 @@ def insert_contracts_data(chat_id, contractor_id, ord_id):
 #
 # # 'INSERT OR REPLACE INTO platforms (chat_id, platform_name, platform_url, average_views, ord_id) VALUES (?, ?, ?, ?, ?)'
 # # Вставляет платформу
-# def insert_platforms_data(chat_id, platform_name, platform_url, average_views, ord_id):
+# async def insert_platforms_data(chat_id, platform_name, platform_url, average_views, ord_id):
 #     with begin_conn() as conn:
 #         with conn.cursor() as cursor:
 #             cursor.execute(
@@ -188,7 +188,7 @@ def insert_contracts_data(chat_id, contractor_id, ord_id):
 #
 # # 'INSERT OR REPLACE INTO selected_contractors (chat_id, contractor_id) VALUES (?, ?)'
 # # Вставляет контрагента
-# def insert_selected_contractors_data(chat_id, contractor_id):
+# async def insert_selected_contractors_data(chat_id, contractor_id):
 #     with begin_conn() as conn:
 #         with conn.cursor() as cursor:
 #             cursor.execute(
@@ -205,7 +205,7 @@ def insert_contracts_data(chat_id, contractor_id, ord_id):
 #
 # # 'INSERT OR REPLACE INTO creative_links (chat_id, ord_id, creative_id, token) VALUES (?, ?, ?, ?)'
 # # Вставляет платформу
-# def insert_creative_links_data(chat_id, contract_external_id, creative_id, marker):
+# async def insert_creative_links_data(chat_id, contract_external_id, creative_id, marker):
 #     with begin_conn() as conn:
 #         with conn.cursor() as cursor:
 #             cursor.execute(
@@ -224,7 +224,7 @@ def insert_contracts_data(chat_id, contractor_id, ord_id):
 #
 # #  'INSERT OR REPLACE INTO users (chat_id, juridical_type) VALUES (?, ?)', (chat_id, juridical_type)'
 # # Вставляет Тип пользователя
-# def insert_users_juridical_type_data(chat_id, juridical_type):
+# async def insert_users_juridical_type_data(chat_id, juridical_type):
 #     with begin_conn() as conn:
 #         with conn.cursor() as cursor:
 #             cursor.execute(
@@ -241,7 +241,7 @@ def insert_contracts_data(chat_id, contractor_id, ord_id):
 #
 # # 'INSERT OR IGNORE INTO contracts (chat_id, contractor_id, ord_id) VALUES (?, ?, ?)',
 # # Вставляет contracts
-# def insert_contracts_data(chat_id, contractor_id, ord_id):
+# async def insert_contracts_data(chat_id, contractor_id, ord_id):
 #     with begin_conn() as conn:
 #         with conn.cursor() as cursor:
 #             cursor.execute(
