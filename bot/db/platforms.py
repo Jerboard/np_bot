@@ -1,7 +1,7 @@
 from datetime import datetime
 import typing as t
 import sqlalchemy as sa
-import sqlalchemy.dialects.postgresql as sa_postgresql
+import sqlalchemy.dialects.postgresql as psql
 
 from .base_db import METADATA, begin_connection
 
@@ -46,7 +46,7 @@ async def add_platform(
 ) -> None:
     now = datetime.now()
     query = (
-        sa_postgresql.insert(PlatformTable)
+        psql.insert(PlatformTable)
         .values(
             created_at=now,
             user_id=user_id,

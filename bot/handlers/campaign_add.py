@@ -1,72 +1,103 @@
-from aiogram.types import CallbackQuery
-
-import logging
+from aiogram.types import Message, CallbackQuery
+from aiogram.filters import Command as CommandFilter, StateFilter
+from aiogram.fsm.context import FSMContext
+from datetime import datetime
+from asyncio import sleep
 
 import db
 import keyboards as kb
+from config import Config
 from init import dp
-from . import common as cf
-
-
-####  Добавление рекламной кампании ####
-# Конфигурация логгирования
-# logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+import utils as ut
+from .base import add_creative_start, start_campaign_base
+from enums import CB, Command, UserState, JStatus, Role, AddContractStep
 
 
 # Обработчик для команды /start_campaign
-@dp.message(commands=['start_campaign'])
-async def start_campaign(message):
-    chat_id = message.chat.id
-    await message.answer("Введите название бренда, который вы планируете рекламировать.")
-    cf.ask_for_brand(chat_id)
+@dp.message(CommandFilter(Command.START_CAMPAIGN.value))
+async def start_campaign(msg: Message, state: FSMContext):
+    await start_campaign_base(msg, state)
 
 
-@dp.callback_query(
-    lambda cb: cb.data.startswith('add_another_link') or cb.data.startswith('continue_campaign'))
-async def handle_additional_link(cb: CallbackQuery):
-    chat_id = cb.message.chat.id
-    campaign_id = cb.data.split(':')[1]
-    if cb.data.startswith('add_another_link'):
-        cf.ask_for_target_link(chat_id, campaign_id)
-    elif cb.data.startswith('continue_campaign'):
-        confirm_ad_campaign(chat_id, campaign_id)
-
-
-# Подтверждение рекламной кампании
-async def confirm_ad_campaign(chat_id, campaign_id):
-    ad_campaign = db.query_db(
-        'SELECT brand, service FROM ad_campaigns WHERE campaign_id = ?', (campaign_id,),
-        one=True
-    )
-    target_links = db.query_db('SELECT link FROM target_links WHERE campaign_id = ?', (campaign_id,))
-    links_str = "\n".join([f"Целевая ссылка {i + 1}: {link[0]}" for i, link in enumerate(target_links)])
-    await message.answer(
-        chat_id,
-        f"Проверьте, правильно ли указана информация о рекламной кампании:\n"
-        f"Бренд: {ad_campaign[0]}\n"
-        f"Услуга: {ad_campaign[1]}\n{links_str}",
-        reply_markup=kb.get_confirm_ad_campaign_kb(campaign_id)
+# Обработчик для сохранения бренда
+@dp.message(StateFilter(UserState.ADD_CAMPAIGN_BRAND))
+async def save_brand(msg: Message, state: FSMContext):
+    await state.set_state(UserState.ADD_CAMPAIGN_SERVICE)
+    await state.update_data(data={'brand': msg.text})
+    # await msg.answer("Бренд сохранен.")
+    msg = await msg.answer(
+        text="Кратко опишите товар или услугу, которые вы планируете рекламировать (не более 60 символов)."
     )
 
 
-# Обработка выбора подтверждения, изменения или удаления рекламной кампании
-@dp.callback_query(lambda cb: cb.data.startswith("confirm_ad_campaign") or cb.data.startswith(
-    "change_ad_campaign") or cb.data.startswith("delete_ad_campaign"))
-async def handle_ad_campaign_callback(cb: CallbackQuery):
-    chat_id = cb.message.chat.id
-    campaign_id = cb.data.split(':')[1]
-    if cb.data.startswith("confirm_ad_campaign"):
-        await message.answer(
-            chat_id,
+# Обработчик для сохранения услуги
+@dp.message(StateFilter(UserState.ADD_CAMPAIGN_SERVICE))
+async def save_service(msg: Message, state: FSMContext):
+    await state.set_state(UserState.ADD_CAMPAIGN_LINK)
+    await state.update_data(data={'service': msg.text[:60]})
+
+    await msg.answer("Пришлите ссылку на товар или услугу, которые вы планируете рекламировать.")
+
+
+# Обработчик для сохранения целевой ссылки
+@dp.message(StateFilter(UserState.ADD_CAMPAIGN_LINK))
+async def save_target_link(msg: Message, state: FSMContext):
+    target_link = msg.text
+    if not target_link.startswith("http://") and not target_link.startswith("https://"):
+        target_link = f"https://{target_link}"
+
+    data = await state.get_data()
+    links: list = data.get('links', [])
+    links.append(target_link)
+    await state.update_data(data={'links': links})
+
+    await msg.answer(
+        text="Есть ли дополнительная ссылка на товар или услугу, которые вы планируете рекламировать?",
+        reply_markup=kb.get_ask_for_additional_link_kb()
+    )
+
+
+@dp.callback_query(lambda cb: cb.data.startswith(CB.CAMPAIGN_ADD_ANOTHER_LINK.value))
+async def handle_additional_link(cb: CallbackQuery, state: FSMContext):
+    _, action = cb.data.split(':')
+    if action == '1':
+        await state.set_state(UserState.ADD_CAMPAIGN_LINK)
+        await cb.message.answer("Пришлите ссылку на товар или услугу, которые вы планируете рекламировать.")
+
+    else:
+        data = await state.get_data()
+        links_str = "\n".join([f"Целевая ссылка {i + 1}: {link}" for i, link in data['links']])
+
+        await cb.message.answer(
+            f"Проверьте, правильно ли указана информация о рекламной кампании:\n"
+            f"Бренд: {data['brand']}\n"
+            f"Услуга: {data['service']}\n"
+            f"{links_str}",
+            reply_markup=kb.get_confirm_ad_campaign_kb()
+        )
+
+
+# Обработка выбора подтверждения, изменения или удаления рекламной кампании CAMPAIGN_ADD_CONFIRM
+@dp.callback_query(lambda cb: cb.data.startswith(CB.CAMPAIGN_ADD_CONFIRM.value))
+async def handle_ad_campaign_callback(cb: CallbackQuery, state: FSMContext):
+    _, action = cb.data.split(':')
+    if action == '1':
+        data = await state.get_data()
+        await state.clear()
+        campaign_id = await db.add_campaign(
+            user_id=cb.from_user.id,
+            brand=data['brand'],
+            service=data['service'],
+            links=data['links'],
+        )
+
+        await cb.message.answer(
             f"Рекламная кампания с брендом "
-            f"{db.query_db('SELECT brand FROM ad_campaigns WHERE campaign_id = ?', (campaign_id,), one=True)[0]} "
+            f"{data['brand']}"
             f"успешно создана!"
         )
-        cf.add_creative_start(chat_id, campaign_id)
+        await add_creative_start(cb.message, campaign_id)
+
     elif cb.data.startswith("change_ad_campaign"):
-        cf.ask_for_brand(chat_id)
-    elif cb.data.startswith("delete_ad_campaign"):
-        db.query_db('DELETE FROM ad_campaigns WHERE campaign_id = ?', (campaign_id,))
-        db.query_db('DELETE FROM target_links WHERE campaign_id = ?', (campaign_id,))
-        dp.answer_callback_query(cb.id, "Рекламная кампания удалена")
-        logging.debug(f"Deleted campaign_id: {campaign_id} and associated links")
+        await state.clear()
+        await start_campaign(cb.message, state)

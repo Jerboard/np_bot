@@ -1,7 +1,7 @@
 from datetime import datetime
 import typing as t
 import sqlalchemy as sa
-import sqlalchemy.dialects.postgresql as sa_postgresql
+import sqlalchemy.dialects.postgresql as psql
 
 from .base_db import METADATA, begin_connection
 
@@ -34,7 +34,7 @@ DistributorTable: sa.Table = sa.Table(
 async def add_contractor(user_id: int, name: str, inn: int, j_type: str, ord_id: str) -> None:
     now = datetime.now()
     query = (
-        sa_postgresql.insert(DistributorTable)
+        psql.insert(DistributorTable)
         .values(
             created_at=now,
             user_id=user_id,

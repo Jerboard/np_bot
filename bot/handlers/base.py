@@ -8,6 +8,7 @@ import keyboards as kb
 from init import dp
 import utils as ut
 from . import common as cf
+from enums import UserState
 
 
 async def start_contract(msg: Message):
@@ -87,3 +88,21 @@ async def finalize_platform_data(msg: Message, state: FSMContext):
 
     else:
         await msg.answer("Площадка добавлена, но сервер вернул неожиданный статус.")
+
+
+async def start_campaign_base(msg: Message, state: FSMContext):
+    await state.clear()
+    await state.set_state(UserState.ADD_CAMPAIGN_BRAND)
+    await msg.answer("Введите название бренда, который вы планируете рекламировать.\n\nУкажите бренд.")
+
+
+# Начало процесса добавления креатива
+async def add_creative_start(msg: Message, state: FSMContext, campaign_id: int):
+    await state.set_state(UserState.ADD_CREATIVE)
+    await state.update_data(data={'campaign_id': campaign_id})
+
+    msg = await msg.answer(
+        "Загрузите файл своего рекламного креатива или введите текст. "
+        "Вы можете загрузить несколько файлов для одного креатива."
+    )
+    # dp.register_next_step(msg, lambda message: handle_creative_upload(message, campaign_id))

@@ -1,68 +1,79 @@
-from aiogram.types import CallbackQuery
-
-import logging
+from aiogram.types import Message, CallbackQuery
+from aiogram.filters import Command as CommandFilter, StateFilter
+from aiogram.fsm.context import FSMContext
+from datetime import datetime
+from asyncio import sleep
 
 import db
 import keyboards as kb
+from config import Config
+from init import dp
 import utils as ut
-from init import dp, log_error
-from . import common as cf
-from .base import ask_amount
-
-
-####  Добавление креативов ####
-
-# Команда /creative для Telegram бота
-# @bot.message(commands=['creative'])
-# async def start_creative_process(message):
-#     chat_id = message.chat.id
-#
-#     # сменил запрос на query_db
-#     # conn = sqlite3.connect('bot_database2.db')
-#     # cursor = conn.cursor()
-#     # cursor.execute('SELECT balance FROM users WHERE chat_id = ?', (chat_id,))
-#     # result = cursor.fetchone()
-#     result = db.query_db('SELECT balance FROM users WHERE chat_id = ?', (chat_id,), one=True)
-#
-#     if result is None or result[0] < 400:
-#         bot.send_message(chat_id, "Недостаточно средств на балансе. Пожалуйста, пополните баланс.")
-#         ask_amount(message)
-#     else:
-#         balance = result[0]
-#
-#         # сменил запрос на query_db
-#         # cursor.execute('UPDATE users SET balance = ? WHERE chat_id = ?', (balance - 400, chat_id))
-#         # conn.commit()
-#         # conn.close()
-#         db.query_db('UPDATE users SET balance = ? WHERE chat_id = ?', (balance - 400, chat_id))
-#
-#         # Продолжение процесса добавления креатива
-#         add_creative(message)
+from .base import start_campaign_base, add_creative_start
+from enums import CB, Command, UserState, JStatus, Role, AddContractStep
 
 
 # Обработчик для команды /add_creative
-@dp.message(commands=['add_creative'])
-async def add_creative(message):
-    chat_id = message.chat.id
-    campaigns = db.query_db('SELECT campaign_id, brand, service FROM ad_campaigns WHERE chat_id = ?', (chat_id,))
-    logging.debug(f"Рекламные кампании для пользователя {chat_id}: {campaigns}")
+@dp.message(CommandFilter(Command.ADD_CREATIVE.value))
+async def add_creative(msg: Message, state: FSMContext):
+    campaigns = await db.get_campaign(msg.from_user.id)
     if not campaigns:
-        await message.answer(
-            chat_id,
+        await msg.answer(
             "У вас нет активных рекламных кампаний. Пожалуйста, создайте кампанию перед добавлением креатива."
         )
-        return
+        await start_campaign_base(msg, state)
 
-    await message.answer("Выберите рекламную кампанию для этого креатива:", reply_markup=kb.get_add_creative_kb(campaigns))
+    else:
+        await msg.answer(
+            text="Выберите рекламную кампанию для этого креатива:",
+            reply_markup=kb.get_add_creative_kb(campaigns)
+        )
 
 
-# Обработчик выбора рекламной кампании
-@dp.callback_query(lambda cb: cb.data.startswith('choose_campaign_'))
-async def choose_campaign_callback(cb: CallbackQuery):
-    chat_id = cb.message.chat.id
-    campaign_id = cb.data.split('_')[2]
-    logging.debug(f"Выбранная рекламная кампания: {campaign_id}")
-    cf.add_creative_start(chat_id, campaign_id)
+# Обработчик выбора рекламной кампании CREATIVE_SELECT_CAMPAIGN
+@dp.callback_query(lambda cb: cb.data.startswith(CB.CREATIVE_SELECT_CAMPAIGN.value))
+async def choose_campaign_callback(cb: CallbackQuery, state: FSMContext):
+    _, campaign_id = cb.data.split(':')
+    await add_creative_start(msg=cb.message, campaign_id=campaign_id, state=state)
+
+
+# Обработчик загрузки креатива
+@dp.message(StateFilter(UserState.ADD_CREATIVE))
+async def handle_creative_upload(msg: Message, state: FSMContext):
+    if msg.content_type in ['text', 'photo', 'video', 'audio', 'document']:
+        creative_content = save_creative(msg)
+        creative_count = db.query_db('SELECT COUNT(*) FROM creatives WHERE chat_id = ? AND campaign_id = ?',
+                                     (chat_id, campaign_id), one=True)
+        if creative_count is None:
+            creative_count = [0]
+
+        ord_id_data = db.query_db(
+            'SELECT ord_id FROM ad_campaigns WHERE campaign_id = ?',
+            (campaign_id,),
+            one=True
+        )
+        logging.debug(f"ord_id для кампании {campaign_id}: {ord_id_data}")
+
+        if ord_id_data is None:
+            logging.error(f"Не удалось найти ord_id для кампании с campaign_id: {campaign_id}")
+            await msg.answer("Ошибка: Не удалось найти ord_id для указанной кампании.")
+            return
+
+        ord_id = get_creative_ord_id(ord_id_data[0], creative_count[0])
+        db.query_db(
+            'INSERT INTO creatives (chat_id, campaign_id, creative_id, content_type, content, ord_id, status) '
+            'VALUES (?, ?, ?, ?, ?, ?, ?)',
+            (chat_id, campaign_id, str(uuid.uuid4()), msg.content_type, creative_content, ord_id, 'pending'))
+        logging.debug(f"Inserted creative for chat_id: {chat_id}, campaign_id: {campaign_id}, ord_id: {ord_id}")
+
+        await msg.answer(
+            chat_id,
+            "Креатив успешно добавлен. Добавить еще файл или текст для этого креатива?",
+            reply_markup=kb.get_handle_creative_upload_kb(campaign_id)
+        )
+    else:
+        await msg.answer("Ошибка. Пожалуйста, попробуйте еще раз и пришлите креатив.")
+        add_creative_start(chat_id, campaign_id)
 
 
 # Обработчик кнопки "Добавить файл или текст"

@@ -19,19 +19,19 @@ async def create_tables():
         #     total_balance DECIMAL(10, 2) DEFAULT 0.00
         # )
         # ''')
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS platforms (
-            id SERIAL PRIMARY KEY,
-            chat_id INTEGER,
-            platform_name TEXT,
-            platform_url TEXT,
-            advertiser_link TEXT,
-            average_views INTEGER,
-            link TEXT,
-            ord_id TEXT,
-            vat_included TEXT
-        )
-        ''')
+        # cursor.execute('''
+        # CREATE TABLE IF NOT EXISTS platforms (
+        #     id SERIAL PRIMARY KEY,
+        #     chat_id INTEGER,
+        #     platform_name TEXT,
+        #     platform_url TEXT,
+        #     advertiser_link TEXT,
+        #     average_views INTEGER,
+        #     link TEXT,
+        #     ord_id TEXT,
+        #     vat_included TEXT
+        # )
+        # ''')
         # cursor.execute('''
         # CREATE TABLE IF NOT EXISTS contracts (
         #     id SERIAL PRIMARY KEY,
@@ -46,15 +46,15 @@ async def create_tables():
         # )
         # ''')
         cursor.execute('''
-        CREATE TABLE IF NOT EXISTS ad_campaigns (
-            id SERIAL PRIMARY KEY,
-            chat_id BIGINT,
-            campaign_id TEXT,
-            brand TEXT,
-            service TEXT,
-            ord_id TEXT
-        )
-        ''')
+        # CREATE TABLE IF NOT EXISTS ad_campaigns (
+        #     id SERIAL PRIMARY KEY,
+        #     chat_id BIGINT,
+        #     campaign_id TEXT,
+        #     brand TEXT,
+        #     service TEXT,
+        #     ord_id TEXT
+        # )
+        # ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS target_links (
             id SERIAL PRIMARY KEY,

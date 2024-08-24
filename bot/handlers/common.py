@@ -63,78 +63,22 @@ async def delete_contractor(chat_id, contractor_id):
     db.query_db('DELETE FROM contractors WHERE chat_id = ? AND contractor_id = ?', (chat_id, contractor_id))
 
 
-]
 
 
-# Функция для запроса бренда
-async def ask_for_brand(chat_id):
-    msg = await message.answer("Укажите бренд.")
-    dp.register_next_step(msg, save_brand)
-
-
-# Обработчик для сохранения бренда
-async def save_brand(message):
-    chat_id = message.chat.id
-    brand = message.text
-    campaign_id = db.query_db('SELECT ord_id FROM platforms WHERE chat_id = ? ORDER BY ord_id DESC LIMIT 1', (chat_id,),
-                              one=True)
-
-    if campaign_id:
-        campaign_id = campaign_id[0]  # Извлекаем значение из результата запроса
-        ord_id = ut.get_ord_id(chat_id, campaign_id)
-        db.query_db('INSERT INTO ad_campaigns (chat_id, campaign_id, brand, ord_id) VALUES (?, ?, ?, ?)',
-                    (chat_id, campaign_id, brand, ord_id))
-        logging.debug(f"Inserted campaign record for chat_id: {chat_id}, campaign_id: {campaign_id}, ord_id: {ord_id}")
-        await message.answer("Бренд сохранен.")
-        ask_for_service(chat_id, campaign_id)
-    else:
-        logging.error(f"No campaign_id found for chat_id: {chat_id}")
-        await message.answer("Ошибка: не удалось сохранить бренд.")
 
 
 # Функция для запроса услуги
-async def ask_for_service(chat_id, campaign_id):
-    msg = await message.answer(
-        chat_id,
-        "Кратко опишите товар или услугу, которые вы планируете рекламировать (не более 60 символов)."
-    )
-    dp.register_next_step(msg, lambda msg: save_service(msg, campaign_id))
 
 
 # Обработчик для сохранения услуги
-async def save_service(message, campaign_id):
-    chat_id = message.chat.id
-    service = message.text[:60]  # Ограничение на 60 символов
-    db.query_db('UPDATE ad_campaigns SET service = ? WHERE campaign_id = ?', (service, campaign_id))
-    logging.debug(f"Updated service for campaign_id: {campaign_id}")
-    await message.answer("Услуга сохранена.")
-    ask_for_target_link(chat_id, campaign_id)
 
 
-# Функция для запроса целевой ссылки
-async def ask_for_target_link(chat_id, campaign_id):
-    msg = await message.answer("Пришлите ссылку на товар или услугу, которые вы планируете рекламировать.")
-    dp.register_next_step(msg, lambda msg: save_target_link(msg, campaign_id))
 
 
-# Обработчик для сохранения целевой ссылки
-async def save_target_link(message, campaign_id):
-    chat_id = message.chat.id
-    target_link = message.text.strip()
-    if not target_link.startswith("http://") and not target_link.startswith("https://"):
-        target_link = "https://" + target_link
-    db.query_db('INSERT INTO target_links (chat_id, campaign_id, link) VALUES (?, ?, ?)',
-                (chat_id, campaign_id, target_link))
-    logging.debug(f"Inserted target link for campaign_id: {campaign_id}")
-    await message.answer("Целевая ссылка сохранена.")
-    ask_for_additional_link(chat_id, campaign_id)
 
 
 # Функция для запроса дополнительной ссылки
-async def ask_for_additional_link(chat_id, campaign_id):
-    await message.answer(chat_id,
-                     "Есть ли дополнительная ссылка на товар или услугу, которые вы планируете рекламировать?",
-                    reply_markup=kb.get_ask_for_additional_link_kb(campaign_id))
+
 
 
 #### Функция для выбора платформы ####
@@ -199,54 +143,18 @@ async def get_creative_ord_id(campaign_ord_id, creative_count):
     return f"{campaign_ord_id}.{creative_count + 1}"
 
 
-# Начало процесса добавления креатива
-async def add_creative_start(chat_id, campaign_id):
-    logging.debug(f"Начало процесса добавления креатива для кампании: {campaign_id}")
-    msg = await message.answer(
-        chat_id,
-        "Загрузите файл своего рекламного креатива или введите текст. "
-        "Вы можете загрузить несколько файлов для одного креатива."
-    )
-    dp.register_next_step(msg, lambda message: handle_creative_upload(message, campaign_id))
+# # Начало процесса добавления креатива
+# async def add_creative_start(chat_id, campaign_id):
+#     logging.debug(f"Начало процесса добавления креатива для кампании: {campaign_id}")
+#     msg = await message.answer(
+#         chat_id,
+#         "Загрузите файл своего рекламного креатива или введите текст. "
+#         "Вы можете загрузить несколько файлов для одного креатива."
+#     )
+#     dp.register_next_step(msg, lambda message: handle_creative_upload(message, campaign_id))
 
 
-# Обработчик загрузки креатива
-async def handle_creative_upload(message, campaign_id):
-    chat_id = message.chat.id
-    if message.content_type in ['text', 'photo', 'video', 'audio', 'document']:
-        creative_content = save_creative(message)
-        creative_count = db.query_db('SELECT COUNT(*) FROM creatives WHERE chat_id = ? AND campaign_id = ?',
-                                     (chat_id, campaign_id), one=True)
-        if creative_count is None:
-            creative_count = [0]
 
-        ord_id_data = db.query_db(
-            'SELECT ord_id FROM ad_campaigns WHERE campaign_id = ?',
-            (campaign_id,),
-            one=True
-        )
-        logging.debug(f"ord_id для кампании {campaign_id}: {ord_id_data}")
-
-        if ord_id_data is None:
-            logging.error(f"Не удалось найти ord_id для кампании с campaign_id: {campaign_id}")
-            await message.answer("Ошибка: Не удалось найти ord_id для указанной кампании.")
-            return
-
-        ord_id = get_creative_ord_id(ord_id_data[0], creative_count[0])
-        db.query_db(
-            'INSERT INTO creatives (chat_id, campaign_id, creative_id, content_type, content, ord_id, status) '
-            'VALUES (?, ?, ?, ?, ?, ?, ?)',
-            (chat_id, campaign_id, str(uuid.uuid4()), message.content_type, creative_content, ord_id, 'pending'))
-        logging.debug(f"Inserted creative for chat_id: {chat_id}, campaign_id: {campaign_id}, ord_id: {ord_id}")
-
-        await message.answer(
-            chat_id,
-            "Креатив успешно добавлен. Добавить еще файл или текст для этого креатива?",
-            reply_markup=kb.get_handle_creative_upload_kb(campaign_id)
-        )
-    else:
-        await message.answer("Ошибка. Пожалуйста, попробуйте еще раз и пришлите креатив.")
-        add_creative_start(chat_id, campaign_id)
         
     
 async def save_creative(message):

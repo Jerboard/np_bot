@@ -114,27 +114,28 @@ def get_finalize_platform_data_kb() -> InlineKeyboardMarkup:
 # кб для confirm_ad_campaign
 def get_confirm_ad_campaign_kb(campaign_id) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text="Да, верно", callback_data=f"confirm_ad_campaign:{campaign_id}"),
-    kb.button(text="Изменить", callback_data=f"change_ad_campaign:{campaign_id}"),
-    kb.button(text="Удалить", callback_data=f"delete_ad_campaign:{campaign_id}")
+    kb.button(text="Да, верно", callback_data=f"confirm_ad_campaign:1"),
+    kb.button(text="Изменить", callback_data=f"change_ad_campaign:0"),
+    kb.button(text="Удалить", callback_data=f"{CB.CLOSE.value}")
     return kb.adjust(3).as_markup()
     
 
 # кб для ask_for_additional_link
-def get_ask_for_additional_link_kb(campaign_id) -> InlineKeyboardMarkup:
+def get_ask_for_additional_link_kb() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text="Да, верно", callback_data=f"confirm_ad_campaign:{campaign_id}"),
-    kb.button(text="Изменить", callback_data=f"change_ad_campaign:{campaign_id}"),
-    kb.button(text="Удалить", callback_data=f"delete_ad_campaign:{campaign_id}")
-    return kb.adjust(3).as_markup()
+    kb.button(text="Да", callback_data=f"{CB.CAMPAIGN_ADD_ANOTHER_LINK.value}:1"),
+    kb.button(text="Нет", callback_data=f"{CB.CAMPAIGN_ADD_ANOTHER_LINK.value}:0"),
+    return kb.adjust(2).as_markup()
     
 
 # кб для add_creative
-def get_add_creative_kb(campaigns) -> InlineKeyboardMarkup:
+def get_add_creative_kb(campaigns: tuple[db.CampaignRow]) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    for idx, campaign in enumerate(campaigns):
+    for campaign in campaigns:
         # Создаем кнопку с текстом из названия бренда и описания услуги
-        kb.button(text=f"{campaign[1]} - {campaign[2]}", callback_data=f"choose_campaign_{campaign[0]}")
+        kb.button(
+            text=f"{campaign.brand} - {campaign.service}",
+            callback_data=f"{CB.CREATIVE_SELECT_CAMPAIGN.value}_{campaign.id}")
     return kb.adjust(1).as_markup()
 
 

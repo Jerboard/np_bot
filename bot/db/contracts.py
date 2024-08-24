@@ -1,7 +1,7 @@
 from datetime import datetime, date
 import typing as t
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql as sa_postgresql
+from sqlalchemy.dialects import postgresql as psql
 
 from .base_db import METADATA, begin_connection
 

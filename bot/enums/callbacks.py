@@ -18,6 +18,9 @@ class CB(str, Enum):
     PLATFORM_DIST = 'platform_dist'
     PLATFORM_FIN = 'platform_fin'
     NO_CHOOSE_PLATFORM = 'no_choose_platform'
+    CAMPAIGN_ADD_ANOTHER_LINK = 'campaign_add_another_link'
+    CAMPAIGN_ADD_CONFIRM = 'campaign_add_confirm'
+    CREATIVE_SELECT_CAMPAIGN = 'creative_select_campaign'
 
     IP = 'ip'
     JURIDICAL = 'juridical'
@@ -29,3 +32,5 @@ class CB(str, Enum):
     UR_ADVERTISER = 'ur_advertiser'
     FIZ_ADVERTISER = 'fiz_advertiser'
     CLOSE = 'close'
+
+

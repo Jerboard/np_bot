@@ -107,7 +107,7 @@ async def inn_collector_advertiser(msg: Message, state: FSMContext):
     # handle_contractor_ord_response(response, message, success_add_distributor, contractor_id, message)
     # Функция для обработки ответа от ОРД и дальнейшего выполнения кода для контрагента
     if response and response.status_code in [200, 201]:
-        await db.add_contractor(
+        await db.add_campaign(
             user_id=msg.from_user.id,
             name=data['name'],
             inn=int(msg.text),

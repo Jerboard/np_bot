@@ -1,7 +1,7 @@
 from datetime import datetime
 import typing as t
 import sqlalchemy as sa
-import sqlalchemy.dialects.postgresql as sa_postgresql
+import sqlalchemy.dialects.postgresql as psql
 
 from .base_db import METADATA, begin_connection
 
@@ -52,7 +52,7 @@ async def add_user(
 ) -> None:
     now = datetime.now()
     query = (
-        sa_postgresql.insert(UserTable)
+        psql.insert(UserTable)
         .values(
             user_id=user_id,
             full_name=full_name,
