@@ -27,7 +27,7 @@ async def no_choose_platform(cb: CallbackQuery):
 @dp.callback_query(lambda cb: cb.data == 'choose_platform')
 async def choose_platform(cb: CallbackQuery):
     chat_id = cb.message.chat.id
-    await message.answer(chat_id, "Выберите площадку:", reply_markup=kb.get_choose_platform_kb())
+    await message.answer("Выберите площадку:", reply_markup=kb.get_choose_platform_kb())
 
 
 @dp.callback_query(
@@ -43,34 +43,34 @@ async def collect_platform(cb: CallbackQuery):
 
     if cb.data == 'vk':
         platform_name = 'ВКонтакте'
-        await message.answer(chat_id, "Пришлите ссылку на аккаунт рекламораспространителя.")
+        await message.answer("Пришлите ссылку на аккаунт рекламораспространителя.")
         dp.register_next_step(
             cb.message,
             lambda message: cf.collect_advertiser_link(message, "https://vk.com/")
         )
     elif cb.data == 'instagram':
         platform_name = 'Instagram'
-        await message.answer(chat_id, "Пришлите ссылку на аккаунт рекламораспространителя.")
+        await message.answer("Пришлите ссылку на аккаунт рекламораспространителя.")
         dp.register_next_step(cb.message,
                               lambda message: cf.collect_advertiser_link(message, "https://instagram.com/"))
     elif cb.data == 'youtube':
         platform_name = 'YouTube'
-        await message.answer(chat_id, "Пришлите ссылку на аккаунт рекламораспространителя.")
+        await message.answer("Пришлите ссылку на аккаунт рекламораспространителя.")
         dp.register_next_step(cb.message,
                               lambda message: cf.collect_advertiser_link(message, "https://youtube.com/"))
     elif cb.data == 'telegram_channel':
         platform_name = 'Telegram-канал'
-        await message.answer(chat_id, "Пришлите ссылку на аккаунт рекламораспространителя.")
+        await message.answer("Пришлите ссылку на аккаунт рекламораспространителя.")
         dp.register_next_step(cb.message,
                               lambda message: cf.collect_advertiser_link(message, "https://t.me/"))
     elif cb.data == 'personal_telegram':
         platform_name = 'Личный профиль Telegram'
-        await message.answer(chat_id, "Пришлите ссылку на аккаунт рекламораспространителя.")
+        await message.answer("Пришлите ссылку на аккаунт рекламораспространителя.")
         dp.register_next_step(cb.message,
                               lambda message: cf.collect_advertiser_link(message, "https://t.me/"))
     elif cb.data == 'other':
         platform_name = 'Другое'
-        await message.answer(chat_id, "Пришлите ссылку на площадку рекламораспространителя.")
+        await message.answer("Пришлите ссылку на площадку рекламораспространителя.")
         dp.register_next_step(cb.message, cf.platform_url_collector)
 
     else:
@@ -108,12 +108,12 @@ async def handle_success_add_platform(cb: CallbackQuery):
         choose_platform(call)
     elif cb.data == 'continue_to_entity':
         if role == 'advertiser':
-            await message.answer(chat_id, "Теперь укажите информацию о договоре.")
+            await message.answer("Теперь укажите информацию о договоре.")
             start_contract(cb.message)
         elif role == 'publisher':
             # перенёс preloader_advertiser_entity
             # preloader_advertiser_entity(cb.message)
-            await message.answer(chat_id, "Перейти к созданию контрагента?",
+            await message.answer("Перейти к созданию контрагента?",
                             reply_markup=kb.get_preloader_advertiser_entity_kb())
             # bot.send_message(chat_id, "Теперь укажите информацию о контрагенте.")
             # register_advertiser_entity(cb.message)

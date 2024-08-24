@@ -73,5 +73,5 @@ async def handle_confirm(call):
         logging.debug("Обработка подтверждения: cb.data = confirm_yes")
         cf.send_statistics_to_ord(chat_id)
     elif cb.data == 'confirm_no':
-        await message.answer(chat_id, "Введите корректное количество показов:")
+        await message.answer("Введите корректное количество показов:")
         dp.register_next_step(cb.message, cf.handle_statistics_input)

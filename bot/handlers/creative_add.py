@@ -53,7 +53,7 @@ async def add_creative(message):
         )
         return
 
-    await message.answer(chat_id, "Выберите рекламную кампанию для этого креатива:", reply_markup=kb.get_add_creative_kb(campaigns))
+    await message.answer("Выберите рекламную кампанию для этого креатива:", reply_markup=kb.get_add_creative_kb(campaigns))
 
 
 # Обработчик выбора рекламной кампании

@@ -9,40 +9,26 @@ from utils import get_ord_id
 from . import common as cf
 
 
-async def start_contract(message: Message):
-    chat_id = message.chat.id
-    selected_contractor = db.query_db(
-        'SELECT contractor_id FROM selected_contractors WHERE chat_id = ?', (chat_id,),
-        one=True
-    )
+async def start_contract(msg: Message):
+    # тут выбирать последнего контрагента из сделок
+    selected_contractor = False
 
     if selected_contractor:
-        contractor_id = selected_contractor[0]
-        ord_id = get_ord_id(chat_id, contractor_id)
-
-        # поменял на постгре
-        db.insert_contracts_data(chat_id, contractor_id, ord_id)
-        # старый код
-        # db.query_db(
-        #     # 'INSERT OR IGNORE INTO contracts (chat_id, contractor_id, ord_id) VALUES (?, ?, ?)',
-        #     'INSERT contracts (chat_id, contractor_id, ord_id) VALUES (?, ?, ?)',
-        #     (chat_id, contractor_id, ord_id)
-        # )
-        logging.debug(f"Selected contractor: {contractor_id} for chat_id: {chat_id}")
-        await message.answer(chat_id, f"Выбранный ранее контрагент будет использован: № {contractor_id}")
-        await message.answer(chat_id, "Введите дату начала договора (дд.мм.гггг):")
-        dp.register_next_step(message, cf.process_contract_start_date, contractor_id)
+        await msg.answer(f"Выбранный ранее контрагент будет использован: № {selected_contractor}")
+        await msg.answer("Введите дату начала договора (дд.мм.гггг):")
+        # dp.register_next_step(msg, cf.process_contract_start_date, contractor_id)
     else:
-        await message.answer(chat_id, "Контрагент не был выбран. Пожалуйста, выберите контрагента.")
-        contractors = db.query_db('SELECT contractor_id, fio, title FROM contractors WHERE chat_id = ?', (chat_id,))
+        contractors = await db.get_all_contractors(msg.from_user.id)
+        await msg.answer("Контрагент не был выбран. Пожалуйста, выберите контрагента.")
         if contractors:
-            kb = InlineKeyboardBuilder()
-            for contractor in contractors:
-                contractor_name = contractor[2] if contractor[2] else contractor[1]  # Используем title или fio
-                contractor_button = kb.button(text=contractor_name,
-                                                               callback_data=f"contractor_{contractor[0]}")
-                contractor_button)
-            await message.answer(chat_id, "Выберите контрагента:", reply_markup=markup)
+            await msg.answer("Выберите контрагента:", reply_markup=kb.get_select_distributor_kb(contractors))
+
+        else:
+            await msg.answer(
+                text=f"❗️У вас нет контрагентов.\n\n"
+                     f"Чтобы добавить контрагента воспользуйтесь командой /{Command.PRELOADER_ADVERTISER_ENTITY.value}")
+
+
 
 
 # старт оплаты
@@ -74,5 +60,4 @@ async def preloader_choose_platform(message: Message):
 
 
 async def preloader_advertiser_entity(message: Message):
-    chat_id = message.chat.id
-    await message.answer(chat_id, "Перейти к созданию контрагента?", reply_markup=kb.get_preloader_advertiser_entity_kb())
+    await message.answer("Перейти к созданию контрагента?", reply_markup=kb.get_preloader_advertiser_entity_kb())

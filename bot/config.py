@@ -47,6 +47,8 @@ class Config:
     yoo_account_id = int(os.getenv('YOO_ACCOUNT_ID_TEST'))
     yoo_secret_key = os.getenv('YOO_SECRET_KEY_TEST')
 
+    date_form = "%d.%m.%Y"
+
     @property
     async def debug(self) -> bool:
         return DEBUG

@@ -1,8 +1,9 @@
 from aiogram.utils.keyboard import InlineKeyboardBuilder, InlineKeyboardMarkup
 
+import db
 from config import Config
 from init import log_error
-from enums import CB, Role
+from enums import CB, Role, JStatus
 
 
 def get_agree_button() -> InlineKeyboardMarkup:
@@ -48,17 +49,17 @@ def get_select_role_kb() -> InlineKeyboardMarkup:
 # кб для  preloader_advertiser_entity
 def get_preloader_advertiser_entity_kb() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text='Да', callback_data='register_advertiser_entity')
-    kb.button(text='Нет', callback_data='no_advertiser')
-    return kb.adjust(1).as_markup()
+    kb.button(text='Да', callback_data=CB.REGISTER_ADVERTISER_ENTITY.value)
+    kb.button(text='Нет', callback_data=CB.NO_ADVERTISER.value)
+    return kb.adjust(2).as_markup()
 
 
 # кб для  register_advertiser_entity
 def get_register_advertiser_entity_kb() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text='ИП', callback_data='ip_advertiser')
-    kb.button(text='Юр. лицо', callback_data='ur_advertiser')
-    kb.button(text='Физическое лицо', callback_data='fiz_advertiser')
+    kb.button(text='ИП', callback_data=f'{CB.ADD_ADVERTISER.value}:{JStatus.IP.value}')
+    kb.button(text='Юр. лицо', callback_data=f'{CB.ADD_ADVERTISER.value}:{JStatus.JURIDICAL.value}')
+    kb.button(text='Физическое лицо', callback_data=f'{CB.ADD_ADVERTISER.value}:{JStatus.PHYSICAL.value}')
     return kb.adjust(2).as_markup()
 
 
@@ -175,10 +176,10 @@ def get_yk_pay_kb(pay_id: str,save_cards: tuple) -> InlineKeyboardMarkup:
     return kb.adjust(1).as_markup()
 
 
-def get_nds_kb(contractor_id) -> InlineKeyboardMarkup:
+def get_nds_kb() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text="Да", callback_data=f"vat_yes_{contractor_id}")
-    kb.button(text="Нет", callback_data=f"vat_no_{contractor_id}")
+    kb.button(text="Да", callback_data=f"{CB.CONTRACT_VAT.value}:4")
+    kb.button(text="Нет", callback_data=f"{CB.CONTRACT_VAT.value}:1")
     return kb.adjust(2).as_markup()
 
 
@@ -187,4 +188,29 @@ def get_check_next_step_contract_kb(step: str) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     kb.button(text="Да", callback_data=f'add_contract_next_step_check:{step}:1'),
     kb.button(text="Нет", callback_data=f'add_contract_next_step_check:{step}:0')
+    return kb.adjust(1).as_markup()
+
+
+# после добавления контрагента
+def get_add_distributor_finish_kb() -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    kb.button(text='Добавить еще контрагента', callback_data=CB.ADD_ANOTHER_DISTRIBUTOR.value)
+    kb.button(text='Продолжить', callback_data=CB.CONTINUE.value)
+    return kb.adjust(2).as_markup()
+
+
+# выбор контрагента
+def get_select_distributor_kb(contractors: tuple[db.DistributorRow]) -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    for contractor in contractors:
+        kb.button(text=contractor.name, callback_data=f"{CB.CONTRACT_DIST_SELECT.value}:{contractor.id}")
+
+    kb.button(text="❌ Отмена", callback_data=CB.CLOSE.value)
+    return kb.adjust(1).as_markup()
+
+
+# запрашивает есть ли часть договора
+def get_close_kb() -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    kb.button(text="❌ Отмена", callback_data=CB.CLOSE.value)
     return kb.adjust(1).as_markup()

@@ -24,40 +24,6 @@ from init import dp, log_error
 from enums import AddContractStep
 
 
-# Обработчик для сбора ФИО ИП контрагента
-async def fio_i_collector_advertiser(message, contractor_id):
-    chat_id = message.chat.id
-    fio_i_advertiser = message.text
-    db.query_db('UPDATE contractors SET fio = ? WHERE chat_id = ? AND contractor_id = ?',
-                (fio_i_advertiser, chat_id, contractor_id))
-    await message.answer(
-        message.chat.id,
-        "Введите ИНН вашего контрагента. Например, 563565286576. "
-        "ИНН индивидуального предпринимателя совпадает с ИНН физического лица."
-    )
-    dp.register_next_step(message, lambda m: inn_collector_advertiser(m, contractor_id))
-
-
-# Обработчик для сбора ФИО физ. лица контрагента
-async def fio_collector_advertiser(message, contractor_id):
-    chat_id = message.chat.id
-    fio_advertiser = message.text
-    db.query_db('UPDATE contractors SET fio = ? WHERE chat_id = ? AND contractor_id = ?',
-                (fio_advertiser, chat_id, contractor_id))
-    await message.answer(message.chat.id, "Введите ИНН вашего контрагента. Например, 563565286576.")
-    dp.register_next_step(message, lambda m: inn_collector_advertiser(m, contractor_id))
-
-
-# Обработчик для сбора названия организации контрагента
-async def title_collector_advertiser(message, contractor_id):
-    chat_id = message.chat.id
-    title_advertiser = message.text
-    db.query_db('UPDATE contractors SET title = ? WHERE chat_id = ? AND contractor_id = ?',
-                (title_advertiser, chat_id, contractor_id))
-    await message.answer(message.chat.id, "Введите ИНН вашего контрагента. Например, 6141027912.")
-    dp.register_next_step(message, lambda m: inn_collector_advertiser(m, contractor_id))
-
-
 # Валидатор ИНН
 async def validate_inn1(inn, juridical_type):
     inn = str(inn)
@@ -88,52 +54,8 @@ async def validate_inn1(inn, juridical_type):
     return False
 
 
-# Обработчик для сбора ИНН контрагента
-async def inn_collector_advertiser(message, contractor_id):
-    chat_id = message.chat.id
-    inn_advertiser = message.text.strip()
-    juridical_type = db.query_db(
-        'SELECT juridical_type FROM contractors WHERE chat_id = ? AND contractor_id = ?',
-        (chat_id, contractor_id),
-        one=True
-    )[0]
-    if not validate_inn1(inn_advertiser, juridical_type):
-        await message.answer(chat_id, "Неверный формат ИНН. Пожалуйста, введите корректный ИНН:")
-        dp.register_next_step(message, lambda m: inn_collector_advertiser(m, contractor_id))
-        return
-    db.query_db('UPDATE contractors SET inn = ? WHERE chat_id = ? AND contractor_id = ?',
-                (inn_advertiser, chat_id, contractor_id))
-    contractor_data = db.query_db(
-        'SELECT fio, role, juridical_type, inn, title, ord_id FROM contractors WHERE chat_id = ? AND contractor_id = ?',
-        (chat_id, contractor_id), one=True)
-    fio, role, juridical_type, inn, title, ord_id = contractor_data
-    phone = "+7(922)744-93-08"  # Используем заглушку для номера телефона
-    rs_url = "https://example.com" if juridical_type != 'physical' else None  # Используем заглушку для rs_url только для юр. лиц и ИП
-    name = title if juridical_type == 'juridical' else fio  # Устанавливаем правильное значение для name
-    response = ut.send_contractor_to_ord(ord_id, name, role, juridical_type, inn, phone, rs_url)
-    handle_contractor_ord_response(response, message, success_add_distributor, contractor_id, message)
 
 
-# Функция для обработки ответа от ОРД и дальнейшего выполнения кода для контрагента
-async def handle_contractor_ord_response(response, message, next_step_function, contractor_id, *args):
-    if response and response.status_code in [200, 201]:
-        next_step_function(message, *args)  # Передаем аргумент message
-    else:
-        chat_id = message.chat.id
-        delete_contractor(chat_id, contractor_id)
-        await message.answer(
-            chat_id,
-            f"Произошла ошибка при добавлении контрагента в ОРД: "
-            f"{response.status_code if response else 'Нет ответа'}. "
-            f"Попробуйте снова.")
-
-        # перенёс
-        # register_advertiser_entity(message)
-        await message.answer(
-            chat_id,
-            "Укажите правовой статус вашего контрагента",
-            reply_markup=kb.get_register_advertiser_entity_kb()
-        )
 
 
 # Функция для удаления контрагента из базы данных
@@ -141,21 +63,12 @@ async def delete_contractor(chat_id, contractor_id):
     db.query_db('DELETE FROM contractors WHERE chat_id = ? AND contractor_id = ?', (chat_id, contractor_id))
 
 
-# Функция для обработки успешного добавления контрагента
-async def success_add_distributor(message, *args):
-    chat_id = message.chat.id
-    kb = InlineKeyboardBuilder()
-    add_another_button = kb.button(text='Добавить еще контрагента',
-                                                    callback_data='add_another_distributor')
-    continue_button = kb.button(text='Продолжить', callback_data='continue')
-    kb.row(add_another_button, continue_button)
-    await message.answer(chat_id, "Контрагент успешно добавлен!\nВы всегда можете добавить новых контрагентов позже.",
-                    reply_markup=markup)
+]
 
 
 # Функция для запроса бренда
 async def ask_for_brand(chat_id):
-    msg = await message.answer(chat_id, "Укажите бренд.")
+    msg = await message.answer("Укажите бренд.")
     dp.register_next_step(msg, save_brand)
 
 
@@ -172,11 +85,11 @@ async def save_brand(message):
         db.query_db('INSERT INTO ad_campaigns (chat_id, campaign_id, brand, ord_id) VALUES (?, ?, ?, ?)',
                     (chat_id, campaign_id, brand, ord_id))
         logging.debug(f"Inserted campaign record for chat_id: {chat_id}, campaign_id: {campaign_id}, ord_id: {ord_id}")
-        await message.answer(chat_id, "Бренд сохранен.")
+        await message.answer("Бренд сохранен.")
         ask_for_service(chat_id, campaign_id)
     else:
         logging.error(f"No campaign_id found for chat_id: {chat_id}")
-        await message.answer(chat_id, "Ошибка: не удалось сохранить бренд.")
+        await message.answer("Ошибка: не удалось сохранить бренд.")
 
 
 # Функция для запроса услуги
@@ -194,13 +107,13 @@ async def save_service(message, campaign_id):
     service = message.text[:60]  # Ограничение на 60 символов
     db.query_db('UPDATE ad_campaigns SET service = ? WHERE campaign_id = ?', (service, campaign_id))
     logging.debug(f"Updated service for campaign_id: {campaign_id}")
-    await message.answer(chat_id, "Услуга сохранена.")
+    await message.answer("Услуга сохранена.")
     ask_for_target_link(chat_id, campaign_id)
 
 
 # Функция для запроса целевой ссылки
 async def ask_for_target_link(chat_id, campaign_id):
-    msg = await message.answer(chat_id, "Пришлите ссылку на товар или услугу, которые вы планируете рекламировать.")
+    msg = await message.answer("Пришлите ссылку на товар или услугу, которые вы планируете рекламировать.")
     dp.register_next_step(msg, lambda msg: save_target_link(msg, campaign_id))
 
 
@@ -213,7 +126,7 @@ async def save_target_link(message, campaign_id):
     db.query_db('INSERT INTO target_links (chat_id, campaign_id, link) VALUES (?, ?, ?)',
                 (chat_id, campaign_id, target_link))
     logging.debug(f"Inserted target link for campaign_id: {campaign_id}")
-    await message.answer(chat_id, "Целевая ссылка сохранена.")
+    await message.answer("Целевая ссылка сохранена.")
     ask_for_additional_link(chat_id, campaign_id)
 
 
@@ -252,7 +165,7 @@ async def platform_url_collector(message: Message):
     chat_id = message.chat.id
     verification_message = (f"Проверьте, правильно ли указана ссылка на площадку рекламораспространителя:\n"
                             f"{platform_name} - {advertiser_link}")
-    await message.answer(chat_id, verification_message, reply_markup=kb.get_platform_url_collector_kb())
+    await message.answer(verification_message, reply_markup=kb.get_platform_url_collector_kb())
 
 
 # Функция для удаления платформы
@@ -264,7 +177,7 @@ async def del_platform(cb: CallbackQuery):
     if platform_name:
         platform_name = platform_name[0]
         db.query_db('DELETE FROM platforms WHERE chat_id = ? AND platform_name = ?', (chat_id, platform_name))
-        await message.answer(chat_id, f"Платформа '{platform_name}' успешно удалена.")
+        await message.answer(f"Платформа '{platform_name}' успешно удалена.")
 
         # перенёс
         # preloader_choose_platform(cb.message)
@@ -274,12 +187,12 @@ async def del_platform(cb: CallbackQuery):
             reply_markup=kb.get_preloader_choose_platform_kb()
         )
     else:
-        await message.answer(chat_id, "Ошибка при удалении платформы. Пожалуйста, попробуйте снова.")
+        await message.answer("Ошибка при удалении платформы. Пожалуйста, попробуйте снова.")
 
 
 # Функция для запроса среднего количества просмотров
 async def request_average_views(chat_id):
-    msg = await message.answer(chat_id, "Укажите среднее количество просмотров поста за месяц:")
+    msg = await message.answer("Укажите среднее количество просмотров поста за месяц:")
     dp.register_next_step(msg, process_average_views)
 
 
@@ -339,7 +252,7 @@ async def finalize_platform_data(chat_id, contractor_id):
         platform_name, platform_url, average_views, ord_id = platform_data
         person_external_id = f"{chat_id}.{contractor_id}"
         response = send_platform_to_ord(ord_id, platform_name, platform_url, average_views, person_external_id, chat_id)
-        await message.answer(chat_id, "Площадка успешно зарегистрирована в ОРД.")
+        await message.answer("Площадка успешно зарегистрирована в ОРД.")
 
         # постгрес
         db.insert_selected_contractors_data(chat_id, contractor_id)
@@ -347,7 +260,7 @@ async def finalize_platform_data(chat_id, contractor_id):
         # db.query_db('INSERT OR REPLACE INTO selected_contractors (chat_id, contractor_id) VALUES (?, ?)',
         #             (chat_id, contractor_id))
 
-        await message.answer(chat_id, "Добавить новую площадку или продолжить?", reply_markup=kb.get_finalize_platform_data_kb())
+        await message.answer("Добавить новую площадку или продолжить?", reply_markup=kb.get_finalize_platform_data_kb())
 
 
 # Функция для отправки данных о платформе в ОРД API
@@ -384,7 +297,7 @@ async def send_platform_to_ord(ord_id, platform_name, platform_url, average_view
         if response.status_code in [200, 201]:
             return True
         else:
-            await message.answer(chat_id, "Площадка добавлена, но сервер вернул неожиданный статус.")
+            await message.answer("Площадка добавлена, но сервер вернул неожиданный статус.")
             return False
     except requests.exceptions.RequestException as e:
         logging.error(f"RequestException: {e}")
@@ -396,190 +309,19 @@ async def send_platform_to_ord(ord_id, platform_name, platform_url, average_view
 
 
 ### Добавление договоров ####
-# Обработчик для обработки даты начала договора
-async def process_contract_start_date(message, contractor_id):
-    chat_id = message.chat.id
-    contract_date = message.text.strip()
-    try:
-        date_obj = datetime.strptime(contract_date, "%d.%m.%Y")
-        formatted_date = date_obj.strftime("%Y-%m-%d")
-        ord_id = ut.get_ord_id(chat_id, contractor_id)
-        db.query_db('UPDATE contracts SET contract_date = ? WHERE chat_id = ? AND contractor_id = ? AND ord_id = ?',
-                    (formatted_date, chat_id, contractor_id, ord_id))
-        logging.debug(f"Updated contract start date for ord_id: {ord_id}")
-        # bot.send_message(chat_id, "Введите дату завершения договора (дд.мм.гггг):")
-        # сохраняем contractor_id
-        ut.save_user_data(chat_id, {'contractor_id': contractor_id})
-        await message.answer(
-            chat_id,
-            "Указана ли в договоре дата завершения?",
-            reply_markup=kb.get_check_next_step_contract_kb(AddContractStep.END_DATE.value)
-        )
-        # bot.register_next_step(message, process_contract_end_date, contractor_id)
-    except ValueError:
-        logging.error(f"Invalid date format for start date: {contract_date}")
-        await message.answer(chat_id, "Неверный формат даты. Пожалуйста, введите дату в формате дд.мм.гггг:")
-        dp.register_next_step(message, process_contract_start_date, contractor_id)
+
 
 
 # Обработчик для конпок даты завершения договора
 
-# Обработчик для обработки даты завершения договора
-async def process_contract_end_date(message, contractor_id):
-    chat_id = message.chat.id
-    end_date = message.text.strip()
-    try:
-        date_obj = datetime.strptime(end_date, "%d.%m.%Y")
-        formatted_date = date_obj.strftime("%Y-%m-%d")
-        ord_id = ut.get_ord_id(chat_id, contractor_id)
-        db.query_db('UPDATE contracts SET end_date = ? WHERE chat_id = ? AND contractor_id = ? AND ord_id = ?',
-                    (formatted_date, chat_id, contractor_id, ord_id))
-        logging.debug(f"Updated contract end date for ord_id: {ord_id}")
 
-        ut.save_user_data(chat_id, {'contractor_id': contractor_id})
-        await message.answer(
-            chat_id,
-            "Есть ли номер у вашего договора?",
-            reply_markup=kb.get_check_next_step_contract_kb(AddContractStep.NUM.value)
-        )
-
-        # bot.send_message(chat_id, "Введите номер договора:")
-        # bot.register_next_step(message, process_contract_serial, contractor_id)
-    except ValueError:
-        logging.error(f"Invalid date format for end date: {end_date}")
-        await message.answer(chat_id, "Неверный формат даты. Пожалуйста, введите дату в формате дд.мм.гггг:")
-        dp.register_next_step(message, process_contract_end_date, contractor_id)
-
-
-# Обработчик для обработки номера договора
-async def process_contract_serial(message, contractor_id):
-    chat_id = message.chat.id
-    serial = message.text.strip()
-    ord_id = ut.get_ord_id(chat_id, contractor_id)
-    db.query_db('UPDATE contracts SET serial = ? WHERE chat_id = ? AND contractor_id = ? AND ord_id = ?',
-                (serial, chat_id, contractor_id, ord_id))
-    logging.debug(f"Updated contract serial for ord_id: {ord_id}")
-
-    ut.save_user_data(chat_id, {'contractor_id': contractor_id})
-    await message.answer(
-        chat_id,
-        "Указана ли в договоре сумма?",
-        reply_markup=kb.get_check_next_step_contract_kb(AddContractStep.SUM.value)
-    )
-
-
-# Обработчик для обработки суммы договора
-async def process_contract_amount(message, contractor_id):
-    chat_id = message.chat.id
-    amount = message.text.strip()
-    try:
-        amount = float(amount)
-        ord_id = ut.get_ord_id(chat_id, contractor_id)
-        db.query_db('UPDATE contracts SET amount = ? WHERE chat_id = ? AND contractor_id = ? AND ord_id = ?',
-                    (amount, chat_id, contractor_id, ord_id))
-        logging.debug(f"Updated contract amount for ord_id: {ord_id}")
-
-        # Спросить про НДС
-        # markup = InlineKeyboardBuilder()
-        # vat_yes_button = kb.button(text="Да", callback_data=f"vat_yes_{contractor_id}")
-        # vat_no_button = kb.button(text="Нет", callback_data=f"vat_no_{contractor_id}")
-        # markup.add(vat_yes_button, vat_no_button)
-        await message.answer(chat_id, "Сумма по договору указана с НДС?", reply_markup=kb.get_nds_kb(contractor_id))
-    except ValueError:
-        logging.error(f"Invalid amount format: {amount}")
-        await message.answer(chat_id, "Неверный формат суммы. Пожалуйста, введите сумму договора:")
-        dp.register_next_step(message, process_contract_amount, contractor_id)
 
 
 # Функция для завершения процесса добавления данных договора
-async def finalize_contract_data(message, user_role, contractor_id):
-    chat_id = message.chat.id
-    ord_id = ut.get_ord_id(chat_id, contractor_id)
-    contract_data = db.query_db(
-        'SELECT '
-        'contract_date, end_date, serial, amount, vat_included '
-        'FROM contracts WHERE chat_id = ? AND contractor_id = ? AND ord_id = ?',
-        (chat_id, contractor_id, ord_id),
-        one=True
-    )
-    if contract_data:
-        contract_date, end_date, serial, amount, vat_included = contract_data
-        vat_flag = ["vat_included"] if vat_included else []
-        if user_role == "advertiser":
-            client_external_id = f"{chat_id}"
-            contractor_external_id = f"{chat_id}.{contractor_id}"
-        else:
-            client_external_id = f"{chat_id}.{contractor_id}"
-            contractor_external_id = f"{chat_id}"
-
-        data = {
-            "type": "service",
-            "client_external_id": str(client_external_id),
-            "contractor_external_id": str(contractor_external_id),
-            "date": contract_date,
-            "serial": str(serial),
-            "subject_type": "org_distribution",
-            "flags": vat_flag,
-            "amount": str(amount) if amount else '0'
-        }
-        response = send_contract_to_ord(ord_id, chat_id, data)
-        if response in [200, 201]:
-            await message.answer(chat_id, "Договор успешно зарегистрирован в ОРД.")
-            # start_campaign(message)
-
-        #     добавил чтоб не было кругового импорта
-            await message.answer(chat_id, "Введите название бренда, который вы планируете рекламировать.")
-            ask_for_brand(chat_id)
-        else:
-            await message.answer(chat_id, "Произошла ошибка при регистрации договора в ОРД.")
-            logging.error(f"Error registering contract in ORD: {response}")
-
-    else:
-        await message.answer(chat_id, "Произошла ошибка. Данные о договоре не найдены.")
-        logging.error(
-            f"Contract data not found for chat_id: {chat_id}, contractor_id: {contractor_id}, ord_id: {ord_id}")
 
 
-# Функция для отправки данных о договоре в ОРД API
-async def send_contract_to_ord(ord_id, chat_id, data):
-    # чтоб не было ошибки при возврате False
-    text_error = 'Response error'
-    try:
-        contract_id = f"{ord_id}"
-        url = f"https://api-sandbox.ord.vk.com/v1/contract/{contract_id}"
 
-        headers = {
-            "Authorization": f"Bearer {config.VK_API_KEY}",
-            "Content-Type": "application/json"
-        }
 
-        logging.debug(f"URL: {url}")
-        logging.debug(f"Headers: {headers}")
-        logging.debug(f"Data: {data}")
-
-        response = requests.put(url, headers=headers, json=data)
-        text_error = response.text
-        response.raise_for_status()
-
-        logging.debug(f"Response status code: {response.status_code}")
-        logging.debug(f"Response content: {response.content}")
-
-        if response.status_code in [200, 201]:
-            return response.status_code
-        else:
-            logging.error(f"Unexpected status code: {response.status_code}")
-            await message.answer(chat_id, "Договор добавлен, но сервер вернул неожиданный статус.")
-            return response.json()
-    except requests.exceptions.RequestException as e:
-        logging.error(f"RequestException: {e}")
-        # дублирует ответ из finalize_contract_data
-        # bot.send_message(chat_id, "Произошла ошибка при регистрации договора в ОРД.")
-        return str(e)
-    except ValueError as e:
-        logging.error(f"ValueError: {e}")
-        logging.error(f"Response text: {text_error}")
-        await message.answer(chat_id, "Произошла ошибка при обработке ответа от сервера ОРД.")
-        return str(e)
     
     
 ####  Добавление креативов ####
@@ -618,7 +360,7 @@ async def handle_creative_upload(message, campaign_id):
 
         if ord_id_data is None:
             logging.error(f"Не удалось найти ord_id для кампании с campaign_id: {campaign_id}")
-            await message.answer(chat_id, "Ошибка: Не удалось найти ord_id для указанной кампании.")
+            await message.answer("Ошибка: Не удалось найти ord_id для указанной кампании.")
             return
 
         ord_id = get_creative_ord_id(ord_id_data[0], creative_count[0])
@@ -634,7 +376,7 @@ async def handle_creative_upload(message, campaign_id):
             reply_markup=kb.get_handle_creative_upload_kb(campaign_id)
         )
     else:
-        await message.answer(chat_id, "Ошибка. Пожалуйста, попробуйте еще раз и пришлите креатив.")
+        await message.answer("Ошибка. Пожалуйста, попробуйте еще раз и пришлите креатив.")
         add_creative_start(chat_id, campaign_id)
         
     
@@ -730,7 +472,7 @@ async def finalize_creative(chat_id, campaign_id):
     contract = db.query_db('SELECT ord_id, contractor_id FROM contracts WHERE chat_id = ? ORDER BY ID DESC LIMIT 1',
                            (chat_id,), one=True)
     if contract is None:
-        await message.answer(chat_id, "Ошибка: Не найден договор для данного пользователя.")
+        await message.answer("Ошибка: Не найден договор для данного пользователя.")
         return
 
     contract_ord_id, contractor_id_part = contract
@@ -740,7 +482,7 @@ async def finalize_creative(chat_id, campaign_id):
 
     user_inn = db.query_db('SELECT inn FROM users WHERE chat_id = ?', (chat_id,), one=True)
     if user_inn is None:
-        await message.answer(chat_id, "Ошибка: Не найден ИНН для данного пользователя.")
+        await message.answer("Ошибка: Не найден ИНН для данного пользователя.")
         return
     user_inn = user_inn[0]
 
@@ -767,7 +509,7 @@ async def finalize_creative(chat_id, campaign_id):
         response = send_creative_to_ord(chat_id, campaign_id, creatives, description, media_ids, contract_external_id,
                                         user_inn)
         if response is None or 'marker' not in response:
-            await message.answer(chat_id, "Ошибка при отправке креатива в ОРД.")
+            await message.answer("Ошибка при отправке креатива в ОРД.")
             return
 
         marker = response['marker']
@@ -816,7 +558,7 @@ async def send_creative_to_ord(chat_id, campaign_id, creatives, description, med
         'SELECT creative_id FROM creatives WHERE chat_id = ? AND campaign_id = ? ORDER BY id DESC LIMIT 1',
         (chat_id, campaign_id), one=True)
     if creative_id is None:
-        await message.answer(chat_id, "Ошибка: Не найден creative_id для указанной кампании.")
+        await message.answer("Ошибка: Не найден creative_id для указанной кампании.")
         return
     creative_id = creative_id[0]
 
@@ -871,12 +613,12 @@ async def handle_creative_link(message, ord_id):
         'SELECT creative_id FROM creative_links WHERE chat_id = ? AND ord_id = ? ORDER BY ID DESC LIMIT 1',
         (chat_id, ord_id), one=True)
     if creative_id is None:
-        await message.answer(chat_id, "Ошибка: Не найден creative_id для указанной кампании.")
+        await message.answer("Ошибка: Не найден creative_id для указанной кампании.")
         return
     creative_id = creative_id[0]
     db.query_db('UPDATE creative_links SET link = ? WHERE chat_id = ? AND ord_id = ? AND creative_id = ?',
                 (link, chat_id, ord_id, creative_id))
-    await message.answer(chat_id, "Вы успешно добавили ссылку на ваш рекламный креатив.")
+    await message.answer("Вы успешно добавили ссылку на ваш рекламный креатив.")
 
     await message.answer(
         chat_id,
@@ -1023,7 +765,7 @@ async def send_statistics_to_ord(chat_id):
     user_data = user_state.get(str(chat_id) + "_data")
     logging.debug(f"user_data: {user_data}")
     if not user_data:
-        await message.answer(chat_id, "Ошибка: не удалось получить данные для отправки в ОРД.")
+        await message.answer("Ошибка: не удалось получить данные для отправки в ОРД.")
         return
 
     campaign_id = user_state.get(str(chat_id) + "_selected")
@@ -1035,7 +777,7 @@ async def send_statistics_to_ord(chat_id):
     creative_id = db.query_db('SELECT creative_id FROM creatives WHERE campaign_id = ?', (campaign_id,), one=True)
     logging.debug(f"creative_id: {creative_id}")
     if not creative_id:
-        await message.answer(chat_id, f"Ошибка: не удалось получить creative_id для креатива {campaign_id}.")
+        await message.answer(f"Ошибка: не удалось получить creative_id для креатива {campaign_id}.")
         return
 
     creative_id = creative_id[0]
@@ -1046,7 +788,7 @@ async def send_statistics_to_ord(chat_id):
     })
 
     if pad_check_response.status_code != 200:
-        await message.answer(chat_id, f"Ошибка: pad_external_id {campaign_id} не зарегистрирован в системе ОРД.")
+        await message.answer(f"Ошибка: pad_external_id {campaign_id} не зарегистрирован в системе ОРД.")
         return
 
     date_start_actual = db.query_db(
@@ -1077,7 +819,7 @@ async def send_statistics_to_ord(chat_id):
     logging.debug("Ответ ОРД: %s", response.text)
 
     if response.status_code in [200, 201]:
-        await message.answer(chat_id, "Статистика успешно отправлена в ОРД.")
+        await message.answer("Статистика успешно отправлена в ОРД.")
         logging.debug(f"Статистика успешно отправлена в ОРД для chat_id: {chat_id}")
         # Обновляем состояние пользователя для перехода к следующему креативу
         current_index = user_state.get(str(chat_id) + "_current", 0)
@@ -1087,11 +829,11 @@ async def send_statistics_to_ord(chat_id):
         if user_state[str(chat_id) + "_current"] < total_creatives:
             current_campaign_id = user_state[chat_id][user_state[str(chat_id) + "_current"]]
             message_text, markup = create_message_text(current_campaign_id)
-            await message.answer(chat_id, message_text, reply_markup=markup, parse_mode='HTML')
+            await message.answer(message_text, reply_markup=markup, parse_mode='HTML')
         else:
-            await message.answer(chat_id, "Вы успешно подали статистику по всем вашим креативам.")
+            await message.answer("Вы успешно подали статистику по всем вашим креативам.")
     else:
-        await message.answer(chat_id, f"Ошибка при отправке статистики в ОРД: {response.text}")
+        await message.answer(f"Ошибка при отправке статистики в ОРД: {response.text}")
 
 
 # Функция для автоматической подачи статистики за день до конца месяца
@@ -1220,7 +962,7 @@ async def process_amount(message):
         kb = InlineKeyboardBuilder()
         button = kb.button(text=text="Оплатить", url=payment_link)
         button)
-        await message.answer(chat_id, "Нажмите кнопку ниже, чтобы перейти к оплате:", reply_markup=markup)
+        await message.answer("Нажмите кнопку ниже, чтобы перейти к оплате:", reply_markup=markup)
 
     except ValueError as e:
         await message.answer(message.chat.id, "Ошибка: введите корректную сумму (целое число).")

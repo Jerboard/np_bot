@@ -31,7 +31,7 @@ async def payment_result():
         conn.close()
 
         # Оповещение пользователя о подтверждении оплаты
-        await message.answer(chat_id, f"Оплата подтверждена для счета: {inv_id}. Спасибо за ваш платеж!")
+        await message.answer(f"Оплата подтверждена для счета: {inv_id}. Спасибо за ваш платеж!")
 
     return result
 

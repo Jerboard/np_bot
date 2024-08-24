@@ -17,7 +17,7 @@ from . import common as cf
 @dp.message(commands=['start_campaign'])
 async def start_campaign(message):
     chat_id = message.chat.id
-    await message.answer(chat_id, "Введите название бренда, который вы планируете рекламировать.")
+    await message.answer("Введите название бренда, который вы планируете рекламировать.")
     cf.ask_for_brand(chat_id)
 
 

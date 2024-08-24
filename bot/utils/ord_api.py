@@ -35,42 +35,65 @@ async def send_to_ord(user_id: int, name: str, role: str, j_type: str, inn: int,
 
 
 # Функция для отправки данных о контрагенте в ОРД API
-async def send_contractor_to_ord(ord_id, name, role, juridical_type, inn, phone, rs_url):
-    try:
-        assert juridical_type in ['physical', 'juridical', 'ip'], f"Invalid juridical_type: {juridical_type}"
-
-        url = f"https://api-sandbox.ord.vk.com/v1/person/{ord_id}"
-        headers = {
-            "Authorization": f"Bearer 633962f71ade453f997d179af22e2532",
-            "Content-Type": "application/json"
+async def send_contractor_to_ord(ord_id: str, name: str, role: str, j_type: str, inn: str, phone: str, rs_url: str):
+    url = f"https://api-sandbox.ord.vk.com/v1/person/{ord_id}"
+    headers = {
+        "Authorization": f"Bearer {Config.bearer}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "name": name,
+        "roles": [role],
+        "juridical_details": {
+            "type": j_type,
+            "inn": inn,
+            "phone": phone  # Используем номер телефона, переданный в функцию
         }
-        data = {
-            "name": name,
-            "roles": [role],
-            "juridical_details": {
-                "type": juridical_type,
-                "inn": inn,
-                "phone": phone  # Используем номер телефона, переданный в функцию
-            }
-        }
+    }
+    if rs_url is not None:
+        data["rs_url"] = rs_url
 
-        if rs_url is not None:
-            data["rs_url"] = rs_url
+    async with httpx.AsyncClient() as client:
+        response = await client.put(url, headers=headers, json=data)
 
-        # Логирование данных запроса
-        logging.debug(f"Sending data to ORD API: {data}")
+    return response
 
-        response = requests.put(url, headers=headers, json=data)
-        # Логирование данных ответа
-        logging.debug(f"Response status code: {response.status_code}")
-        logging.debug(f"Response content: {response.content}")
 
-        response.raise_for_status()  # Принудительно вызовет исключение для кода состояния HTTP 4xx или 5xx
-        return response
-    except AssertionError as e:
-        logging.error(f"AssertionError: {e}")
-    except requests.exceptions.RequestException as e:
-        logging.error(f"RequestException: {e}")
-        logging.error(f"Response content: {e.response.content if e.response else 'No response content'}")
+# Функция для отправки данных о договоре в ОРД API
+async def send_contract_to_ord(
+        ord_id: str,
+        client_external_id: str,
+        contractor_external_id: str,
+        contract_date: str,
+        serial: str,
+        vat_flag: list,
+        amount: int
+) -> bool:
+    data = {
+        "type": "service",
+        "client_external_id": client_external_id,
+        "contractor_external_id": contractor_external_id,
+        "date": contract_date,
+        "serial": serial,
+        "subject_type": "org_distribution",
+        "flags": vat_flag,
+        "amount": str(amount)
+    }
+
+    url = f"https://api-sandbox.ord.vk.com/v1/contract/{ord_id}"
+
+    headers = {
+        "Authorization": f"Bearer {Config.bearer}",
+        "Content-Type": "application/json"
+    }
+
+    response = requests.put(url, headers=headers, json=data)
+    response.raise_for_status()
+
+    if response.status_code in [200, 201]:
+        return True
+    else:
+        return False
+
 
 

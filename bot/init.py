@@ -1,5 +1,5 @@
 from aiogram import Dispatcher, Bot
-from aiogram.bot_command import BotCommand
+from aiogram.types import BotCommand
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 from yookassa import Configuration
@@ -15,6 +15,7 @@ import re
 import redis
 
 from config import Config
+from enums import Command
 
 
 try:
@@ -39,14 +40,13 @@ Configuration.secret_key = Config.yoo_secret_key
 
 async def set_main_menu():
     main_menu_commands = [
-        BotCommand(command='/start', description='Главный экран'),
-        BotCommand(command='/preloader_advertiser_entity', description='Контрагент'),
-        BotCommand(command='/preloader_choose_platform', description='Выбор платформы'),
-        BotCommand(command='/start_contract', description='Контракт'),
-        BotCommand(command='/start_campaign', description='Начать компанию'),
-        BotCommand(command='/add_creative', description='Добавить креатив'),
-        BotCommand(command='/start_statistics', description='Статистика'),
-        # BotCommand(command='/pay', description='Оплата'),
+        BotCommand(command=f'/{Command.START.value}', description='Главный экран'),
+        BotCommand(command=f'/{Command.PRELOADER_ADVERTISER_ENTITY.value}', description='Контрагент'),
+        BotCommand(command=f'/{Command.PRELOADER_CHOOSE_PLATFORM.value}', description='Выбор платформы'),
+        BotCommand(command=f'/{Command.START_CONTRACT.value}', description='Контракт'),
+        BotCommand(command=f'/{Command.START_CAMPAIGN.value}', description='Начать компанию'),
+        BotCommand(command=f'/{Command.ADD_CREATIVE.value}', description='Добавить креатив'),
+        BotCommand(command=f'/{Command.START_STATISTICS.value}', description='Статистика'),
     ]
 
     await bot.set_my_commands(main_menu_commands)

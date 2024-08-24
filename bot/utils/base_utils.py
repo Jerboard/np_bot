@@ -1,24 +1,34 @@
 from datetime import datetime
+from random import randint
 
+import db
 from config import Config
 from enums import JStatus
 
 
 # Функция для получения ord_id
-async def get_ord_id(chat_id, campaign_id):
-    return f"{chat_id}.{campaign_id}"
+def get_ord_id(user_id: int) -> str:
+    return f"{user_id}.{randint(100000000, 9999999999)}"
 
 
-async def is_valid_date(date_string):
+def is_valid_date(date_string):
     try:
-        datetime.strptime(date_string, "%d.%m.%Y")
+        datetime.strptime(date_string, Config.date_form)
         return True
     except ValueError:
         return False
 
 
+def is_float(text: str) -> bool:
+    try:
+        float(text)
+        return True
+    except Exception as ex:
+        return False
+
+
 # Валидатор ИНН
-async def is_valid_inn(inn: str, juridical_type: str) -> bool:
+def is_valid_inn(inn: str, juridical_type: str) -> bool:
     if Config.debug:
         return True
 
@@ -32,8 +42,6 @@ async def is_valid_inn(inn: str, juridical_type: str) -> bool:
     else:
         if len(inn) != 12:
             return False
-
-
 
 
 # переименовал inn в inn_check и coefficients в coefficients_check, чтоб не дублировалось название переменной
