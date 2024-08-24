@@ -1,119 +1,139 @@
-from aiogram import types
-from aiogram.types import CallbackQuery
+from aiogram.types import Message, CallbackQuery
+from aiogram.filters import Command as CommandFilter, StateFilter
+from aiogram.fsm.context import FSMContext
+from datetime import datetime
+from asyncio import sleep
 
 import db
-import utils as ut
 import keyboards as kb
+from config import Config
 from init import dp
-from . import common as cf
-from .base import start_contract, preloader_choose_platform
+import utils as ut
+from .base import preloader_choose_platform, finalize_platform_data, start_contract
+from enums import CB, Command, UserState, JStatus, Role, AddContractStep
 
 
 #### Функция для выбора платформы ####
-@dp.message(commands=['preloader_choose_platform'])
+@dp.message(CommandFilter(Command.PRELOADER_CHOOSE_PLATFORM.value))
 async def preloader_choose_platform_base(message: Message):
-    preloader_choose_platform(message)
+    await preloader_choose_platform(message)
 
 
-@dp.callback_query(lambda cb: cb.data == 'no_choose_platform')
+# если не хочет выбирать платформу
+@dp.callback_query(lambda cb: cb.data.startswith(CB.NO_CHOOSE_PLATFORM.value))
 async def no_choose_platform(cb: CallbackQuery):
-    chat_id = cb.message.chat.id
-    await message.answer(
-        chat_id,
-        "Вы можете в любой момент продолжить добавление рекламной площадки нажав на соответствующий пункт в меню"
-    )
+    await cb.message.answer("Вы можете в любой момент продолжить добавление рекламной площадки "
+                            "нажав на соответствующий пункт в меню")
 
 
-@dp.callback_query(lambda cb: cb.data == 'choose_platform')
+# выбор платформы
+@dp.callback_query(lambda cb: cb.data.startswith(CB.PLATFORM_START.value))
 async def choose_platform(cb: CallbackQuery):
-    chat_id = cb.message.chat.id
-    await message.answer("Выберите площадку:", reply_markup=kb.get_choose_platform_kb())
+    await cb.message.answer("Выберите площадку:", reply_markup=kb.get_choose_platform_kb())
 
 
-@dp.callback_query(
-    lambda cb: cb.data in ['vk', 'instagram', 'youtube', 'telegram_channel', 'personal_telegram', 'other'])
-async def collect_platform(cb: CallbackQuery):
-    chat_id = cb.message.chat.id
+# сохраняем платформу просим ссылку
+@dp.callback_query(lambda cb: cb.data.startswith(CB.PLATFORM_SELECT.value))
+async def collect_platform(cb: CallbackQuery, state: FSMContext):
+    _, platform = cb.data.split(':')
 
-    user_data = {'platform_name': cb.data}
-    ut.save_user_data(chat_id=chat_id, data=user_data)
+    await state.set_state(UserState.ADD_PLATFORM_NAME)
+    await state.update_data(data={'platform_name': platform})
 
-    # убрать глобальную переменную, использовать машину состояний
-    # global platform_name
+    await cb.message.answer("Пришлите ссылку на аккаунт рекламораспространителя.")
 
-    if cb.data == 'vk':
-        platform_name = 'ВКонтакте'
-        await message.answer("Пришлите ссылку на аккаунт рекламораспространителя.")
-        dp.register_next_step(
-            cb.message,
-            lambda message: cf.collect_advertiser_link(message, "https://vk.com/")
+
+    # elif cb.data == 'other':
+    #     platform_name = 'Другое'
+    #     await message.answer("Пришлите ссылку на площадку рекламораспространителя.")
+    #     dp.register_next_step(cb.message, cf.platform_url_collector)
+    #
+    # else:
+    #     # добавил чтоб не было предупреждения
+    #     platform_name = 'error'
+
+
+# принимаем ссылку
+@dp.message(StateFilter(UserState.ADD_PLATFORM_NAME))
+async def collect_advertiser_link(msg: Message, state: FSMContext):
+    advertiser_link = f'https://{msg.text}' if not msg.text.startswith("https://") else msg.text
+
+    await state.update_data(data={'platform_url': advertiser_link})
+    data = await state.get_data()
+
+    text = (f"Проверьте, правильно ли указана ссылка на площадку рекламораспространителя:\n"
+            f"{data['platform_name']} - {advertiser_link}")
+    await msg.answer(text, reply_markup=kb.get_platform_url_collector_kb())
+
+
+# подтверждение ссылки
+@dp.callback_query(lambda cb: cb.data.startswith(CB.PLATFORM_CORRECT.value))
+async def handle_platform_verification(cb: CallbackQuery, state: FSMContext):
+    _, action = cb.data.split(':')
+    if action == '1':
+        await state.set_state(UserState.ADD_PLATFORM_VIEW)
+        await cb.message.answer("Укажите среднее количество просмотров поста за месяц:")
+    else:
+        await preloader_choose_platform(cb.message)
+
+
+# Функция для проверки введенных данных и перехода к следующему шагу
+@dp.message(StateFilter(UserState.ADD_PLATFORM_VIEW))
+async def process_average_views(msg: Message, state: FSMContext):
+    if msg.text.isdigit():
+        await state.update_data(data={'view': int(msg.text)})
+
+        # Получение person_external_id для РР
+        user = await db.get_user_info(msg.from_user.id)
+        if user.role == Role.ADVERTISER:
+            contractors = await db.get_all_contractors(msg.from_user.id)
+            if contractors:
+                await msg.answer("Выберите контрагента:", reply_markup=kb.get_process_average_views_kb(contractors))
+            else:
+                await msg.answer("Не найдено контрагентов. Пожалуйста, добавьте контрагентов и повторите попытку.")
+
+        else:
+            await state.update_data(data={'dist_id': msg.from_user.id})
+            await finalize_platform_data(msg, state)
+    else:
+        sent = await msg.answer(
+            "❌ Неверный формат. "
+            "Пожалуйста, укажите среднее количество просмотров вашего поста за месяц, используя только цифры:"
         )
-    elif cb.data == 'instagram':
-        platform_name = 'Instagram'
-        await message.answer("Пришлите ссылку на аккаунт рекламораспространителя.")
-        dp.register_next_step(cb.message,
-                              lambda message: cf.collect_advertiser_link(message, "https://instagram.com/"))
-    elif cb.data == 'youtube':
-        platform_name = 'YouTube'
-        await message.answer("Пришлите ссылку на аккаунт рекламораспространителя.")
-        dp.register_next_step(cb.message,
-                              lambda message: cf.collect_advertiser_link(message, "https://youtube.com/"))
-    elif cb.data == 'telegram_channel':
-        platform_name = 'Telegram-канал'
-        await message.answer("Пришлите ссылку на аккаунт рекламораспространителя.")
-        dp.register_next_step(cb.message,
-                              lambda message: cf.collect_advertiser_link(message, "https://t.me/"))
-    elif cb.data == 'personal_telegram':
-        platform_name = 'Личный профиль Telegram'
-        await message.answer("Пришлите ссылку на аккаунт рекламораспространителя.")
-        dp.register_next_step(cb.message,
-                              lambda message: cf.collect_advertiser_link(message, "https://t.me/"))
-    elif cb.data == 'other':
-        platform_name = 'Другое'
-        await message.answer("Пришлите ссылку на площадку рекламораспространителя.")
-        dp.register_next_step(cb.message, cf.platform_url_collector)
+        await sleep(3)
+        await sent.delete()
+
+
+# выбор контрагента
+@dp.callback_query(lambda cb: cb.data.startswith(CB.PLATFORM_DIST.value))
+async def handle_contractor_selection(cb: CallbackQuery, state: FSMContext):
+    _, dist_id_str = cb.data.split(':')
+    dist_id = int(dist_id_str)
+
+    await state.update_data(data={'dist_id': dist_id})
+    await finalize_platform_data(cb.message, state)
+
+
+# завершение создания платформы. Следующий шаг
+@dp.callback_query(lambda cb: cb.data.startswith(CB.PLATFORM_FIN.value))
+async def handle_success_add_platform(cb: CallbackQuery):
+    _, action = cb.data.split(':')
+    # chat_id = cb.message.chat.id
+    # role = db.query_db('SELECT role FROM users WHERE chat_id = ?', (chat_id,), one=True)[0]
+    if action == '1':
+        await choose_platform(cb)
 
     else:
-        # добавил чтоб не было предупреждения
-        platform_name = 'error'
-
-    user_data = {'platform_name': platform_name}
-    ut.save_user_data(chat_id=chat_id, data=user_data)
-
-
-@dp.callback_query(
-    lambda cb: cb.data in ['correct_platform', 'change_platform', 'delete_platform'])
-async def handle_platform_verification(cb: CallbackQuery):
-    chat_id = cb.message.chat.id
-    if cb.data == 'correct_platform':
-        cf.request_average_views(chat_id)
-    elif cb.data == 'change_platform':
-        choose_platform(call)
-    elif cb.data == 'delete_platform':
-        cf.del_platform(call)
-
-
-@dp.callback_query(lambda cb: cb.data.startswith('contractor1_'))
-async def handle_contractor_selection(cb: CallbackQuery):
-    chat_id = cb.message.chat.id
-    contractor_id = cb.data.split('_')[1]
-    cf.finalize_platform_data(chat_id, contractor_id)
-
-
-@dp.callback_query(lambda cb: cb.data in ['add_another_platform', 'continue_to_entity'])
-async def handle_success_add_platform(cb: CallbackQuery):
-    chat_id = cb.message.chat.id
-    role = db.query_db('SELECT role FROM users WHERE chat_id = ?', (chat_id,), one=True)[0]
-    if cb.data == 'add_another_platform':
-        choose_platform(call)
-    elif cb.data == 'continue_to_entity':
-        if role == 'advertiser':
-            await message.answer("Теперь укажите информацию о договоре.")
-            start_contract(cb.message)
-        elif role == 'publisher':
+        user = await db.get_user_info(cb.from_user.id)
+        if user.role == Role.ADVERTISER:
+            await cb.message.answer("Теперь укажите информацию о договоре.")
+            await start_contract(cb.message)
+        else:
             # перенёс preloader_advertiser_entity
             # preloader_advertiser_entity(cb.message)
-            await message.answer("Перейти к созданию контрагента?",
-                            reply_markup=kb.get_preloader_advertiser_entity_kb())
+            await cb.message.answer(
+                "Перейти к созданию контрагента?",
+                reply_markup=kb.get_preloader_advertiser_entity_kb()
+            )
             # bot.send_message(chat_id, "Теперь укажите информацию о контрагенте.")
             # register_advertiser_entity(cb.message)

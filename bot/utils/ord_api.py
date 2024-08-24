@@ -87,8 +87,8 @@ async def send_contract_to_ord(
         "Content-Type": "application/json"
     }
 
-    response = requests.put(url, headers=headers, json=data)
-    response.raise_for_status()
+    async with httpx.AsyncClient() as client:
+        response = await client.put(url, headers=headers, json=data)
 
     if response.status_code in [200, 201]:
         return True
@@ -96,4 +96,28 @@ async def send_contract_to_ord(
         return False
 
 
+# Функция для отправки данных о платформе в ОРД API
+async def send_platform_to_ord(ord_id: str, platform_name: str, platform_url: str, person_external_id: str):
+    url = f"https://api-sandbox.ord.vk.com/v1/pad/{ord_id}"
 
+    headers = {
+        "Authorization": f"Bearer {Config.bearer}",
+        "Content-Type": "application/json"
+    }
+
+    data = {
+        "person_external_id": person_external_id,
+        "is_owner": True,
+        "type": "web",
+        "name": platform_name,
+        "url": platform_url
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.put(url, headers=headers, json=data)
+
+
+    if response.status_code in [200, 201]:
+        return True
+    else:
+        return False

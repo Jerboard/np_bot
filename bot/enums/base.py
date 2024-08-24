@@ -28,3 +28,12 @@ class Command(str, Enum):
     START_CAMPAIGN = 'start_campaign'
     ADD_CREATIVE = 'add_creative'
     START_STATISTICS = 'start_statistics'
+
+
+class Platform(str, Enum):
+    VK = 'vk'
+    INSTAGRAM = 'instagram'
+    YOUTUBE = 'youtube'
+    TG_CHANNEL = 'telegram_channel'
+    TG_PERSONAL = 'personal_telegram'
+    OTHER = 'other'

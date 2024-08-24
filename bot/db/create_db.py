@@ -5,20 +5,20 @@ from .base_db import begin_conn
 async def create_tables():
     with begin_conn() as conn:
         cursor = conn.cursor()
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            chat_id BIGINT PRIMARY KEY,
-            agreed BOOLEAN,
-            role TEXT,
-            fio TEXT,
-            inn TEXT,
-            title TEXT,
-            juridical_type TEXT,
-            ord_id INTEGER,
-            balance DECIMAL(10, 2) DEFAULT 0.00,
-            total_balance DECIMAL(10, 2) DEFAULT 0.00
-        )
-        ''')
+        # cursor.execute('''
+        # CREATE TABLE IF NOT EXISTS users (
+        #     chat_id BIGINT PRIMARY KEY,
+        #     agreed BOOLEAN,
+        #     role TEXT,
+        #     fio TEXT,
+        #     inn TEXT,
+        #     title TEXT,
+        #     juridical_type TEXT,
+        #     ord_id INTEGER,
+        #     balance DECIMAL(10, 2) DEFAULT 0.00,
+        #     total_balance DECIMAL(10, 2) DEFAULT 0.00
+        # )
+        # ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS platforms (
             id SERIAL PRIMARY KEY,
@@ -32,19 +32,19 @@ async def create_tables():
             vat_included TEXT
         )
         ''')
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS contracts (
-            id SERIAL PRIMARY KEY,
-            chat_id INTEGER,
-            contractor_id BIGINT,
-            contract_date TEXT,
-            end_date TEXT,
-            serial TEXT,
-            amount REAL,
-            vat_included INTEGER,
-            ord_id TEXT
-        )
-        ''')
+        # cursor.execute('''
+        # CREATE TABLE IF NOT EXISTS contracts (
+        #     id SERIAL PRIMARY KEY,
+        #     chat_id INTEGER,
+        #     contractor_id BIGINT,
+        #     contract_date TEXT,
+        #     end_date TEXT,
+        #     serial TEXT,
+        #     amount REAL,
+        #     vat_included INTEGER,
+        #     ord_id TEXT
+        # )
+        # ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS ad_campaigns (
             id SERIAL PRIMARY KEY,
@@ -168,19 +168,19 @@ async def create_tables():
             date_start_actual DATE
         )
         ''')
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS contractors (
-            id SERIAL PRIMARY KEY,
-            chat_id BIGINT,
-            contractor_id BIGINT,
-            fio TEXT,
-            title TEXT,
-            inn TEXT,
-            juridical_type TEXT,
-            role TEXT,
-            ord_id TEXT
-        )
-        ''')
+        # cursor.execute('''
+        # CREATE TABLE IF NOT EXISTS contractors (
+        #     id SERIAL PRIMARY KEY,
+        #     chat_id BIGINT,
+        #     contractor_id BIGINT,
+        #     fio TEXT,
+        #     title TEXT,
+        #     inn TEXT,
+        #     juridical_type TEXT,
+        #     role TEXT,
+        #     ord_id TEXT
+        # )
+        # ''')
         cursor.execute('''
                CREATE TABLE IF NOT EXISTS payment_yk (
                     id SERIAL PRIMARY KEY,

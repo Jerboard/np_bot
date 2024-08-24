@@ -139,33 +139,11 @@ async def ask_for_additional_link(chat_id, campaign_id):
 
 #### Функция для выбора платформы ####
 # Функция для сбора ссылки на аккаунт рекламораспространителя
-async def collect_advertiser_link(message, platform_url):
-    chat_id = message.chat.id
-    # global advertiser_link
 
-    advertiser_link = message.text.strip()  # Получаем введенную ссылку и убираем лишние пробелы
-    if not advertiser_link.startswith("https://"):
-        advertiser_link = platform_url + advertiser_link  # Если ссылка не начинается с "https://", добавляем префикс
-
-    # сохраняем данные в редис
-    ut.update_user_data(chat_id, 'advertiser_link', advertiser_link)
-    platform_url_collector(message)
 
 
 # Функция для сбора ссылки на площадку рекламораспространителя
-async def platform_url_collector(message: Message):
-    # global platform_url, platform_name, advertiser_link
-    user_data = ut.get_user_data(message.chat.id)
-    log_error(f'user_data: {user_data}', wt=False)
-    # platform_url = advertiser_link  # Используем advertiser_link вместо message.text.strip()
-    advertiser_link = user_data.get('advertiser_link')  # Используем advertiser_link вместо message.text.strip()
-    ut.update_user_data(message.chat.id, 'platform_url', advertiser_link)
 
-    platform_name = user_data.get('platform_name')
-    chat_id = message.chat.id
-    verification_message = (f"Проверьте, правильно ли указана ссылка на площадку рекламораспространителя:\n"
-                            f"{platform_name} - {advertiser_link}")
-    await message.answer(verification_message, reply_markup=kb.get_platform_url_collector_kb())
 
 
 # Функция для удаления платформы
@@ -190,122 +168,13 @@ async def del_platform(cb: CallbackQuery):
         await message.answer("Ошибка при удалении платформы. Пожалуйста, попробуйте снова.")
 
 
-# Функция для запроса среднего количества просмотров
-async def request_average_views(chat_id):
-    msg = await message.answer("Укажите среднее количество просмотров поста за месяц:")
-    dp.register_next_step(msg, process_average_views)
 
 
-# Функция для проверки введенных данных и перехода к следующему шагу
-async def process_average_views(message):
-    chat_id = message.chat.id
-    average_views = message.text
-
-    # вместо глобальных переменных используем радис
-    user_data = ut.get_user_data(chat_id)
-    log_error(user_data, wt=False)
-    platform_name = user_data.get('platform_name')
-    platform_url = user_data.get('platform_url')
-
-    if average_views.isdigit():
-        ord_id = f"{chat_id}-p-{len(db.query_db('SELECT * FROM platforms WHERE chat_id = ?', (chat_id,))) + 1}"
-
-        # поменял на постгрес
-        db.insert_platforms_data(chat_id, platform_name, platform_url, average_views, ord_id)
-        # старый код
-        # db.query_db(
-        #     'INSERT OR REPLACE INTO platforms (chat_id, platform_name, platform_url, average_views, ord_id) VALUES (?, ?, ?, ?, ?)',
-        #     (chat_id, platform_name, platform_url, average_views, ord_id))
-
-        # Получение person_external_id для РР
-        user_role = db.query_db('SELECT role FROM users WHERE chat_id = ?', (chat_id,), one=True)[0]
-        if user_role == 'advertiser':
-            contractors = db.query_db('SELECT contractor_id, fio, title FROM contractors WHERE chat_id = ?',
-                                      (chat_id,))
-            if contractors:
-                await message.answer(
-                    chat_id,
-                    "Выберите контрагента:",
-                    reply_markup=kb.get_process_average_views_kb(contractors)
-                )
-            else:
-                await message.answer(chat_id,
-                                 "Не найдено контрагентов. Пожалуйста, добавьте контрагентов и повторите попытку.")
-        else:
-            finalize_platform_data(chat_id, str(chat_id))
-    else:
-        msg = await message.answer(
-            chat_id,
-            "Неверный формат. "
-            "Пожалуйста, укажите среднее количество просмотров вашего поста за месяц, используя только цифры:"
-        )
-        dp.register_next_step(msg, process_average_views)
 
 
-# Функция для завершения процесса добавления данных платформы
-async def finalize_platform_data(chat_id, contractor_id):
-    platform_data = db.query_db(
-        'SELECT platform_name, platform_url, average_views, ord_id '
-        'FROM platforms WHERE chat_id = ? AND ord_id = (SELECT MAX(ord_id) FROM platforms WHERE chat_id = ?)',
-        (chat_id, chat_id), one=True)
-    if platform_data:
-        platform_name, platform_url, average_views, ord_id = platform_data
-        person_external_id = f"{chat_id}.{contractor_id}"
-        response = send_platform_to_ord(ord_id, platform_name, platform_url, average_views, person_external_id, chat_id)
-        await message.answer("Площадка успешно зарегистрирована в ОРД.")
-
-        # постгрес
-        db.insert_selected_contractors_data(chat_id, contractor_id)
-        # старый код
-        # db.query_db('INSERT OR REPLACE INTO selected_contractors (chat_id, contractor_id) VALUES (?, ?)',
-        #             (chat_id, contractor_id))
-
-        await message.answer("Добавить новую площадку или продолжить?", reply_markup=kb.get_finalize_platform_data_kb())
 
 
-# Функция для отправки данных о платформе в ОРД API
-async def send_platform_to_ord(ord_id, platform_name, platform_url, average_views, person_external_id, chat_id):
-    # чтоб не было ошибки при возврате False
-    text_error = 'Response error'
-    try:
-        url = f"https://api-sandbox.ord.vk.com/v1/pad/{ord_id}"
 
-        headers = {
-            "Authorization": "Bearer 633962f71ade453f997d179af22e2532",
-            "Content-Type": "application/json"
-        }
-
-        data = {
-            "person_external_id": person_external_id,
-            "is_owner": True,
-            "type": "web",
-            "name": platform_name,
-            "url": platform_url
-        }
-
-        logging.debug(f"URL: {url}")
-        logging.debug(f"Headers: {headers}")
-        logging.debug(f"Data: {data}")
-
-        response = requests.put(url, headers=headers, json=data)
-        text_error = response.text
-        response.raise_for_status()
-
-        logging.debug(f"Response status code: {response.status_code}")
-        logging.debug(f"Response content: {response.content}")
-
-        if response.status_code in [200, 201]:
-            return True
-        else:
-            await message.answer("Площадка добавлена, но сервер вернул неожиданный статус.")
-            return False
-    except requests.exceptions.RequestException as e:
-        logging.error(f"RequestException: {e}")
-        return False
-    except ValueError as e:
-        logging.error(f"ValueError: {e}")
-        logging.error(f"Response text: {text_error}")
-        return False
 
 
 ### Добавление договоров ####

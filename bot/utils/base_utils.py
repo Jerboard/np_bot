@@ -7,8 +7,8 @@ from enums import JStatus
 
 
 # Функция для получения ord_id
-def get_ord_id(user_id: int) -> str:
-    return f"{user_id}.{randint(100000000, 9999999999)}"
+def get_ord_id(user_id: int, delimiter: str = '.') -> str:
+    return f"{user_id}{delimiter}{randint(100000000, 9999999999)}"
 
 
 def is_valid_date(date_string):

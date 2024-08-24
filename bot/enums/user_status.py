@@ -7,6 +7,8 @@ class UserState(str, Enum):
     ADD_ADVERTISER_NAME = 'add_advertiser_name'
     ADD_ADVERTISER_INN = 'add_advertiser_inn'
     ADD_CONTRACT = 'add_contract'
+    ADD_PLATFORM_NAME = 'add_platform_name'
+    ADD_PLATFORM_VIEW = 'add_platform_view'
 
     ADD_CONTRACT_START_DATE = 'add_contract_start_date'
     ADD_CONTRACT_END_DATE = 'add_contract_end_date'

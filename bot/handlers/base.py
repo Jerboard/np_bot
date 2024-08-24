@@ -1,11 +1,12 @@
 from aiogram.types import Message, CallbackQuery
+from aiogram.fsm.context import FSMContext
 
 import logging
 
 import db
 import keyboards as kb
 from init import dp
-from utils import get_ord_id
+import utils as ut
 from . import common as cf
 
 
@@ -29,8 +30,6 @@ async def start_contract(msg: Message):
                      f"Чтобы добавить контрагента воспользуйтесь командой /{Command.PRELOADER_ADVERTISER_ENTITY.value}")
 
 
-
-
 # старт оплаты
 def ask_amount(message: Message):
     chat_id = message.chat.id
@@ -51,13 +50,40 @@ def ask_amount(message: Message):
 
 
 async def preloader_choose_platform(message: Message):
-    chat_id = message.chat.id
     await message.answer(
-        chat_id,
-        "Перейти к созданию рекламной площадки?",
+        text="Перейти к созданию рекламной площадки?",
         reply_markup=kb.get_preloader_choose_platform_kb()
     )
 
 
 async def preloader_advertiser_entity(message: Message):
     await message.answer("Перейти к созданию контрагента?", reply_markup=kb.get_preloader_advertiser_entity_kb())
+
+
+# Функция для завершения процесса добавления данных платформы
+async def finalize_platform_data(msg: Message, state: FSMContext):
+    data = await state.get_data()
+    await state.clear()
+
+    ord_id = ut.get_ord_id(msg.from_user.id, delimiter='-p-')
+    response = await ut.send_platform_to_ord(
+        ord_id=ord_id,
+        platform_name=data['platform_name'],
+        platform_url=data['platform_url'],
+        person_external_id=f"{msg.from_user.id}.{data['dist_id']}"
+
+    )
+    if response:
+        await db.add_platform(
+            user_id=msg.from_user.id,
+            name=data['platform_name'],
+            url=data['platform_url'],
+            average_views=data['view'],
+            ord_id=ord_id,
+        )
+
+        await msg.answer("Площадка успешно зарегистрирована в ОРД.")
+        await msg.answer("Добавить новую площадку или продолжить?", reply_markup=kb.get_finalize_platform_data_kb())
+
+    else:
+        await msg.answer("Площадка добавлена, но сервер вернул неожиданный статус.")
