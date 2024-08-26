@@ -10,6 +10,7 @@ class CampaignRow(t.Protocol):
     id: int
     created_at: datetime
     user_id: int
+    contract_id: int
     brand: str
     service: str
     link: list
@@ -22,6 +23,7 @@ CampaignTable: sa.Table = sa.Table(
     sa.Column('id', sa.Integer, primary_key=True, autoincrement=True),
     sa.Column('created_at', sa.DateTime(timezone=True), default=datetime.now()),
     sa.Column('user_id', sa.BigInteger),
+    sa.Column('contract_id', sa.Integer),
     sa.Column('brand', sa.String(255)),
     sa.Column('service', sa.String(255)),
     sa.Column('links', psql.ARRAY(sa.String(255))),
@@ -29,11 +31,12 @@ CampaignTable: sa.Table = sa.Table(
 
 
 # добавляет рекламную компанию
-async def add_campaign(user_id: int, brand: str, service: str, links: list) -> int:
+async def add_campaign(user_id: int, contract_id: int, brand: str, service: str, links: list) -> int:
     now = datetime.now()
     query = CampaignTable.insert().values(
             created_at=now,
             user_id=user_id,
+            contract_id=contract_id,
             brand=brand,
             service=service,
             link=links,
@@ -44,10 +47,19 @@ async def add_campaign(user_id: int, brand: str, service: str, links: list) -> i
     return result.inserted_primary_key
 
 
-# возвращает рекламную компанию
-async def get_campaign(user_id: int) -> tuple[CampaignRow]:
+# возвращает все рекламные компании пользователя
+async def get_user_campaigns(user_id: int) -> tuple[CampaignRow]:
     query = CampaignTable.select().where(CampaignTable.c.user_id == user_id)
 
     async with begin_connection() as conn:
         result = await conn.execute(query)
     return result.all()
+
+
+# возвращает рекламную компанию
+async def get_campaign(campaign_id: int) -> CampaignRow:
+    query = CampaignTable.select().where(CampaignTable.c.id == campaign_id)
+
+    async with begin_connection() as conn:
+        result = await conn.execute(query)
+    return result.first()

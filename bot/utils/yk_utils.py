@@ -3,13 +3,13 @@ from yookassa import Payment
 import json
 
 from init import log_error
-from config import SERVICE_PRICE, BOT_LINK
+from config import Config
 
 
-async def create_pay_link(campaign_id: str) -> str:
+def create_pay_link(campaign_id: str, vat_code: str = 1) -> str:
     payment = Payment.create({
         "amount": {
-            "value": SERVICE_PRICE,
+            "value": Config.service_price,
             "currency": "RUB"
         },
         "payment_method_data": {
@@ -17,10 +17,10 @@ async def create_pay_link(campaign_id: str) -> str:
         },
         'save_payment_method': True,
         "capture": True,
-        "description": campaign_id,
+        "description": 'Оплата услуг маркировки рекламы',
         "confirmation": {
             "type": "redirect",
-            "return_url": BOT_LINK
+            "return_url": Config.bot_link
         },
         "receipt": {
             "customer": {
@@ -31,10 +31,10 @@ async def create_pay_link(campaign_id: str) -> str:
                     "description": f"Оплата 400 рубликов",
                     "quantity": "1.00",
                     "amount": {
-                        "value": SERVICE_PRICE,
+                        "value": Config.service_price,
                         "currency": "RUB"
                     },
-                    "vat_code": "1",
+                    "vat_code": f'{vat_code}',
                     "payment_mode": "full_payment",
                     "payment_subject": "service"
                 }

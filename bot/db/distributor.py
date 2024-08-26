@@ -76,3 +76,12 @@ async def get_all_contractors(user_id: int) -> tuple(DistributorRow):
         result = await conn.execute(query)
 
     return result.all()
+
+
+# возвращает всех контрагентов
+async def get_contractor(contractor_id: int) -> DistributorRow:
+    query = DistributorTable.select().where(DistributorTable.c.id == contractor_id)
+    async with begin_connection() as conn:
+        result = await conn.execute(query)
+
+    return result.first()

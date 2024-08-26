@@ -180,7 +180,7 @@ async def handle_vat_selection(cb: CallbackQuery, state: FSMContext):
             user_id=cb.from_user.id,
             contractor_id=data['dist_id'],
             contract_date=data['start_date'],
-            vat_included=vat,
+            vat_code=vat,
             ord_id=ord_id,
             end_date=data.get('end_date'),
             serial=data.get('num'),

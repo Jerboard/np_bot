@@ -96,7 +96,7 @@ async def handle_ad_campaign_callback(cb: CallbackQuery, state: FSMContext):
             f"{data['brand']}"
             f"успешно создана!"
         )
-        await add_creative_start(cb.message, campaign_id)
+        await add_creative_start(cb.message, state, campaign_id)
 
     elif cb.data.startswith("change_ad_campaign"):
         await state.clear()

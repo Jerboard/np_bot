@@ -114,16 +114,16 @@ async def create_tables():
                """)
 
         # Добавление таблицы creatives
-        cursor.execute("""
-                   CREATE TABLE IF NOT EXISTS creatives (
-                       id SERIAL PRIMARY KEY,
-                       chat_id BIGINT,
-                       campaign_id BIGINT,
-                       type TEXT,
-                       content TEXT,
-                       resized_path TEXT
-                   )
-               """)
+        # cursor.execute("""
+        #            CREATE TABLE IF NOT EXISTS creatives (
+        #                id SERIAL PRIMARY KEY,
+        #                chat_id BIGINT,
+        #                campaign_id BIGINT,
+        #                type TEXT,
+        #                content TEXT,
+        #                resized_path TEXT
+        #            )
+        #        """)
 
         # Добавление таблицы creative_links
         cursor.execute("""
@@ -181,14 +181,14 @@ async def create_tables():
         #     ord_id TEXT
         # )
         # ''')
-        cursor.execute('''
-               CREATE TABLE IF NOT EXISTS payment_yk (
-                    id SERIAL PRIMARY KEY,
-                    created_at TIMESTAMP DEFAULT NOW(),
-                    user_id BIGINT,
-                    pay_id VARCHAR(255),
-                    card VARCHAR(255)
-                );
-               ''')
+        # cursor.execute('''
+        #        CREATE TABLE IF NOT EXISTS payment_yk (
+        #             id SERIAL PRIMARY KEY,
+        #             created_at TIMESTAMP DEFAULT NOW(),
+        #             user_id BIGINT,
+        #             pay_id VARCHAR(255),
+        #             card VARCHAR(255)
+        #         );
+        #        ''')
         conn.commit()
         cursor.close()

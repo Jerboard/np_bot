@@ -139,8 +139,8 @@ async def del_platform(cb: CallbackQuery):
     
 ####  Добавление креативов ####
 # Функция для получения ord_id
-async def get_creative_ord_id(campaign_ord_id, creative_count):
-    return f"{campaign_ord_id}.{creative_count + 1}"
+# async def get_creative_ord_id(campaign_ord_id, creative_count):
+#     return f"{campaign_ord_id}.{creative_count + 1}"
 
 
 # # Начало процесса добавления креатива
@@ -157,35 +157,7 @@ async def get_creative_ord_id(campaign_ord_id, creative_count):
 
         
     
-async def save_creative(message):
-    chat_id = message.chat.id
-    creative_type = message.content_type
-    creative_content = None
 
-    if creative_type == 'text':
-        creative_content = message.text
-
-    elif creative_type == 'photo':
-        file_id = message.photo[-1].file_id
-        file_info = dp.get_file(file_id)
-        creative_content = download_and_save_file(file_info, "photo", chat_id)
-
-    elif creative_type == 'video':
-        file_id = message.video.file_id
-        file_info = dp.get_file(file_id)
-        creative_content = download_and_save_file(file_info, "video", chat_id)
-
-    elif creative_type == 'audio':
-        file_id = message.audio.file_id
-        file_info = dp.get_file(file_id)
-        creative_content = download_and_save_file(file_info, "audio", chat_id)
-
-    elif creative_type == 'document':
-        file_id = message.document.file_id
-        file_info = dp.get_file(file_id)
-        creative_content = download_and_save_file(file_info, "document", chat_id)
-
-    return creative_content
 
 
 async def download_and_save_file(file_info, file_type, chat_id):
@@ -219,167 +191,102 @@ async def download_and_save_file(file_info, file_type, chat_id):
 
 
 # Завершение процесса добавления креатива
-async def finalize_creative(chat_id, campaign_id):
-    if config.DEBUG:
-        await message.answer(chat_id,
-                         f"Креативы успешно промаркированы. Ваш токен - test.\n"
-                         f"Для копирования нажмите на текст ниже👇\n\n"
-                         f"`Реклама. test. ИНН: test. erid: test`",
-                        parse_mode="MARKDOWN")
-
-        ask_for_creative_link(chat_id, 111111111)
-        return
-
-    creatives = db.query_db(
-        'SELECT creative_id, content_type, content FROM creatives WHERE chat_id = ? AND campaign_id = ?',
-        (chat_id, campaign_id))
-    media_ids = []
-    creative_data = []
-
-    for creative in creatives:
-        if creative[1] != 'text':
-            media_id = register_media_file(creative[2], campaign_id, creative[1])
-            media_ids.append(media_id)
-        else:
-            media_id = None
-
-        creative_data.append((creative[0], creative[2], media_id))
-
-    description = db.query_db('SELECT service FROM ad_campaigns WHERE campaign_id = ?', (campaign_id,), one=True)[0]
-    contract = db.query_db('SELECT ord_id, contractor_id FROM contracts WHERE chat_id = ? ORDER BY ID DESC LIMIT 1',
-                           (chat_id,), one=True)
-    if contract is None:
-        await message.answer("Ошибка: Не найден договор для данного пользователя.")
-        return
-
-    contract_ord_id, contractor_id_part = contract
-
-    # Использование правильного ord_id для контракта
-    contract_external_id = contract_ord_id
-
-    user_inn = db.query_db('SELECT inn FROM users WHERE chat_id = ?', (chat_id,), one=True)
-    if user_inn is None:
-        await message.answer("Ошибка: Не найден ИНН для данного пользователя.")
-        return
-    user_inn = user_inn[0]
-
-    user_role = db.query_db('SELECT role FROM users WHERE chat_id = ?', (chat_id,), one=True)[0]
-
-    if user_role == "advertiser":
-        user_info = db.query_db('SELECT fio, inn FROM users WHERE chat_id = ?', (chat_id,), one=True)
-        fio_or_title = user_info[0]
-        user_inn = user_info[1]
-    else:
-        contractor_info = db.query_db('SELECT fio, title, inn FROM contractors WHERE contractor_id = ?',
-                                      (int(contractor_id_part),), one=True)
-        # Чтоб не вис если не найден contractor_info
-        fio_or_title = 'н.д.'
-        if contractor_info:
-            fio_or_title = contractor_info[0] if contractor_info[0] else contractor_info[1]
-        user_inn = contractor_info[2] if contractor_info else 'н.д.'
-
-    # для строки 707. Если creative_data пустая, то в INSERT INTO statistics добавляем None
-    creative_id = None
-    # для строки 700. Тоже самое, чтоб отправлялось сообщение, если marker не определён
-    marker = 'Не найден'
-    for creative_id, _, _ in creative_data:
-        response = send_creative_to_ord(chat_id, campaign_id, creatives, description, media_ids, contract_external_id,
-                                        user_inn)
-        if response is None or 'marker' not in response:
-            await message.answer("Ошибка при отправке креатива в ОРД.")
-            return
-
-        marker = response['marker']
-        db.query_db('UPDATE creatives SET token = ?, status = ? WHERE creative_id = ?', (marker, 'active', creative_id))
-
-        # постгре
-        db.insert_creative_links_data(chat_id, contract_external_id, creative_id, marker)
-        # старый код
-        # db.query_db('INSERT OR REPLACE INTO creative_links (chat_id, ord_id, creative_id, token) VALUES (?, ?, ?, ?)',
-        #             (chat_id, contract_external_id, creative_id, marker))
-
-    await message.answer(chat_id,
-                     f"Креативы успешно промаркированы. Ваш токен - {marker}.\n"
-                     f"Для копирования нажмите на текст ниже👇\n\n"
-                     f"`Реклама. {fio_or_title}. ИНН: {user_inn}. erid: {marker}`",
-                    parse_mode="MARKDOWN")
-    # Сохранение данных в таблицу statistics
-    date_start_actual = datetime.now().strftime('%Y-%m-%d')
-    db.query_db('INSERT INTO statistics (chat_id, campaign_id, creative_id, date_start_actual) VALUES (?, ?, ?, ?)',
-                (chat_id, campaign_id, creative_id, date_start_actual))
-
-    # Запрос ссылки на креатив
-    ask_for_creative_link(chat_id, contract_external_id)
+# async def finalize_creative(chat_id, campaign_id):
+    # creatives = db.query_db(
+    #     'SELECT creative_id, content_type, content FROM creatives WHERE chat_id = ? AND campaign_id = ?',
+    #     (chat_id, campaign_id))
+    # media_ids = []
+    # creative_data = []
+    #
+    # for creative in creatives:
+    #     if creative[1] != 'text':
+    #         media_id = register_media_file(creative[2], campaign_id, creative[1])
+    #         media_ids.append(media_id)
+    #     else:
+    #         media_id = None
+    #
+    #     creative_data.append((creative[0], creative[2], media_id))
+    #
+    # description = db.query_db('SELECT service FROM ad_campaigns WHERE campaign_id = ?', (campaign_id,), one=True)[0]
+    # contract = db.query_db('SELECT ord_id, contractor_id FROM contracts WHERE chat_id = ? ORDER BY ID DESC LIMIT 1',
+    #                        (chat_id,), one=True)
+    # if contract is None:
+    #     await message.answer("Ошибка: Не найден договор для данного пользователя.")
+    #     return
+    #
+    # contract_ord_id, contractor_id_part = contract
+    #
+    # # Использование правильного ord_id для контракта
+    # contract_external_id = contract_ord_id
+    #
+    # user_inn = db.query_db('SELECT inn FROM users WHERE chat_id = ?', (chat_id,), one=True)
+    # if user_inn is None:
+    #     await message.answer("Ошибка: Не найден ИНН для данного пользователя.")
+    #     return
+    # user_inn = user_inn[0]
+    #
+    # user_role = db.query_db('SELECT role FROM users WHERE chat_id = ?', (chat_id,), one=True)[0]
+    #
+    # if user_role == "advertiser":
+    #     user_info = db.query_db('SELECT fio, inn FROM users WHERE chat_id = ?', (chat_id,), one=True)
+    #     fio_or_title = user_info[0]
+    #     user_inn = user_info[1]
+    # else:
+    #     contractor_info = db.query_db('SELECT fio, title, inn FROM contractors WHERE contractor_id = ?',
+    #                                   (int(contractor_id_part),), one=True)
+    #     # Чтоб не вис если не найден contractor_info
+    #     fio_or_title = 'н.д.'
+    #     if contractor_info:
+    #         fio_or_title = contractor_info[0] if contractor_info[0] else contractor_info[1]
+    #     user_inn = contractor_info[2] if contractor_info else 'н.д.'
+    #
+    # # для строки 707. Если creative_data пустая, то в INSERT INTO statistics добавляем None
+    # creative_id = None
+    # # для строки 700. Тоже самое, чтоб отправлялось сообщение, если marker не определён
+    # marker = 'Не найден'
+    # for creative_id, _, _ in creative_data:
+    #     response = send_creative_to_ord(chat_id, campaign_id, creatives, description, media_ids, contract_external_id,
+    #                                     user_inn)
+    #     if response is None or 'marker' not in response:
+    #         await message.answer("Ошибка при отправке креатива в ОРД.")
+    #         return
+    #
+    #     marker = response['marker']
+    #     db.query_db('UPDATE creatives SET token = ?, status = ? WHERE creative_id = ?', (marker, 'active', creative_id))
+    #
+    #     # постгре
+    #     db.insert_creative_links_data(chat_id, contract_external_id, creative_id, marker)
+    #     # старый код
+    #     # db.query_db('INSERT OR REPLACE INTO creative_links (chat_id, ord_id, creative_id, token) VALUES (?, ?, ?, ?)',
+    #     #             (chat_id, contract_external_id, creative_id, marker))
+    #
+    # await message.answer(chat_id,
+    #                  f"Креативы успешно промаркированы. Ваш токен - {marker}.\n"
+    #                  f"Для копирования нажмите на текст ниже👇\n\n"
+    #                  f"`Реклама. {fio_or_title}. ИНН: {user_inn}. erid: {marker}`",
+    #                 parse_mode="MARKDOWN")
+    # # Сохранение данных в таблицу statistics
+    # date_start_actual = datetime.now().strftime('%Y-%m-%d')
+    # db.query_db('INSERT INTO statistics (chat_id, campaign_id, creative_id, date_start_actual) VALUES (?, ?, ?, ?)',
+    #             (chat_id, campaign_id, creative_id, date_start_actual))
+    #
+    # # Запрос ссылки на креатив
+    # ask_for_creative_link(chat_id, contract_external_id)
 
 
-async def register_media_file(file_path, campaign_id, creative_type):
-    media_id = f"{campaign_id}_media_{uuid.uuid4()}"
-    url = f'https://api-sandbox.ord.vk.com/v1/media/{media_id}'
-    headers = {
-        'Authorization': 'Bearer 633962f71ade453f997d179af22e2532'
-    }
-    files = {
-        'media_file': open(file_path, 'rb')
-    }
-    description = db.query_db('SELECT service FROM ad_campaigns WHERE campaign_id = ?', (campaign_id,), one=True)[0]
-    data = {
-        'description': description
-    }
-    response = requests.put(url, headers=headers, files=files, data=data)
-    response.raise_for_status()
-    return media_id
-
-
-async def send_creative_to_ord(chat_id, campaign_id, creatives, description, media_ids, contract_external_id, user_inn):
-    creative_id = db.query_db(
-        'SELECT creative_id FROM creatives WHERE chat_id = ? AND campaign_id = ? ORDER BY id DESC LIMIT 1',
-        (chat_id, campaign_id), one=True)
-    if creative_id is None:
-        await message.answer("Ошибка: Не найден creative_id для указанной кампании.")
-        return
-    creative_id = creative_id[0]
-
-    url = f"https://api-sandbox.ord.vk.com/v1/creative/{creative_id}"
-    headers = {
-        "Authorization": "Bearer 633962f71ade453f997d179af22e2532",
-        "Content-Type": "application/json"
-    }
-    data = {
-        "contract_external_id": contract_external_id,
-        "okveds": ["73.11"],
-        "name": creatives[0][1] if creatives else "Creative",
-        "brand": db.query_db('SELECT brand FROM ad_campaigns WHERE campaign_id = ?', (campaign_id,), one=True)[0],
-        "category": description,
-        "description": description,
-        "pay_type": "cpc",
-        "form": "text_graphic_block",
-        "targeting": "Школьники",
-        "url": "https://www.msu.ru",
-        "texts": [creative[1] for creative in creatives if creative[0] == 'text'],
-        "media_external_ids": media_ids
-    }
-
-    logging.debug("Отправка запроса на регистрацию креатива:")
-    logging.debug(json.dumps(data, indent=4))
-
-    response = requests.put(url, headers=headers, json=data)
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logging.error(f"Ошибка при отправке запроса: {e}")
-        logging.error(f"Ответ сервера: {response.text}")
-        raise
-    return response.json()
 
 
 # Функция для запроса ссылки на креатив
 async def ask_for_creative_link(chat_id, ord_id):
-    msg = await message.answer(chat_id,
-                           "Теперь прикрепите маркировку к вашему креативу, опубликуйте и пришлите ссылку на него. Прикрепить к публикации маркировку может как рекламодатель, так и рекламораспространитель. Если вы публикуете один креатив на разных площадках - пришлите ссылку на каждую площадку.")
+    msg = await message.answer(
+        text="Теперь прикрепите маркировку к вашему креативу, опубликуйте и пришлите ссылку на него. "
+             "Прикрепить к публикации маркировку может как рекламодатель, так и рекламораспространитель. "
+             "Если вы публикуете один креатив на разных площадках - пришлите ссылку на каждую площадку."
+    )
     dp.register_next_step(msg, lambda message: handle_creative_link(message, ord_id))
 
     # Установка таймера для напоминания через час, если ссылка не будет предоставлена
-    threading.Timer(3600, check_and_remind_link, [chat_id, ord_id]).start()
+    # threading.Timer(3600, check_and_remind_link, [chat_id, ord_id]).start()
 
 
 # Обработчик ссылки на креатив

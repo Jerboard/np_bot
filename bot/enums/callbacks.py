@@ -21,6 +21,7 @@ class CB(str, Enum):
     CAMPAIGN_ADD_ANOTHER_LINK = 'campaign_add_another_link'
     CAMPAIGN_ADD_CONFIRM = 'campaign_add_confirm'
     CREATIVE_SELECT_CAMPAIGN = 'creative_select_campaign'
+    CREATIVE_ADD_CREATIVE = 'creative_add_creative'
 
     IP = 'ip'
     JURIDICAL = 'juridical'

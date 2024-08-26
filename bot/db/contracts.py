@@ -31,7 +31,7 @@ ContractTable: sa.Table = sa.Table(
     sa.Column('end_date', sa.Date()),
     sa.Column('serial', sa.String(255)),
     sa.Column('amount', sa.Float),
-    sa.Column('vat_included', sa.Integer),
+    sa.Column('vat_code', sa.Integer),
     sa.Column('ord_id', sa.String(255)),
 
 )
@@ -42,7 +42,7 @@ async def add_contract(
         user_id: int,
         contractor_id: int,
         contract_date: date,
-        vat_included: int,
+        vat_code: int,
         ord_id: str,
         end_date: date = None,
         serial: str = None,
@@ -51,9 +51,10 @@ async def add_contract(
     now = datetime.now()
     query = ContractTable.insert(ContractTable).values(
         user_id=user_id,
+        created_at=now,
         contractor_id=contractor_id,
         contract_date=contract_date,
-        vat_included=vat_included,
+        vat_code=vat_code,
         ord_id=ord_id,
         end_date=end_date,
         serial=serial,
@@ -62,3 +63,12 @@ async def add_contract(
 
     async with begin_connection() as conn:
         await conn.execute(query)
+
+
+# возвращает рекламную компанию
+async def get_contract(contract_id: int) -> ContractRow:
+    query = ContractTable.select().where(ContractTable.c.id == contract_id)
+
+    async with begin_connection() as conn:
+        result = await conn.execute(query)
+    return result.first()

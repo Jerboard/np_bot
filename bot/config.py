@@ -48,6 +48,7 @@ class Config:
     yoo_secret_key = os.getenv('YOO_SECRET_KEY_TEST')
 
     date_form = "%d.%m.%Y"
+    storage_path = 'creatives'
 
     @property
     async def debug(self) -> bool:

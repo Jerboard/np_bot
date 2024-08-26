@@ -14,6 +14,12 @@ class Role(str, Enum):
     ORS = 'ors'
 
 
+class Status(str, Enum):
+    NEW = 'new'
+    ACTIVE = 'active'
+    UNACTIVE = 'unactive'
+
+
 class JStatus(str, Enum):
     IP = 'ip'
     JURIDICAL = 'juridical'
@@ -37,3 +43,9 @@ class Platform(str, Enum):
     TG_CHANNEL = 'telegram_channel'
     TG_PERSONAL = 'personal_telegram'
     OTHER = 'other'
+
+
+class Delimiter(str, Enum):
+    BASE = '.'
+    P = '-p-'
+    C = '-c-'

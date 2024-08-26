@@ -142,7 +142,9 @@ def get_add_creative_kb(campaigns: tuple[db.CampaignRow]) -> InlineKeyboardMarku
 # кб для handle_creative_upload
 def get_handle_creative_upload_kb(campaign_id) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text="Добавить файл или текст", callback_data=f"add_more_{campaign_id}")
+    kb.button(text="Добавить файл или текст", callback_data=f"{CB.CREATIVE_ADD_CREATIVE.value}:1")
+    # kb.button(text="Продолжить", callback_data=f"{CB.CREATIVE_ADD_CREATIVE.value}:1")
+    # kb.button(text="Добавить файл или текст", callback_data=f"add_more_{campaign_id}")
     kb.button(text="Продолжить", callback_data=f"pay_yk:{campaign_id}")
     return kb.adjust(1).as_markup()
 
@@ -166,11 +168,11 @@ def generate_link_markup() -> InlineKeyboardMarkup:
 
 # кб со ссылкой на оплату в юкассе
 # def get_yk_pay_kb(pay_id: str, campaign_id: str, save_cards: tuple) -> InlineKeyboardMarkup:
-def get_yk_pay_kb(pay_id: str,save_cards: tuple) -> InlineKeyboardMarkup:
+def get_yk_pay_kb(pay_id: str, save_cards: tuple) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     kb.button(text="Оплатить 400 р.", url=Config.pay_link.format(payment_id=pay_id))
     for card in save_cards:
-        kb.button(text=f"Оплатить {card[0]}", callback_data=f"in_dev")
+        kb.button(text=f"Оплатить {card}", callback_data=f"in_dev")
 
     # markup.add(kb.button(text="Продолжить", callback_data=f"continue_creative_:{pay_id}:{campaign_id}"))
     kb.button(text="Продолжить", callback_data=f"continue_creative_:{pay_id}")
