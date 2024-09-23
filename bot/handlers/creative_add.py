@@ -9,13 +9,17 @@ import keyboards as kb
 from config import Config
 from init import dp, log_error
 import utils as ut
-from .base import start_campaign_base, add_creative_start
+from .base import start_campaign_base, add_creative_start, start_bot
 from enums import CB, Command, UserState, JStatus, Role, Delimiter
 
 
 # Обработчик для команды /add_creative
-@dp.message(CommandFilter(Command.ADD_CREATIVE.value))
+@dp.message(CommandFilter(Command.ADD_CREATIVE.value), StateFilter('*'))
 async def add_creative(msg: Message, state: FSMContext):
+    user = await db.get_user_info(msg.from_user.id)
+    if not user:
+        await start_bot(msg, state)
+
     campaigns = await db.get_user_campaigns(msg.from_user.id)
     if not campaigns:
         await msg.answer(

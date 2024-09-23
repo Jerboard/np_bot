@@ -1,13 +1,13 @@
 import json
 
 from init import redis_db
-from config import TTL_REDIS
+from config import Config
 
 
 # сохраняем данные
 async def save_user_data(chat_id: int, data: dict) -> None:
     key = f"{chat_id}"
-    redis_db.setex(key, TTL_REDIS, json.dumps(data))
+    redis_db.setex(key, Config.ttl_redis, json.dumps(data))
 
 
 # возвращаем данные

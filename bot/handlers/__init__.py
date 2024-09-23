@@ -5,7 +5,6 @@ from .campaign_add import dp
 from .choose_platform import dp
 from .contract_add import dp
 from .creative_add import dp
-from .payment import dp
-# from .exceptions import bot
+from .exceptions import dp
 
 __all__ = ['dp']

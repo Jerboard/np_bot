@@ -9,33 +9,15 @@ import keyboards as kb
 import utils as ut
 from config import Config
 from init import dp, log_error, bot
-from .base import preloader_choose_platform, preloader_advertiser_entity
+from .base import preloader_choose_platform, start_bot, preloader_advertiser_entity
 from utils import ord_api
-from enums import CB, JStatus, UserState
+from enums import CB, JStatus, UserState, Role
 
 
 # Обработчик команды /start
-@dp.message(CommandStart)
+@dp.message(CommandStart())
 async def start(msg: Message, state: FSMContext):
-    user = await db.get_user_info(msg.from_user.id)
-    if user:
-        # Если пользователь найден в базе данных, выводим информацию о нем
-        display_name = user.fio if user.j_type != 'juridical' else user.title
-        name_label = "ФИО" if user.j_type != 'juridical' else "Название организации"
-
-        text = (f"Информация о вас:\n\n"
-                f"{name_label}: <b>{display_name}</b>\n"
-                f"ИНН: <b>{user.inn}</b>\n"
-                f"Правовой статус: <b>{dt.juridical_type_map.get(user.j_type, user.j_type)}</b>\n"
-                f"Баланс: <b>{user.balance} рублей</b>\n"
-                f"Текущая роль: <b>{dt.role_map.get(user.role, user.role)}</b>\n\n"
-                "Вы можете изменить свои данные и роль.\n\n"
-                "Чтобы воспользоваться функционалом бота - нажмите на синюю кнопку меню и выберите действие.\n\n")
-        await msg.answer(text, reply_markup=kb.get_start_kb())
-
-    else:
-        # Если пользователь не найден в базе данных, предлагаем согласиться с офертой
-        await msg.answer(dt.start_text, reply_markup=kb.get_agree_button())
+    await start_bot(msg, state)
 
 
 # типа конец регистрации пользователя вроде
@@ -58,25 +40,12 @@ async def confirmation(cb: CallbackQuery):
         await cb.message.answer("✅ Данные подтверждены. Вы можете продолжить работу с ботом.")
 
 
-# Обработчик нажатий на кнопки подтверждения или смены роли
-@dp.callback_query(lambda cb: cb.data.startswith(CB.CHANGE_ROLE.value))
-async def select_role(cb: CallbackQuery):
-    # Добавьте логику для смены роли пользователя здесь
-    await cb.message.answer(
-        text=("Выберите свою роль:\n"
-              "Рекламодатель - тот, кто заказывает и оплачивает рекламу.\n"
-              "Рекламораспространитель - тот, кто распространяет рекламу на площадках, чтобы привлечь внимание "
-              "к товару или услуге.")
-    )
-    await cb.message.answer("Выберите свою роль:", reply_markup=kb.get_process_role_change_kb())
-
-
 # Обработчик для сбора информации о пользователе
-@dp.callback_query(lambda cb: cb.data in [CB.IP.value, CB.JURIDICAL.value, CB.PHYSICAL.value])
+@dp.callback_query(lambda cb: cb.data.startswith(CB.RED_J_TYPE.value))
 async def collect_info(cb: CallbackQuery, state: FSMContext):
-    juridical_type = cb.data
+    _, juridical_type = cb.data.split(':')
 
-    await db.update_user(user_id=cb.from_user.id, j_type=juridical_type)
+    # await db.update_user(user_id=cb.from_user.id, j_type=juridical_type)
 
     if juridical_type == JStatus.IP:
         await cb.message.answer("Укажите ваши фамилию, имя и отчество. \nНапример, Иванов Иван Иванович.")
@@ -89,6 +58,22 @@ async def collect_info(cb: CallbackQuery, state: FSMContext):
 
     await state.set_state(UserState.USER_ADD_NAME)
     await state.update_data(data={'j_type': juridical_type})
+
+
+# Обработчик нажатий на кнопки подтверждения или смены роли
+@dp.callback_query(lambda cb: cb.data.startswith(CB.CHANGE_ROLE.value))
+async def select_role(cb: CallbackQuery):
+    # await state.set_state(UserState.USER_ADD_NAME)
+    # await state.update_data(data={'j_type': juridical_type})
+
+    # Добавьте логику для смены роли пользователя здесь
+    await cb.message.answer(
+        text=("Выберите свою роль:\n"
+              "Рекламодатель - тот, кто заказывает и оплачивает рекламу.\n"
+              "Рекламораспространитель - тот, кто распространяет рекламу на площадках, чтобы привлечь внимание "
+              "к товару или услуге.")
+    )
+    await cb.message.answer("Выберите свою роль:", reply_markup=kb.get_process_role_change_kb())
 
 
 # принимает имя
@@ -118,7 +103,7 @@ async def add_inn(msg: Message, state: FSMContext):
         return
 
     await state.set_state(UserState.USER_ADD_INN)
-    await state.update_data(data={'role': int(msg.text)})
+    await state.update_data(data={'inn': int(msg.text)})
 
     await msg.answer(
         text="Выберите свою роль:\n"
@@ -130,8 +115,8 @@ async def add_inn(msg: Message, state: FSMContext):
     )
 
 
-# Обработчик для выбора роли
-@dp.callback_query(lambda cb: cb.data in ['advertiser', 'publisher'])
+# Обработчик для выбора роли CB.USER_SELECT_ROLE.value
+@dp.callback_query(lambda cb: cb.data.startswith(CB.USER_SELECT_ROLE.value))
 async def collect_role(cb: CallbackQuery, state: FSMContext):
     _, role = cb.data.split(':')
 
@@ -164,12 +149,14 @@ async def collect_role(cb: CallbackQuery, state: FSMContext):
         )
 
         # handle_ord_response пока закомментил, используется только тут. Взял отправку сообщений
-        if role == 'advertiser':
+        if role == Role.ADVERTISER:
+            await preloader_advertiser_entity(cb.message)
             # следующий шаг preloader_advertiser_entity
-            pass
-        elif role == 'publisher':
+
+        elif role == Role.PUBLISHER:
+            await preloader_choose_platform(cb.message)
             # следующий шаг preloader_choose_platform
-            pass
+
     else:
         await cb.message.answer("Произошла ошибка при регистрации в ОРД\n\n"
                                 "Написать что произошла ошибка вывести данные. Мол попробуйте снова")
@@ -185,4 +172,4 @@ async def in_dev(cb: CallbackQuery):
 @dp.callback_query(lambda cb: cb.data == CB.CLOSE.value)
 async def close(cb: CallbackQuery, state: FSMContext):
     await state.clear()
-#     тут команда старт
+    await start_bot(cb.message, state)

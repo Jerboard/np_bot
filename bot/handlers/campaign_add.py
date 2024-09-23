@@ -9,14 +9,18 @@ import keyboards as kb
 from config import Config
 from init import dp
 import utils as ut
-from .base import add_creative_start, start_campaign_base
+from .base import add_creative_start, start_campaign_base, start_bot
 from enums import CB, Command, UserState, JStatus, Role, AddContractStep
 
 
 # Обработчик для команды /start_campaign
 @dp.message(CommandFilter(Command.START_CAMPAIGN.value))
 async def start_campaign(msg: Message, state: FSMContext):
-    await start_campaign_base(msg, state)
+    user = await db.get_user_info(msg.from_user.id)
+    if user:
+        await start_campaign_base(msg, state)
+    else:
+        await start_bot(msg, state)
 
 
 # Обработчик для сохранения бренда

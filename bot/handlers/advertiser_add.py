@@ -6,14 +6,18 @@ import db
 import keyboards as kb
 from init import dp
 import utils as ut
-from .base import preloader_advertiser_entity
+from .base import preloader_advertiser_entity, start_bot
 from enums import CB, Command, UserState, JStatus, Role
 
 
 #### Добавление контрагента ####
 @dp.message(CommandFilter(Command.PRELOADER_ADVERTISER_ENTITY.value))
-async def preloader_advertiser_entity_base(message: Message):
-    await preloader_advertiser_entity(message)
+async def preloader_advertiser_entity_base(msg: Message, state: FSMContext):
+    user = await db.get_user_info(msg.from_user.id)
+    if user:
+        await preloader_advertiser_entity(msg)
+    else:
+        await start_bot(msg, state)
 
 
 @dp.callback_query(lambda cb: cb.data in ['no_advertiser'])

@@ -11,7 +11,7 @@ async def errors(ex: ErrorEvent):
     msg = log_error(ex)
     user_id = ex.update.message.chat.id if ex.update.message else 0
 
-    if user_id and not ex != TelegramBadRequest:
+    if user_id and ex != TelegramBadRequest:
         await bot.send_message(
             chat_id=user_id,
             text='‼️ Что-то сломалось! Сообщите разработчикам, чтоб мы могли это исправить\n\n'

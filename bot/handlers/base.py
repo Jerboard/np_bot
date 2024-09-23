@@ -1,14 +1,41 @@
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message
+from aiogram.types import CallbackQuery
+from aiogram.filters import CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 
-import logging
-
 import db
+import data as dt
 import keyboards as kb
-from init import dp
 import utils as ut
-from . import common as cf
-from enums import UserState
+from config import Config
+from init import dp, log_error, bot
+from utils import ord_api
+from enums import CB, JStatus, UserState, Command
+
+
+# стартовый экран
+async def start_bot(msg: Message, state: FSMContext, user: db.UserRow = None):
+    await state.clear()
+    if not user:
+        user = await db.get_user_info(msg.from_user.id)
+
+    if user:
+        # Если пользователь найден в базе данных, выводим информацию о нем
+        name_label = "ФИО" if user.j_type != JStatus.JURIDICAL else "Название организации"
+
+        text = (f"Информация о вас:\n\n"
+                f"{name_label}: <b>{user.name}</b>\n"
+                f"ИНН: <b>{user.inn}</b>\n"
+                f"Правовой статус: <b>{dt.juridical_type_map.get(user.j_type, user.j_type)}</b>\n"
+                f"Баланс: <b>{user.balance} рублей</b>\n"
+                f"Текущая роль: <b>{dt.role_map.get(user.role, user.role)}</b>\n\n"
+                "Вы можете изменить свои данные и роль.\n\n"
+                "Чтобы воспользоваться функционалом бота - нажмите на синюю кнопку меню и выберите действие.\n\n")
+        await msg.answer(text, reply_markup=kb.get_start_kb())
+
+    else:
+        # Если пользователь не найден в базе данных, предлагаем согласиться с офертой
+        await msg.answer(dt.start_text, reply_markup=kb.get_agree_button(), disable_web_page_preview=True)
 
 
 async def start_contract(msg: Message):
@@ -32,22 +59,19 @@ async def start_contract(msg: Message):
 
 
 # старт оплаты
-def ask_amount(message: Message):
+async def ask_amount(message: Message):
     chat_id = message.chat.id
     balance = db.query_db('SELECT balance FROM users WHERE chat_id = ?', (chat_id,), one=True)
     if balance:
         balance_amount = balance[0]
-        logging.debug(f"Баланс пользователя {chat_id}: {balance_amount}")
-        msg = await message.answer(
-            message.chat.id,
+        msg = message.answer(
             f"На вашем балансе {balance_amount} рублей. \n\n "
             f"Введите сумму, на которую хотите пополнить баланс. \n\n "
             f"Стоимость маркировки одного креатива составляет 400 рублей."
         )
-        dp.register_next_step(msg, cf.process_amount)
+        # dp.register_next_step(msg, cf.process_amount)
     else:
-        logging.error(f"Не удалось получить баланс для пользователя {chat_id}")
-        await message.answer(message.chat.id, "Ошибка: не удалось получить ваш баланс. Пожалуйста, попробуйте позже.")
+        await message.answer("Ошибка: не удалось получить ваш баланс. Пожалуйста, попробуйте позже.")
 
 
 async def preloader_choose_platform(message: Message):

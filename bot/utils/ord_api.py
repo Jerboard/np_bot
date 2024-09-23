@@ -32,6 +32,7 @@ async def send_to_ord(user_id: int, name: str, role: str, j_type: str, inn: int,
     async with httpx.AsyncClient() as client:
         response = await client.put(url, headers=headers, json=data)
 
+    log_error(f'>>> {response.text}', wt=False)
     return response.status_code
 
 

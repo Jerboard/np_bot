@@ -1,18 +1,20 @@
-import logging
 from aiogram.types import Message, CallbackQuery
+from aiogram.filters import Command as CommandFilter, StateFilter
+from aiogram.fsm.context import FSMContext
 
 import db
 import keyboards as kb
-import utils as ut
 from init import dp
-from . import common as cf
+import utils as ut
+from .base import preloader_advertiser_entity
+from enums import CB, Command, UserState, JStatus, Role
 
 
 ### Блок подачи статистики ###
 
 
 # Обработка команды /start_statistics
-@dp.message(commands=['start_statistics'])
+@dp.message(CommandFilter(Command.START_STATISTICS.value))
 async def send_welcome(message: Message):
     user_id = message.from_user.id
     user_state = {}

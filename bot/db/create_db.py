@@ -1,4 +1,4 @@
-from .base_db import begin_conn
+# from .base_db import begin_conn
 
 
 # Создание таблиц в базе данных

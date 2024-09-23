@@ -9,14 +9,18 @@ import keyboards as kb
 from config import Config
 from init import dp
 import utils as ut
-from .base import preloader_choose_platform, finalize_platform_data, start_contract
+from .base import preloader_choose_platform, finalize_platform_data, start_contract, start_bot
 from enums import CB, Command, UserState, JStatus, Role, AddContractStep
 
 
 #### Функция для выбора платформы ####
 @dp.message(CommandFilter(Command.PRELOADER_CHOOSE_PLATFORM.value))
-async def preloader_choose_platform_base(message: Message):
-    await preloader_choose_platform(message)
+async def preloader_choose_platform_base(msg: Message, state: FSMContext):
+    user = await db.get_user_info(msg.from_user.id)
+    if user:
+        await preloader_choose_platform(msg)
+    else:
+        await start_bot(msg, state)
 
 
 # если не хочет выбирать платформу

@@ -68,7 +68,7 @@ def log_error(message, wt: bool = True):
         ex_traceback = traceback.format_exc()
         tb = ''
         msg = ''
-        start_row = '  File'
+        start_row = '  File "/app'
         tb_split = ex_traceback.split('\n')
         for row in tb_split:
             if row.startswith(start_row) and not re.search ('venv', row):

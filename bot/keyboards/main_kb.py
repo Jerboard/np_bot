@@ -32,9 +32,9 @@ def get_process_role_change_kb() -> InlineKeyboardMarkup:
 # кб для  register
 def get_register_kb() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text='ИП', callback_data='ip')
-    kb.button(text='Юр. лицо', callback_data='juridical')
-    kb.button(text='Физическое лицо', callback_data='physical')
+    kb.button(text='ИП', callback_data=f'{CB.RED_J_TYPE.value}:{JStatus.IP.value}')
+    kb.button(text='Юр. лицо', callback_data=f'{CB.RED_J_TYPE.value}:{JStatus.JURIDICAL.value}')
+    kb.button(text='Физическое лицо', callback_data=f'{CB.RED_J_TYPE.value}:{JStatus.PHYSICAL.value}')
     return kb.adjust(2).as_markup()
 
 

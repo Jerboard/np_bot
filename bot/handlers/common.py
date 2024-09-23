@@ -25,7 +25,7 @@ from enums import AddContractStep
 
 
 # Валидатор ИНН
-async def validate_inn1(inn, juridical_type):
+def validate_inn1(inn, juridical_type):
     inn = str(inn)
 
     if juridical_type in ['ip', 'physical']:
@@ -38,7 +38,7 @@ async def validate_inn1(inn, juridical_type):
     if not re.match(r'^\d{10}$|^\d{12}$', inn):
         return False
 
-    async def check_control_digit(inn, coefficients):
+    def check_control_digit(inn, coefficients):
         n = sum([int(a) * b for a, b in zip(inn, coefficients)]) % 11
         return n if n < 10 else n % 10
 
@@ -643,10 +643,10 @@ async def process_amount(message):
         db.query_db('INSERT INTO payments (chat_id, inv_id, amount, status) VALUES (?, ?, ?, ?)',
                              (chat_id, inv_id, amount, 'pending'))
 
-        kb = InlineKeyboardBuilder()
-        button = kb.button(text=text="Оплатить", url=payment_link)
-        button)
-        await message.answer("Нажмите кнопку ниже, чтобы перейти к оплате:", reply_markup=markup)
+        # kb = InlineKeyboardBuilder()
+        # button = kb.button(text=text="Оплатить", url=payment_link)
+        # # button)
+        # await message.answer("Нажмите кнопку ниже, чтобы перейти к оплате:", reply_markup=markup)
 
     except ValueError as e:
         await message.answer(message.chat.id, "Ошибка: введите корректную сумму (целое число).")
