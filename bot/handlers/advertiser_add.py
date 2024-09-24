@@ -7,12 +7,12 @@ import keyboards as kb
 from init import dp
 import utils as ut
 from .base import preloader_advertiser_entity, start_bot
-from enums import CB, Command, UserState, JStatus, Role
+from enums import CB, Command, UserState, JStatus, Role, Delimiter
 
 
-#### Добавление контрагента ####
+# Добавление контрагента начало
 @dp.message(CommandFilter(Command.PRELOADER_ADVERTISER_ENTITY.value))
-async def preloader_advertiser_entity_base(msg: Message, state: FSMContext):
+async def preloader_advertiser_entity_command(msg: Message, state: FSMContext):
     user = await db.get_user_info(msg.from_user.id)
     if user:
         await preloader_advertiser_entity(msg)
@@ -20,7 +20,7 @@ async def preloader_advertiser_entity_base(msg: Message, state: FSMContext):
         await start_bot(msg, state)
 
 
-@dp.callback_query(lambda cb: cb.data in ['no_advertiser'])
+@dp.callback_query(lambda cb: cb.data == CB.NO_ADVERTISER.value)
 async def handle_no_advertiser(cb: CallbackQuery):
     await cb.message.answer(
         "Вы можете в любой момент продолжить добавление контрагента нажав на соответствующий пункт в меню"
@@ -78,7 +78,7 @@ async def inn_collector_advertiser(msg: Message, state: FSMContext):
     data = await state.get_data()
     await state.clear()
 
-    if not ut.is_valid_inn(msg.text, data['j_type']):
+    if not ut.validate_inn(msg.text, j_type=data['j_type']):
         await msg.answer(
             text="Неверный формат ИНН. Пожалуйста, введите корректный ИНН:",
             reply_markup=kb.get_close_kb()
@@ -93,37 +93,34 @@ async def inn_collector_advertiser(msg: Message, state: FSMContext):
     if data['j_type'] == JStatus.JURIDICAL and user.role == Role.PUBLISHER:
         contractor_role = Role.ORS.value
 
-    ord_id = ut.get_ord_id(msg.from_user.id)
+    ord_id = ut.get_ord_id(msg.from_user.id, delimiter=Delimiter.U.value)
 
-    phone = "+7(922)744-93-08"  # Используем заглушку для номера телефона
-    rs_url = "https://example.com" if data['j_type'] != 'physical' else None  # Используем заглушку для rs_url только для юр. лиц и ИП
-
-    response = await ut.send_contractor_to_ord(
+    response = await ut.send_user_to_ord(
         ord_id=ord_id,
         name=data['name'],
         role=contractor_role,
         j_type=data['j_type'],
-        inn=msg.text,
-        phone=phone,
-        rs_url=rs_url
+        inn=msg.text
     )
 
-    # handle_contractor_ord_response(response, message, success_add_distributor, contractor_id, message)
     # Функция для обработки ответа от ОРД и дальнейшего выполнения кода для контрагента
-    if response and response.status_code in [200, 201]:
-        await db.add_campaign(
+    if response and response in [200, 201]:
+        # async def add_campaign(user_id: int, contract_id: int, brand: str, service: str, links: list) -> int:
+        await db.add_contractor(
             user_id=msg.from_user.id,
             name=data['name'],
-            inn=int(msg.text),
+            inn=msg.text,
             j_type=data['j_type'],
             ord_id=ord_id
         )
-        await msg.answer("Контрагент успешно добавлен!\nВы всегда можете добавить новых контрагентов позже.",
-                         reply_markup=kb.get_add_distributor_finish_kb())
+        await msg.answer(
+            text="✅ Контрагент успешно добавлен!\nВы всегда можете добавить новых контрагентов позже.",
+            reply_markup=kb.get_add_distributor_finish_kb()
+        )
     else:
         await msg.answer(
-            f"Произошла ошибка при добавлении контрагента в ОРД: "
-            f"{response.status_code if response else 'Нет ответа'}. "
+            f"❌ Произошла ошибка при добавлении контрагента в ОРД: "
+            f"{response if response else 'Нет ответа'}. "
             f"Попробуйте снова.")
 
         # перенёс

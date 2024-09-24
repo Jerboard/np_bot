@@ -26,6 +26,14 @@ class JStatus(str, Enum):
     PHYSICAL = 'physical'
 
 
+class Action(str, Enum):
+    ADD = 'add'
+    DEL = 'del'
+    YES = 'yes'
+    NO = 'no'
+    CONT = 'continue'
+
+
 class Command(str, Enum):
     START = 'start'
     PRELOADER_ADVERTISER_ENTITY = 'preloader_advertiser_entity'
@@ -45,7 +53,18 @@ class Platform(str, Enum):
     OTHER = 'other'
 
 
+platform_dict = {
+    Platform.VK.value: 'ВКонтакте',
+    Platform.INSTAGRAM.value: 'Instagram',
+    Platform.YOUTUBE.value: 'YouTube',
+    Platform.TG_CHANNEL.value: 'Telegram-канал',
+    Platform.TG_PERSONAL.value: 'Личный Telegram',
+    Platform.OTHER.value: 'Другое',
+}
+
+
 class Delimiter(str, Enum):
     BASE = '.'
+    U = '-u-'
     P = '-p-'
     C = '-c-'

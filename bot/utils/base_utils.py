@@ -34,21 +34,34 @@ def is_float(text: str) -> bool:
 
 
 # Валидатор ИНН
-def is_valid_inn(inn: str, juridical_type: str) -> bool:
-    if Config.debug:
-        return True
-
-    if not inn.isdigit():
+def validate_inn(inn: str, j_type: str):
+    # Проверяем длину ИНН (он должен быть 10 или 12 символов)
+    if len(inn) not in (10, 12):
         return False
 
-    if juridical_type == JStatus.JURIDICAL:
-        if len(inn) != 10:
+    # Функция для вычисления контрольной цифры
+    def calculate_checksum(inn_digits, coefficients):
+        return sum(int(digit) * coef for digit, coef in zip(inn_digits, coefficients)) % 11 % 10
+
+    # Если ИНН 10-значный
+    if len(inn) == 10:
+        if j_type != JStatus.JURIDICAL:
             return False
 
-    else:
-        if len(inn) != 12:
-            return False
-        
+        coefficients_10 = [2, 4, 10, 3, 5, 9, 4, 6, 8]
+        checksum_10 = calculate_checksum(inn[:9], coefficients_10)
+        return checksum_10 == int(inn[9])
+
+    # Если ИНН 12-значный
+    elif len(inn) == 12:
+        coefficients_11_1 = [7, 2, 4, 10, 3, 5, 9, 4, 6, 8]
+        coefficients_11_2 = [3, 7, 2, 4, 10, 3, 5, 9, 4, 6, 8]
+
+        checksum_11_1 = calculate_checksum(inn[:10], coefficients_11_1)
+        checksum_11_2 = calculate_checksum(inn[:11], coefficients_11_2)
+
+        return checksum_11_1 == int(inn[10]) and checksum_11_2 == int(inn[11])
+
 
 #  возвращает id файла
 def get_file_id(msg: Message) -> t.Union[str, None]:

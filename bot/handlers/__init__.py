@@ -1,4 +1,5 @@
 from .main_menu import dp
+from .add_update_user import dp
 from .statistic import dp
 from .advertiser_add import dp
 from .campaign_add import dp

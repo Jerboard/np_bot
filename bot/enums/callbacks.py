@@ -23,6 +23,7 @@ class CB(str, Enum):
     CREATIVE_SELECT_CAMPAIGN = 'creative_select_campaign'
     CREATIVE_ADD_CREATIVE = 'creative_add_creative'
     RED_J_TYPE = 'red_j_type'
+    NO = 'answer_no'
 
     IP = 'ip'
     JURIDICAL = 'juridical'

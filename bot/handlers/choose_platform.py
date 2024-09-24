@@ -1,6 +1,7 @@
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command as CommandFilter, StateFilter
 from aiogram.fsm.context import FSMContext
+from aiogram.enums.message_entity_type import MessageEntityType
 from datetime import datetime
 from asyncio import sleep
 
@@ -10,10 +11,10 @@ from config import Config
 from init import dp
 import utils as ut
 from .base import preloader_choose_platform, finalize_platform_data, start_contract, start_bot
-from enums import CB, Command, UserState, JStatus, Role, AddContractStep
+from enums import CB, Command, UserState, platform_dict, Role, Action
 
 
-#### Функция для выбора платформы ####
+# выбора платформы старт
 @dp.message(CommandFilter(Command.PRELOADER_CHOOSE_PLATFORM.value))
 async def preloader_choose_platform_base(msg: Message, state: FSMContext):
     user = await db.get_user_info(msg.from_user.id)
@@ -60,21 +61,27 @@ async def collect_platform(cb: CallbackQuery, state: FSMContext):
 # принимаем ссылку
 @dp.message(StateFilter(UserState.ADD_PLATFORM_NAME))
 async def collect_advertiser_link(msg: Message, state: FSMContext):
+    entity = msg.entities[0].type if msg.entities else None
+    if entity != MessageEntityType.URL:
+        await msg.answer('❗️ Некорректная ссылка\n\nПришлите ссылку на аккаунт рекламораспространителя.')
+        return
+
     advertiser_link = f'https://{msg.text}' if not msg.text.startswith("https://") else msg.text
 
     await state.update_data(data={'platform_url': advertiser_link})
     data = await state.get_data()
 
-    text = (f"Проверьте, правильно ли указана ссылка на площадку рекламораспространителя:\n"
-            f"{data['platform_name']} - {advertiser_link}")
-    await msg.answer(text, reply_markup=kb.get_platform_url_collector_kb())
+    text = (f"Проверьте, правильно ли указана ссылка на площадку рекламораспространителя:\n\n"
+            f"{platform_dict.get(data['platform_name'], 'нд')} - {advertiser_link}"
+            )
+    await msg.answer(text, reply_markup=kb.get_platform_url_collector_kb(), disable_web_page_preview=True)
 
 
 # подтверждение ссылки
 @dp.callback_query(lambda cb: cb.data.startswith(CB.PLATFORM_CORRECT.value))
 async def handle_platform_verification(cb: CallbackQuery, state: FSMContext):
     _, action = cb.data.split(':')
-    if action == '1':
+    if action == Action.YES:
         await state.set_state(UserState.ADD_PLATFORM_VIEW)
         await cb.message.answer("Укажите среднее количество просмотров поста за месяц:")
     else:
@@ -111,10 +118,9 @@ async def process_average_views(msg: Message, state: FSMContext):
 # выбор контрагента
 @dp.callback_query(lambda cb: cb.data.startswith(CB.PLATFORM_DIST.value))
 async def handle_contractor_selection(cb: CallbackQuery, state: FSMContext):
-    _, dist_id_str = cb.data.split(':')
-    dist_id = int(dist_id_str)
+    _, dist_ord_id_str = cb.data.split(':')
 
-    await state.update_data(data={'dist_id': dist_id})
+    await state.update_data(data={'dist_id': dist_ord_id_str})
     await finalize_platform_data(cb.message, state)
 
 
@@ -122,9 +128,8 @@ async def handle_contractor_selection(cb: CallbackQuery, state: FSMContext):
 @dp.callback_query(lambda cb: cb.data.startswith(CB.PLATFORM_FIN.value))
 async def handle_success_add_platform(cb: CallbackQuery):
     _, action = cb.data.split(':')
-    # chat_id = cb.message.chat.id
-    # role = db.query_db('SELECT role FROM users WHERE chat_id = ?', (chat_id,), one=True)[0]
-    if action == '1':
+
+    if action == Action.ADD:
         await choose_platform(cb)
 
     else:

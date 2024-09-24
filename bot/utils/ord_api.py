@@ -1,5 +1,5 @@
 import logging
-import requests
+import typing as t
 import httpx
 import uuid
 
@@ -10,8 +10,16 @@ from enums import JStatus
 
 
 # Функция для отправки данных в ОРД API
-async def send_to_ord(user_id: int, name: str, role: str, j_type: str, inn: int, phone: str = None, rs_url=None) -> int:
-    url = f"https://api-sandbox.ord.vk.com/v1/person/{user_id}"
+async def send_user_to_ord(
+        ord_id: t.Union[str, int],
+        name: str,
+        role: str,
+        j_type: str,
+        inn: str,
+        phone: str = None,
+        rs_url=None
+) -> int:
+    url = f"https://api-sandbox.ord.vk.com/v1/person/{ord_id}"
     headers = {
         "Authorization": f"Bearer {Config.bearer}",
         "Content-Type": "application/json"
@@ -26,39 +34,37 @@ async def send_to_ord(user_id: int, name: str, role: str, j_type: str, inn: int,
         }
     }
 
-    if rs_url:
-        data["rs_url"] = rs_url
+    # if rs_url:
+    #     data["rs_url"] = rs_url
 
     async with httpx.AsyncClient() as client:
         response = await client.put(url, headers=headers, json=data)
 
-    log_error(f'>>> {response.text}', wt=False)
+    log_error(f'send_user_to_ord response:\n{response.text}', wt=False)
     return response.status_code
 
 
 # Функция для отправки данных о контрагенте в ОРД API
-async def send_contractor_to_ord(ord_id: str, name: str, role: str, j_type: str, inn: str, phone: str, rs_url: str):
-    url = f"https://api-sandbox.ord.vk.com/v1/person/{ord_id}"
-    headers = {
-        "Authorization": f"Bearer {Config.bearer}",
-        "Content-Type": "application/json"
-    }
-    data = {
-        "name": name,
-        "roles": [role],
-        "juridical_details": {
-            "type": j_type,
-            "inn": inn,
-            "phone": phone  # Используем номер телефона, переданный в функцию
-        }
-    }
-    if rs_url is not None:
-        data["rs_url"] = rs_url
-
-    async with httpx.AsyncClient() as client:
-        response = await client.put(url, headers=headers, json=data)
-
-    return response
+# async def send_contractor_to_ord(ord_id: str, name: str, role: str, j_type: str, inn: str, phone: str):
+#     url = f"https://api-sandbox.ord.vk.com/v1/person/{ord_id}"
+#     headers = {
+#         "Authorization": f"Bearer {Config.bearer}",
+#         "Content-Type": "application/json"
+#     }
+#     data = {
+#         "name": name,
+#         "roles": [role],
+#         "juridical_details": {
+#             "type": j_type,
+#             "inn": inn,
+#             "phone": phone  # Используем номер телефона, переданный в функцию
+#         }
+#     }
+#
+#     async with httpx.AsyncClient() as client:
+#         response = await client.put(url, headers=headers, json=data)
+#
+#     return response
 
 
 # Функция для отправки данных о договоре в ОРД API
@@ -70,7 +76,7 @@ async def send_contract_to_ord(
         serial: str,
         vat_flag: list,
         amount: int
-) -> bool:
+) -> int:
     data = {
         "type": "service",
         "client_external_id": client_external_id,
@@ -92,14 +98,13 @@ async def send_contract_to_ord(
     async with httpx.AsyncClient() as client:
         response = await client.put(url, headers=headers, json=data)
 
-    if response.status_code in [200, 201]:
-        return True
-    else:
-        return False
+    log_error(f'send_contract_to_ord response:\n{response.text}', wt=False)
+    return response.status_code
 
 
 # Функция для отправки данных о платформе в ОРД API
-async def send_platform_to_ord(ord_id: str, platform_name: str, platform_url: str, person_external_id: str):
+# async def send_platform_to_ord(ord_id: str, platform_name: str, platform_url: str, person_external_id: str):
+async def send_platform_to_ord(ord_id: str, platform_name: str, platform_url: str, dist_ord_id: str) -> int:
     url = f"https://api-sandbox.ord.vk.com/v1/pad/{ord_id}"
 
     headers = {
@@ -108,7 +113,7 @@ async def send_platform_to_ord(ord_id: str, platform_name: str, platform_url: st
     }
 
     data = {
-        "person_external_id": person_external_id,
+        "person_external_id": dist_ord_id,
         "is_owner": True,
         "type": "web",
         "name": platform_name,
@@ -118,10 +123,8 @@ async def send_platform_to_ord(ord_id: str, platform_name: str, platform_url: st
     async with httpx.AsyncClient() as client:
         response = await client.put(url, headers=headers, json=data)
 
-    if response.status_code in [200, 201]:
-        return True
-    else:
-        return False
+    log_error(f'send_contract_to_ord response:\n{response.text}', wt=False)
+    return response.status_code
 
 
 # регистрация медиа

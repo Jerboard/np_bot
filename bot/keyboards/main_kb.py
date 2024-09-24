@@ -3,7 +3,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder, InlineKeyboardMarkup
 import db
 from config import Config
 from init import log_error
-from enums import CB, Role, JStatus, Platform
+from enums import CB, Role, JStatus, Platform, Action
 
 
 def get_agree_button() -> InlineKeyboardMarkup:
@@ -15,17 +15,9 @@ def get_agree_button() -> InlineKeyboardMarkup:
 # стартовая клавиатура
 def get_start_kb() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text='Подтвердить', callback_data='confirm_user')
-    kb.button(text='Сменить роль', callback_data='change_role')
+    kb.button(text='Подтвердить', callback_data=CB.CONFIRM_USER.value)
+    kb.button(text='Сменить роль', callback_data=CB.CHANGE_ROLE.value)
     kb.adjust(1).as_markup()
-    return kb.adjust(1).as_markup()
-
-
-# кб для  get_process_role_change_kb
-def get_process_role_change_kb() -> InlineKeyboardMarkup:
-    kb = InlineKeyboardBuilder()
-    kb.button(text='Рекламодатель', callback_data='advertiser')
-    kb.button(text='Рекламораспространитель', callback_data='publisher')
     return kb.adjust(1).as_markup()
 
 
@@ -79,16 +71,15 @@ def get_choose_platform_kb() -> InlineKeyboardMarkup:
     kb.button(text='YouTube', callback_data=f'{CB.PLATFORM_SELECT.value}:{Platform.YOUTUBE.value}')
     kb.button(text='Telegram-канал', callback_data=f'{CB.PLATFORM_SELECT.value}:{Platform.TG_CHANNEL.value}')
     kb.button(text='Личный Telegram', callback_data=f'{CB.PLATFORM_SELECT.value}:{Platform.TG_PERSONAL.value}')
-    # kb.button(text='Другое', callback_data='other')
-    kb.button(text='Другое', callback_data='in_dev')
+    kb.button(text='Другое', callback_data=f'{CB.PLATFORM_SELECT.value}:{Platform.OTHER.value}')
     return kb.adjust(2).as_markup()
 
 
 # кб для platform_url_collector
 def get_platform_url_collector_kb() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text='Да, верно', callback_data=f'{CB.PLATFORM_CORRECT.value}:1')
-    kb.button(text='Исправить', callback_data=f'{CB.PLATFORM_CORRECT.value}:0')
+    kb.button(text='Да, верно', callback_data=f'{CB.PLATFORM_CORRECT.value}:{Action.YES.value}')
+    kb.button(text='Исправить', callback_data=f'{CB.PLATFORM_CORRECT.value}:{Action.NO.value}')
     # kb.button(text='Удалить', callback_data=f'{CB.PLATFORM_CORRECT.value}:0')
     kb.button(text='Удалить', callback_data=f'{CB.CLOSE.value}')
     return kb.adjust(3).as_markup()
@@ -98,7 +89,7 @@ def get_platform_url_collector_kb() -> InlineKeyboardMarkup:
 def get_process_average_views_kb(contractors: tuple[db.DistributorRow]) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     for contractor in contractors:
-        kb.button(text=contractor.name, callback_data=f"{CB.P.value}:{contractor.id}")
+        kb.button(text=contractor.name, callback_data=f"{CB.PLATFORM_DIST.value}:{contractor.ord_id}")
     kb.button(text="❌ Отмена", callback_data=CB.CLOSE.value)
     return kb.adjust(1).as_markup()
 
@@ -106,8 +97,8 @@ def get_process_average_views_kb(contractors: tuple[db.DistributorRow]) -> Inlin
 # кб для finalize_platform_data
 def get_finalize_platform_data_kb() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text='Добавить еще площадку', callback_data=f'{CB.PLATFORM_FIN.value}:1')
-    kb.button(text='Продолжить', callback_data=f'{CB.PLATFORM_FIN.value}:0')
+    kb.button(text='Добавить еще площадку', callback_data=f'{CB.PLATFORM_FIN.value}:{Action.ADD.value}')
+    kb.button(text='Продолжить', callback_data=f'{CB.PLATFORM_FIN.value}:{Action.CONT.value}')
     return kb.adjust(2).as_markup()
 
 

@@ -13,12 +13,13 @@ class UserRow(t.Protocol):
     full_name: str
     username: str
     name: str
-    inn: int
+    inn: str
     role: str
     phone: str
     j_type: str
     balance: float
     total_balance: float
+    # is_agree: bool
 
 
 UserTable: sa.Table = sa.Table(
@@ -31,12 +32,13 @@ UserTable: sa.Table = sa.Table(
     sa.Column('full_name', sa.String(255)),
     sa.Column('username', sa.String(255)),
     sa.Column('role', sa.String(255)),
-    sa.Column('inn', sa.BigInteger),
+    sa.Column('inn', sa.String(255)),
     sa.Column('name', sa.String(255)),
     sa.Column('phone', sa.String(255)),
     sa.Column('j_type', sa.String(255)),
     sa.Column('balance', sa.Float(), default=0),
     sa.Column('total_balance', sa.Float(), default=0),
+    # sa.Column('is_agree', sa.Boolean, default=False),
 )
 
 
@@ -46,7 +48,7 @@ async def add_user(
         full_name: str,
         username: str,
         role: str = None,
-        inn: int = None,
+        inn: str = None,
         name: str = None,
         j_type: str = None,
 ) -> None:
@@ -83,12 +85,19 @@ async def get_user_info(user_id: int) -> UserRow:
 
 
 # обновляет данные пользователя
-async def update_user(user_id: int, role: str = None, j_type: str = None) -> None:
+async def update_user(
+        user_id: int,
+        role: str = None,
+        j_type: str = None,
+        agree: bool = None,
+) -> None:
     query = UserTable.update().where(UserTable.c.user_id == user_id)
     if role:
         query = query.values(role=role)
-    if role:
+    if j_type:
         query = query.values(j_type=j_type)
+    if agree is not None:
+        query = query.values(is_agree=agree)
 
     async with begin_connection() as conn:
         await conn.execute(query)
