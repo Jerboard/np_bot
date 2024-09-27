@@ -103,13 +103,28 @@ def get_finalize_platform_data_kb() -> InlineKeyboardMarkup:
 
 
 # кб для confirm_ad_campaign
-def get_confirm_ad_campaign_kb(campaign_id) -> InlineKeyboardMarkup:
+def get_confirm_ad_campaign_kb() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text="Да, верно", callback_data=f"confirm_ad_campaign:1"),
-    kb.button(text="Изменить", callback_data=f"change_ad_campaign:0"),
-    kb.button(text="Удалить", callback_data=f"{CB.CLOSE.value}")
+    kb.button(text="✅ Да, верно", callback_data=f"{CB.CAMPAIGN_ADD_CONFIRM.value}:1"),
+    kb.button(text="🖍 Изменить", callback_data=f"{CB.CAMPAIGN_ADD_CONFIRM.value}:0"),
+    kb.button(text="❌ Удалить", callback_data=f"{CB.CLOSE.value}")
     return kb.adjust(3).as_markup()
-    
+
+
+# Подтвердить замену промо
+def get_select_contract_kb(end_page: bool, contract_id: int, page: int) -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    btn_count = 0
+    if page > 0:
+        btn_count += 1
+        kb.button(text=f'⬅️ Пред стр.', callback_data=f'{CB.CONTRACT_PAGE.value}:{page - 1}:{Action.CONT.value}')
+    if not end_page:
+        btn_count += 1
+        kb.button(text=f'След стр. ➡️ ', callback_data=f'{CB.CONTRACT_PAGE.value}:{page + 1}:{Action.CONT.value}')
+
+    kb.button(text=f'✔️ Выбрать', callback_data=f'{CB.CONTRACT_PAGE.value}:{contract_id}:{Action.YES.value}')
+    kb.adjust(2, 1) if btn_count == 2 else kb.adjust(1)
+    return kb.as_markup()
 
 # кб для ask_for_additional_link
 def get_ask_for_additional_link_kb() -> InlineKeyboardMarkup:

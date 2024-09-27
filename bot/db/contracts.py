@@ -37,7 +37,7 @@ ContractTable: sa.Table = sa.Table(
 )
 
 
-# Добавляет пользователя
+# Добавляет договор
 async def add_contract(
         user_id: int,
         contractor_id: int,
@@ -65,10 +65,11 @@ async def add_contract(
         await conn.execute(query)
 
 
-# возвращает рекламную компанию
+# возвращает договор
 async def get_contract(contract_id: int) -> ContractRow:
     query = ContractTable.select().where(ContractTable.c.id == contract_id)
 
     async with begin_connection() as conn:
         result = await conn.execute(query)
     return result.first()
+

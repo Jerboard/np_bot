@@ -9,8 +9,8 @@ import keyboards as kb
 from config import Config
 from init import dp
 import utils as ut
-from .base import add_creative_start, start_campaign_base, start_bot
-from enums import CB, Command, UserState, JStatus, Role, AddContractStep
+from . import base
+from enums import CB, Command, UserState, Action, Role, AddContractStep
 
 
 # Обработчик для команды /start_campaign
@@ -18,9 +18,37 @@ from enums import CB, Command, UserState, JStatus, Role, AddContractStep
 async def start_campaign(msg: Message, state: FSMContext):
     user = await db.get_user_info(msg.from_user.id)
     if user:
-        await start_campaign_base(msg, state)
+        await base.start_campaign_base(msg, state)
     else:
-        await start_bot(msg, state)
+        await base.start_bot(msg, state)
+
+
+# Смена страницы контрактов
+@dp.callback_query(lambda cb: cb.data.startswith(CB.CONTRACT_PAGE.value))
+async def save_brand(cb: CallbackQuery, state: FSMContext):
+    _, page_str, action = cb.data.split(':')
+    page = int(page_str)
+
+    if action == Action.CONT:
+        data = await state.get_data()
+        contracts = data.get('contracts')
+        if not contracts:
+            contracts = await db.get_all_user_contracts(cb.from_user.id)
+            await state.update_data(data={'contracts': contracts, 'current': page})
+        await base.select_contract(
+            contracts=contracts,
+            current=page,
+            chat_id=cb.message.chat.id,
+            message_id=cb.message.message_id,
+        )
+    else:
+        await state.update_data(data={'contract_id': page})
+        await base.start_campaign_base(
+            msg=cb.message,
+            state=state,
+            contract_id=page,
+            user_id=cb.from_user.id
+        )
 
 
 # Обработчик для сохранения бренда
@@ -70,7 +98,7 @@ async def handle_additional_link(cb: CallbackQuery, state: FSMContext):
 
     else:
         data = await state.get_data()
-        links_str = "\n".join([f"Целевая ссылка {i + 1}: {link}" for i, link in data['links']])
+        links_str = "\n".join([f"Целевая ссылка: {link}" for link in data['links']])
 
         await cb.message.answer(
             f"Проверьте, правильно ли указана информация о рекламной кампании:\n"
@@ -90,18 +118,15 @@ async def handle_ad_campaign_callback(cb: CallbackQuery, state: FSMContext):
         await state.clear()
         campaign_id = await db.add_campaign(
             user_id=cb.from_user.id,
+            contract_id=data['contract_id'],
             brand=data['brand'],
             service=data['service'],
             links=data['links'],
         )
 
         await cb.message.answer(
-            f"Рекламная кампания с брендом "
-            f"{data['brand']}"
-            f"успешно создана!"
+            f"Рекламная кампания с брендом {data['brand']} успешно создана!"
         )
-        await add_creative_start(cb.message, state, campaign_id)
+        await base.add_creative_start(cb.message, state, campaign_id)
 
-    elif cb.data.startswith("change_ad_campaign"):
-        await state.clear()
-        await start_campaign(cb.message, state)
+

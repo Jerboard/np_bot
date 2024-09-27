@@ -13,6 +13,7 @@ class CB(str, Enum):
     CONTRACT_DIST_SELECT = 'contract_dist_select'
     CONTRACT_END = 'contract_end'
     CONTRACT_BACK = 'contract_back'
+    CONTRACT_PAGE = 'contract_page'
     PLATFORM_START = 'platform_start'
     PLATFORM_SELECT = 'platform_select'
     PLATFORM_CORRECT = 'platform_correct'

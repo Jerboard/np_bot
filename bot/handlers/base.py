@@ -138,10 +138,54 @@ async def finalize_platform_data(msg: Message, state: FSMContext):
             f"Попробуйте снова.")
 
 
-async def start_campaign_base(msg: Message, state: FSMContext):
+async def select_contract(
+        contracts: tuple[db.ContractDistRow],
+        current: int,
+        chat_id: int,
+        message_id: int = None,
+):
+    contract = contracts[current]
+
+    text = (
+        f'{current + 1}/{len(contracts)}:\n\n'
+        f'Контрагент: {contract.name}\n'
+        f'Дата заключения договора: {contract.contract_date}\n'
+        f'Номер договора: {contract.serial}\n'
+        f'Сумма договора: {contract.amount} руб\n'
+        f'Дата завершения договора: {contract.end_date}'
+    ).replace('None', 'нет')
+
+    keyboard = kb.get_select_contract_kb(
+        end_page=(current + 1) == len(contracts),
+        contract_id=contract.contract_id,
+        page=current
+    )
+
+    if message_id:
+        await bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=text, reply_markup=keyboard)
+    else:
+        await bot.send_message(chat_id, text, reply_markup=keyboard)
+
+
+async def start_campaign_base(msg: Message, state: FSMContext, contract_id: int = None, user_id: int = None):
     await state.clear()
-    await state.set_state(UserState.ADD_CAMPAIGN_BRAND)
-    await msg.answer("Введите название бренда, который вы планируете рекламировать.\n\nУкажите бренд.")
+
+    if contract_id:
+        await state.set_state(UserState.ADD_CAMPAIGN_BRAND)
+        await state.update_data(data={'contract_id': contract_id})
+        await msg.answer("Введите название бренда, который вы планируете рекламировать.\n\nУкажите бренд.")
+
+    else:
+        if not user_id:
+            user_id = msg.from_user.id
+        contracts = await db.get_all_user_contracts(user_id)
+        await state.update_data(data={'contracts': contracts, 'current': 0})
+
+        await select_contract(
+            contracts=contracts,
+            current=0,
+            chat_id=user_id,
+        )
 
 
 # Начало процесса добавления креатива

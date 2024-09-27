@@ -39,7 +39,7 @@ async def add_campaign(user_id: int, contract_id: int, brand: str, service: str,
             contract_id=contract_id,
             brand=brand,
             service=service,
-            link=links,
+            links=links,
         )
 
     async with begin_connection() as conn:
