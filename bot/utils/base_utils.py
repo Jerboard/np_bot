@@ -17,6 +17,30 @@ def get_ord_id(user_id: int, delimiter: str = Delimiter.BASE.value) -> str:
     return f"{user_id}{delimiter}{randint(100000000, 9999999999)}"
 
 
+def convert_date(date_str: str) -> str:
+    # Определяем два возможных формата
+    formats = [Config.date_form, Config.ord_date_form]
+
+    for date_format in formats:
+        try:
+            # Пробуем распарсить строку как дату
+            date_obj = datetime.strptime(date_str, date_format)
+
+            # Если формат "%Y.%m.%d", просто возвращаем строку
+            if date_format == Config.ord_date_form:
+                return date_str
+
+            # Если формат "%d.%m.%Y", конвертируем в "%Y.%m.%d"
+            return date_obj.strftime(Config.ord_date_form)
+
+        except ValueError:
+            # Если ошибка - продолжаем проверку с другим форматом
+            continue
+
+    # Если строка не является датой в нужных форматах, возвращаем пустую строку
+    return ""
+
+
 def is_valid_date(date_string):
     try:
         datetime.strptime(date_string, Config.date_form)

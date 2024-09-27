@@ -6,6 +6,7 @@ DEBUG = bool(int(os.getenv('DEBUG')))
 
 
 class Config:
+    debug = DEBUG
     # Параметры магазина
     mrh_login = os.getenv('MRH_LOGIN')
     mrh_pass1 = os.getenv('MRH_PASS1')
@@ -48,8 +49,6 @@ class Config:
     yoo_secret_key = os.getenv('YOO_SECRET_KEY_TEST')
 
     date_form = "%d.%m.%Y"
+    ord_date_form = "%Y-%m-%d"
     storage_path = 'creatives'
 
-    @property
-    async def debug(self) -> bool:
-        return DEBUG

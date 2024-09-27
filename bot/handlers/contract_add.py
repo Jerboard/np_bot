@@ -9,8 +9,8 @@ import keyboards as kb
 from config import Config
 from init import dp
 import utils as ut
-from .base import start_contract, start_bot
-from enums import CB, Command, UserState, JStatus, Role, AddContractStep
+from .base import start_contract, start_bot, end_contract
+from enums import CB, Command, UserState, JStatus, Role, AddContractStep, Delimiter
 
 
 ### Добавление договоров ####
@@ -25,17 +25,28 @@ async def start_contract_hnd(msg: Message, state: FSMContext):
         await start_bot(msg, state)
 
 
+# возвращает к старту контракта
+@dp.callback_query(lambda cb: cb.data.startswith(CB.CONTRACT_BACK))
+async def start_contract_hnd(cb: CallbackQuery, state: FSMContext):
+    await state.clear()
+    await start_contract(cb.message, user_id=cb.from_user.id)
+
+
 # Обработчик выбора контрагента
 @dp.callback_query(lambda cb: cb.data.startswith(CB.CONTRACT_DIST_SELECT))
 async def process_contract_start_date(cb: CallbackQuery, state: FSMContext):
     _, dist_id_str = cb.data.split(':')
 
+    await state.clear()
     await state.set_state(UserState.ADD_CONTRACT)
     await state.update_data(data={
         'step': AddContractStep.START_DATE.value,
         'dist_id': int(dist_id_str)
     })
-    await cb.message.answer("Введите дату начала договора (дд.мм.гггг):", reply_markup=kb.get_close_kb())
+    await cb.message.answer(
+        text="Введите дату начала договора (дд.мм.гггг или гггг-мм-дд):",
+        reply_markup=kb.get_close_kb()
+    )
 
 
 # Обработчик для обработки даты начала договора
@@ -45,10 +56,12 @@ async def process_contract_start_date(msg: Message, state: FSMContext):
     error_text = ''
 
     if data['step'] == AddContractStep.START_DATE.value:
-        if ut.is_valid_date(msg.text):
+        date_str = ut.convert_date(msg.text)
+        if date_str:
             await state.update_data(data={
                 'step': AddContractStep.END_DATE.value,
-                'start_date': msg.text
+                'start_date': date_str,
+                'input_start_date': msg.text,
             })
             await msg.answer(
                 "Указана ли в договоре дата завершения?",
@@ -58,10 +71,12 @@ async def process_contract_start_date(msg: Message, state: FSMContext):
             error_text = '❌ Неверный формат даты. Пожалуйста, введите дату в формате дд.мм.гггг:'
 
     elif data['step'] == AddContractStep.END_DATE.value:
-        if ut.is_valid_date(msg.text):
+        date_str = ut.convert_date(msg.text)
+        if date_str:
             await state.update_data(data={
                 'step': AddContractStep.NUM.value,
-                'end_date': msg.text
+                'end_date': date_str,
+                'input_end_date': msg.text
             })
 
             await msg.answer(
@@ -85,12 +100,10 @@ async def process_contract_start_date(msg: Message, state: FSMContext):
     elif data['step'] == AddContractStep.SUM.value:
         if ut.is_float(msg.text):
             await state.update_data(data={
+                'step': AddContractStep.SUM.value,
                 'sum': float(msg.text)
             })
-            await msg.answer(
-                "Сумма по договору указана с НДС?",
-                reply_markup=kb.get_nds_kb()
-            )
+            await end_contract(state=state, chat_id=msg.chat.id)
         else:
             error_text = '❌ Неверный формат сумму. Пожалуйста, отправьте сумму числом'
     else:
@@ -139,10 +152,7 @@ async def add_contract_next_step_check(cb: CallbackQuery, state: FSMContext):
             )
 
         elif step == AddContractStep.SUM:
-            await cb.message.answer(
-                "Сумма по договору указана с НДС?",
-                reply_markup=kb.get_nds_kb()
-            )
+            await end_contract(state=state, chat_id=cb.message.chat.id)
 
         else:
             await state.clear()
@@ -150,43 +160,46 @@ async def add_contract_next_step_check(cb: CallbackQuery, state: FSMContext):
 
 
 # Обработчик для выбора НДС
-@dp.callback_query(lambda cb: cb.data.startswith(CB.CONTRACT_VAT.value))
+@dp.callback_query(lambda cb: cb.data.startswith(CB.CONTRACT_END.value))
 async def handle_vat_selection(cb: CallbackQuery, state: FSMContext):
-    _, vat_str = cb.data.split(':')
-    vat = int(vat_str)
 
     user = await db.get_user_info(cb.from_user.id)
-    
     data = await state.get_data()
     await state.clear()
 
-    ord_id = ut.get_ord_id(cb.from_user.id)
-   
-    vat_flag = ["vat_included"] if vat == 4 else []
+    # for k, v in data.items():
+    #     print(f'{k}: {v}')
+
+    ord_id = ut.get_ord_id(cb.from_user.id, delimiter=Delimiter.C.value)
+
+    contractor = await db.get_contractor(contractor_id=data['dist_id'])
     if user.role == Role.ADVERTISER:
         client_external_id = f"{cb.from_user.id}"
-        contractor_external_id = f"{cb.from_user.id}.{data['dist_id']}"
+        contractor_external_id = contractor.ord_id
     else:
-        client_external_id = f"{cb.from_user.id}.{data['dist_id']}"
+        client_external_id = contractor.ord_id
         contractor_external_id = f"{cb.from_user.id}"
 
-    response = ut.send_contract_to_ord(
+    response = await ut.send_contract_to_ord(
         ord_id=ord_id,
         client_external_id=client_external_id,
         contractor_external_id=contractor_external_id,
         contract_date=data.get('start_date'),
         serial=data.get('num'),
-        vat_flag=vat_flag,
-        amount=data.get('sum', 0)
+        # vat_flag=vat_flag,
+        amount=data.get('sum')
     )
+
     if response:
+        start_date = datetime.strptime(data['start_date'], Config.ord_date_form) if data.get('start_date') else None
+        end_date = datetime.strptime(data['end_date'], Config.ord_date_form) if data.get('end_date') else None
         await db.add_contract(
             user_id=cb.from_user.id,
             contractor_id=data['dist_id'],
-            contract_date=data['start_date'],
-            vat_code=vat,
+            start_date=start_date,
+            # vat_code=vat,
             ord_id=ord_id,
-            end_date=data.get('end_date'),
+            end_date=end_date,
             serial=data.get('num'),
             amount=data.get('sum'),
         )
@@ -199,6 +212,11 @@ async def handle_vat_selection(cb: CallbackQuery, state: FSMContext):
     else:
         await cb.message.answer("Произошла ошибка при регистрации договора в ОРД.")
         # logging.error(f"Error registering contract in ORD: {response}")
+
+
+
+
+
 
 # else:
 #     await message.answer("Произошла ошибка. Данные о договоре не найдены.")

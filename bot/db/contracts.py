@@ -15,7 +15,7 @@ class ContractRow(t.Protocol):
     end_date: date
     serial: str
     amount: float
-    vat_included: int
+    # vat_included: int
     ord_id: str
 
 
@@ -31,7 +31,7 @@ ContractTable: sa.Table = sa.Table(
     sa.Column('end_date', sa.Date()),
     sa.Column('serial', sa.String(255)),
     sa.Column('amount', sa.Float),
-    sa.Column('vat_code', sa.Integer),
+    # sa.Column('vat_code', sa.Integer),
     sa.Column('ord_id', sa.String(255)),
 
 )
@@ -41,20 +41,20 @@ ContractTable: sa.Table = sa.Table(
 async def add_contract(
         user_id: int,
         contractor_id: int,
-        contract_date: date,
-        vat_code: int,
+        start_date: date,
+        # vat_code: int,
         ord_id: str,
         end_date: date = None,
         serial: str = None,
         amount: float = None,
 ) -> None:
     now = datetime.now()
-    query = ContractTable.insert(ContractTable).values(
+    query = ContractTable.insert().values(
         user_id=user_id,
         created_at=now,
         contractor_id=contractor_id,
-        contract_date=contract_date,
-        vat_code=vat_code,
+        contract_date=start_date,
+        # vat_code=vat_code,
         ord_id=ord_id,
         end_date=end_date,
         serial=serial,

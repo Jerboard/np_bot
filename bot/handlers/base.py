@@ -42,16 +42,15 @@ async def start_bot(msg: Message, state: FSMContext, user: db.UserRow = None):
         await msg.answer(dt.start_text, reply_markup=kb.get_agree_button(), disable_web_page_preview=True)
 
 
-async def start_contract(msg: Message):
-    # тут выбирать последнего контрагента из сделок
-    selected_contractor = False
-
+async def start_contract(msg: Message, user_id: int = None, selected_contractor: int = None):
     if selected_contractor:
         await msg.answer(f"Выбранный ранее контрагент будет использован: № {selected_contractor}")
         await msg.answer("Введите дату начала договора (дд.мм.гггг):")
         # dp.register_next_step(msg, cf.process_contract_start_date, contractor_id)
     else:
-        contractors = await db.get_all_contractors(msg.from_user.id)
+        if not user_id:
+            user_id = msg.from_user.id
+        contractors = await db.get_all_contractors(user_id)
         await msg.answer("Контрагент не был выбран. Пожалуйста, выберите контрагента.")
         if contractors:
             await msg.answer("Выберите контрагента:", reply_markup=kb.get_select_distributor_kb(contractors))
@@ -60,6 +59,23 @@ async def start_contract(msg: Message):
             await msg.answer(
                 text=f"❗️У вас нет контрагентов.\n\n"
                      f"Чтобы добавить контрагента воспользуйтесь командой /{Command.PRELOADER_ADVERTISER_ENTITY.value}")
+
+
+async def end_contract(state: FSMContext, chat_id: int):
+    data = await state.get_data()
+
+    contractor = await db.get_contractor(contractor_id=data['dist_id'])
+    await state.update_data(data={'contractor_ord_id': contractor.ord_id})
+    text = (
+        f'❕ Проверьте, правильно ли указана информация по вашему договору с рекламодателем:\n\n'
+        f'Контрагент: {contractor.name}\n'
+        f'Дата заключения договора: {data["input_start_date"]}\n'
+        f'Дата завершения договора: {data.get("input_end_date", "нет")}\n'
+        f'Номер договора: {data.get("num", "нет")}\n'
+        f'Сумма договора: {data.get("sum", "нет")} руб\n'
+        f'Дата завершения договора: {data.get("input_end_date", "нет")}'
+    )
+    await bot.send_message(chat_id=chat_id, text=text, reply_markup=kb.get_contract_end_kb(data['dist_id']))
 
 
 # старт оплаты

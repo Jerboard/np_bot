@@ -74,21 +74,28 @@ async def send_contract_to_ord(
         contractor_external_id: str,
         contract_date: str,
         serial: str,
-        vat_flag: list,
-        amount: int
+        # vat_flag: list,
+        amount: str
 ) -> int:
     data = {
         "type": "service",
         "client_external_id": client_external_id,
         "contractor_external_id": contractor_external_id,
         "date": contract_date,
-        "serial": serial,
         "subject_type": "org_distribution",
-        "flags": vat_flag,
+        "flags": [
+            "vat_included",
+            "contractor_is_creatives_reporter"
+        ],
         "amount": str(amount)
     }
+    if serial:
+        data['serial'] = serial
 
     url = f"https://api-sandbox.ord.vk.com/v1/contract/{ord_id}"
+
+    # for k, v in data.items():
+    #     print(f'{k}: {v}')
 
     headers = {
         "Authorization": f"Bearer {Config.bearer}",
@@ -98,7 +105,7 @@ async def send_contract_to_ord(
     async with httpx.AsyncClient() as client:
         response = await client.put(url, headers=headers, json=data)
 
-    log_error(f'send_contract_to_ord response:\n{response.text}', wt=False)
+    log_error(f'send_contract_to_ord code: {response.status_code}\nresponse:\n{response.text}', wt=False)
     return response.status_code
 
 

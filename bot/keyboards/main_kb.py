@@ -170,11 +170,12 @@ def get_yk_pay_kb(pay_id: str, save_cards: tuple) -> InlineKeyboardMarkup:
     return kb.adjust(1).as_markup()
 
 
-def get_nds_kb() -> InlineKeyboardMarkup:
+def get_contract_end_kb(dist_id: int) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text="Да", callback_data=f"{CB.CONTRACT_VAT.value}:4")
-    kb.button(text="Нет", callback_data=f"{CB.CONTRACT_VAT.value}:1")
-    return kb.adjust(2).as_markup()
+    kb.button(text="✅ Да, верно", callback_data=f"{CB.CONTRACT_END.value}")
+    kb.button(text="🖍 Изменить", callback_data=f"{CB.CONTRACT_DIST_SELECT.value}:{dist_id}")
+    kb.button(text="❌ Удалить", callback_data=f"{CB.CONTRACT_BACK.value}")
+    return kb.adjust(3).as_markup()
 
 
 # запрашивает есть ли часть договора
