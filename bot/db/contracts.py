@@ -47,7 +47,7 @@ async def add_contract(
         end_date: date = None,
         serial: str = None,
         amount: float = None,
-) -> None:
+) -> int:
     now = datetime.now()
     query = ContractTable.insert().values(
         user_id=user_id,
@@ -62,7 +62,8 @@ async def add_contract(
     )
 
     async with begin_connection() as conn:
-        await conn.execute(query)
+        result = await conn.execute(query)
+    return result.inserted_primary_key[0]
 
 
 # возвращает договор

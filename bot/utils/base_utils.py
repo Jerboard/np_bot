@@ -146,9 +146,6 @@ async def save_media_ord(creatives: list[dict], creative_ord_id: str, user_id: i
             file_info = await bot.get_file(file_id)
             tg_file = await bot.download_file(file_info.file_path)
 
-            if not os.path.exists(Config.storage_path):
-                os.mkdir(Config.storage_path)
-
             if creative['content_type'] == ContentType.VIDEO:
                 file_path = os.path.join(Config.storage_path, creative['video_name'])
             else:

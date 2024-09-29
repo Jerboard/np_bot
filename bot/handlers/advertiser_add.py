@@ -143,17 +143,10 @@ async def handle_success_add_distributor(cb: CallbackQuery):
 async def handle_success_add_distributor(cb: CallbackQuery):
     user = await db.get_user_info(cb.from_user.id)
     if user.role == Role.ADVERTISER:
-        # перенёс preloader_choose_platform
-        # preloader_choose_platform(cb.message)
         await cb.message.answer(
             "Перейти к созданию рекламной площадки?",
             reply_markup=kb.get_preloader_choose_platform_kb()
         )
     elif user.role == Role.PUBLISHER:
         await cb.message.answer("Теперь укажите информацию о договоре.")
-        # перенёс start_contract
-        # start_contract(cb.message)
-        # selected_contractor = db.query_db(
-        #     'SELECT contractor_id FROM selected_contractors WHERE chat_id = ?', (chat_id,),
-        #     one=True
-        # )
+

@@ -136,13 +136,9 @@ async def handle_success_add_platform(cb: CallbackQuery):
         user = await db.get_user_info(cb.from_user.id)
         if user.role == Role.ADVERTISER:
             await cb.message.answer("Теперь укажите информацию о договоре.")
-            await start_contract(cb.message)
+            await start_contract(cb.message, user_id=cb.from_user.id, )
         else:
-            # перенёс preloader_advertiser_entity
-            # preloader_advertiser_entity(cb.message)
             await cb.message.answer(
                 "Перейти к созданию контрагента?",
                 reply_markup=kb.get_preloader_advertiser_entity_kb()
             )
-            # bot.send_message(chat_id, "Теперь укажите информацию о контрагенте.")
-            # register_advertiser_entity(cb.message)

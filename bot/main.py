@@ -1,9 +1,10 @@
 import sys
 import logging
 import asyncio
+import os
 
 from init import log_error, set_main_menu, bot
-from config import DEBUG
+from config import Config
 from handlers import dp
 from db.base_db import init_models
 # from handlers.common import auto_submit_statistics
@@ -12,6 +13,8 @@ from db.base_db import init_models
 
 async def main() -> None:
     # await db_command()
+    if not os.path.exists(Config.storage_path):
+        os.mkdir(Config.storage_path)
     await init_models()
     await set_main_menu()
     await bot.delete_webhook (drop_pending_updates=True)
@@ -19,7 +22,7 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    if DEBUG:
+    if Config.debug:
         logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     else:
         log_error('start_bot', wt=False)

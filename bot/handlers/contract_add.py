@@ -9,11 +9,10 @@ import keyboards as kb
 from config import Config
 from init import dp
 import utils as ut
-from .base import start_contract, start_bot, end_contract
+from .base import start_contract, start_bot, end_contract, start_campaign_base
 from enums import CB, Command, UserState, JStatus, Role, AddContractStep, Delimiter
 
 
-### Добавление договоров ####
 # Обработчик для команды /start_contract
 # перенёс функцию в base поменял название, чтоб не совпадали
 @dp.message(CommandFilter(Command.START_CONTRACT.value))
@@ -193,7 +192,7 @@ async def handle_vat_selection(cb: CallbackQuery, state: FSMContext):
     if response:
         start_date = datetime.strptime(data['start_date'], Config.ord_date_form) if data.get('start_date') else None
         end_date = datetime.strptime(data['end_date'], Config.ord_date_form) if data.get('end_date') else None
-        await db.add_contract(
+        contract_id = await db.add_contract(
             user_id=cb.from_user.id,
             contractor_id=data['dist_id'],
             start_date=start_date,
@@ -204,10 +203,10 @@ async def handle_vat_selection(cb: CallbackQuery, state: FSMContext):
             amount=data.get('sum'),
         )
         await cb.message.answer("Договор успешно зарегистрирован в ОРД.")
-        # start_campaign(message)
+        await start_campaign_base(msg=cb.message, state=state, user_id=cb.from_user.id, contract_id=contract_id)
 
         #     добавил чтоб не было кругового импорта
-        await cb.message.answer("Введите название бренда, который вы планируете рекламировать.")
+        # await cb.message.answer("Введите название бренда, который вы планируете рекламировать.")
         # ask_for_brand(chat_id)
     else:
         await cb.message.answer("Произошла ошибка при регистрации договора в ОРД.")

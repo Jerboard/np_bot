@@ -116,7 +116,6 @@ async def finalize_platform_data(msg: Message, state: FSMContext):
         platform_name=data['platform_name'],
         platform_url=data['platform_url'],
         dist_ord_id=data['dist_id']
-
     )
     if response in [200, 201]:
         await db.add_platform(
