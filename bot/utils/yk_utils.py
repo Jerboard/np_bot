@@ -6,7 +6,8 @@ from init import log_error
 from config import Config
 
 
-def create_pay_link(campaign_id: str, vat_code: str = 1) -> str:
+def create_pay_link(email: str = Config.default_email) -> str:
+    print(f'email: {email}')
     payment = Payment.create({
         "amount": {
             "value": Config.service_price,
@@ -24,7 +25,7 @@ def create_pay_link(campaign_id: str, vat_code: str = 1) -> str:
         },
         "receipt": {
             "customer": {
-                "email": "gdruk@gmail.com"
+                "email": 'dgushch@gmail.com'
             },
             "items": [
                 {
@@ -34,7 +35,7 @@ def create_pay_link(campaign_id: str, vat_code: str = 1) -> str:
                         "value": Config.service_price,
                         "currency": "RUB"
                     },
-                    "vat_code": f'{vat_code}',
+                    "vat_code": 0,
                     "payment_mode": "full_payment",
                     "payment_subject": "service"
                 }
@@ -45,15 +46,42 @@ def create_pay_link(campaign_id: str, vat_code: str = 1) -> str:
     return payment.id
 
 
-# проверка оплаты по ю кассе
-async def check_pay_yoo(pay_id: str) -> tuple:
-    payment = Payment.find_one(pay_id)
-    if payment.paid:
-        pay_data = json.loads(payment.payment_method.json())
+# быстрая оплата рекурент
+def fast_pay(last_pay_id: str, email: str = Config.default_email) -> Payment:
+    payment = Payment.create({
+        "amount": {
+            "value": Config.service_price,
+            "currency": "RUB"
+        },
+        'save_payment_method': True,
+        "capture": True,
+        "payment_method_id": last_pay_id,
+        "description": 'Оплата маркировки рекламы',
+        "confirmation": {
+            "type": "redirect",
+            "return_url": Config.bot_link
+        },
+        "receipt": {
+            "customer": {
+                "email": email
+            },
+            "items": [
+                {
+                    "description": 'Оплата маркировки рекламы',
+                    "quantity": "1.00",
+                    "amount": {
+                        "value": Config.service_price,
+                        "currency": "RUB"
+                    },
+                    "vat_code": "1",
+                    "payment_mode": "full_payment",
+                    "pament_subject": "service"
+                }
+            ]
+        },
+    })
 
-        # log_error(f'{pay_data}', wt=False)
-        # log_error(f'{pay_data["card"]["card_type"]} *{pay_data["card"]["last4"]}', wt=False)
-        return f'{pay_data["card"]["card_type"]} **{pay_data["card"]["last4"]}', payment.description
+    return payment
 
 
 

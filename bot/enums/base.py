@@ -68,3 +68,5 @@ class Delimiter(str, Enum):
     U = '-u-'
     P = '-p-'
     C = '-c-'
+    M = '-m-'
+    CR = '-cr-'

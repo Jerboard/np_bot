@@ -16,6 +16,7 @@ class UserRow(t.Protocol):
     inn: str
     role: str
     phone: str
+    email: str
     j_type: str
     balance: float
     total_balance: float
@@ -35,6 +36,7 @@ UserTable: sa.Table = sa.Table(
     sa.Column('inn', sa.String(255)),
     sa.Column('name', sa.String(255)),
     sa.Column('phone', sa.String(255)),
+    sa.Column('email', sa.String(255)),
     sa.Column('j_type', sa.String(255)),
     sa.Column('balance', sa.Float(), default=0),
     sa.Column('total_balance', sa.Float(), default=0),
@@ -50,6 +52,8 @@ async def add_user(
         role: str = None,
         inn: str = None,
         name: str = None,
+        phone: str = None,
+        email: str = None,
         j_type: str = None,
 ) -> None:
     now = datetime.now()
@@ -64,6 +68,8 @@ async def add_user(
             role=role,
             inn=inn,
             name=name,
+            phone=phone,
+            email=email,
             j_type=j_type
         )
         .on_conflict_do_update(

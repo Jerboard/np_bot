@@ -307,24 +307,24 @@ async def handle_creative_link(message, ord_id):
     await message.answer(
         chat_id,
         "Хотите добавить еще одну ссылку или закончить?",
-        reply_markup=kb.get_handle_creative_link_kb(ord_id)
+        # reply_markup=kb.get_handle_creative_link_kb(ord_id)
     )
 
 
 # Функция для проверки и напоминания о ссылке на креатив
-async def check_and_remind_link(chat_id, ord_id):
-    if not db.query_db('SELECT * FROM creative_links WHERE chat_id = ? AND ord_id = ? AND link IS NOT NULL',
-                       (chat_id, ord_id)):
-        remind_link(chat_id)
+# async def check_and_remind_link(chat_id, ord_id):
+#     if not db.query_db('SELECT * FROM creative_links WHERE chat_id = ? AND ord_id = ? AND link IS NOT NULL',
+#                        (chat_id, ord_id)):
+#         remind_link(chat_id)
 
 
-async def remind_link(chat_id):
-    await message.answer(
-        chat_id,
-        "Вы получили токен, но не прислали ссылку на ваш креатив. Пришлите, пожалуйста, ссылку. "
-        "Это нужно для подачи статистики в ОРД.",
-        reply_markup=kb.generate_link_markup()
-    )
+# async def remind_link(chat_id):
+#     await message.answer(
+#         chat_id,
+#         "Вы получили токен, но не прислали ссылку на ваш креатив. Пришлите, пожалуйста, ссылку. "
+#         "Это нужно для подачи статистики в ОРД.",
+#         reply_markup=kb.generate_link_markup()
+#     )
 
 
 ### Блок подачи статистики ###

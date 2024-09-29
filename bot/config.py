@@ -25,12 +25,7 @@ class Config:
         # token = os.getenv('TOKEN')
         # bearer = os.getenv('VK_API_KEY')
 
-    if DEBUG:
-        vk_api_key = os.getenv('VK_TEST_API_KEY')
-    else:
-        # VK_API_KEY = os.getenv('VK_API_KEY')
-        vk_api_key = os.getenv('VK_TEST_API_KEY')
-
+    default_email = 'dgushch@gmail.com'
     db_host = os.getenv('DB_HOST')
     db_port = os.getenv('DB_PORT')
     db_name = os.getenv('POSTGRES_DB')
@@ -45,10 +40,12 @@ class Config:
 
     # YOO_ACCOUNT_ID = int(os.getenv('YOO_ACCOUNT_ID'))
     # YOO_SECRET_KEY = os.getenv('YOO_SECRET_KEY')
-    yoo_account_id = int(os.getenv('YOO_ACCOUNT_ID_TEST'))
-    yoo_secret_key = os.getenv('YOO_SECRET_KEY_TEST')
+    # yoo_account_id = int(os.getenv('YOO_ACCOUNT_ID_TEST'))
+    # yoo_secret_key = os.getenv('YOO_SECRET_KEY_TEST')
+    yoo_account_id = '891569'
+    yoo_secret_key = 'test_AtpTCVjudZJgiE8bVPHfO_4DLuURvqcTl65ZmbpSf7U'
 
     date_form = "%d.%m.%Y"
     ord_date_form = "%Y-%m-%d"
-    storage_path = 'creatives'
+    storage_path = 'temp'
 

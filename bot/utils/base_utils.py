@@ -9,7 +9,21 @@ import os
 import db
 from init import bot, log_error
 from config import Config
+from .ord_api import register_media_file
+from .media_utils import compress_video
 from enums import JStatus, Delimiter
+
+
+# выводит данные словаря
+def print_dict(data: dict, title: str = None) -> None:
+    print('>>>')
+    if title:
+        print(title)
+
+    for k, v in data.items():
+        print(f'{k}: {v}')
+
+
 
 
 # Функция для получения ord_id
@@ -90,7 +104,7 @@ def validate_inn(inn: str, j_type: str):
 #  возвращает id файла
 def get_file_id(msg: Message) -> t.Union[str, None]:
     if msg.content_type == ContentType.PHOTO:
-        file_id = msg.photo[-1].file_id
+        file_id = msg.photo[0].file_id
 
     elif msg.content_type == ContentType.VIDEO:
         file_id = msg.video.file_id
@@ -106,30 +120,58 @@ def get_file_id(msg: Message) -> t.Union[str, None]:
     return file_id
 
 
-async def save_media(file_id: str, user_id: int) -> str:
-    file_info = await bot.get_file(file_id)
-    log_error(f'{file_info.file_path}')
-    photo_file = await bot.download_file(file_info.file_path)
-
-    path = os.path.join(Config.storage_path, str(user_id), file_info.file_unique_id)
-    with open(path, 'wb') as new_file:
-        new_file.write(photo_file.read())
-
-    return path
-
-
-# переименовал inn в inn_check и coefficients в coefficients_check, чтоб не дублировалось название переменной
-# async def check_control_digit(inn_check, coefficients_check):
-#     n = sum([int(a) * b for a, b in zip(inn_check, coefficients_check)]) % 11
-#     return n if n < 10 else n % 10
+# async def save_media(file_id: str, user_id: int) -> str:
+#     file_info = await bot.get_file(file_id)
+#     photo_file = await bot.download_file(file_info.file_path)
 #
-# if len(inn) == 10:
-#     coefficients = [2, 4, 10, 3, 5, 9, 4, 6, 8]
-#     return check_control_digit(inn[:-1], coefficients) == int(inn[-1])
-# elif len(inn) == 12:
-#     coefficients1 = [3, 7, 2, 4, 10, 3, 5, 9, 4, 6, 8]
-#     coefficients2 = [7, 2, 4, 10, 3, 5, 9, 4, 6, 8]
-#     return (check_control_digit(inn[:-1], coefficients1) == int(inn[-1]) and
-#             check_control_digit(inn[:-2], coefficients2) == int(inn[-2]))
+#     path = os.path.join(Config.storage_path, str(user_id), file_info.file_unique_id)
+#     with open(path, 'wb') as new_file:
+#         new_file.write(photo_file.read())
 #
-# return False
+#     return path, file_info.file_size
+
+
+# тут медиа регистрируются в ОРД
+
+async def save_media_ord(creatives: list[dict], creative_ord_id: str, user_id: int, descriptions: str) -> list[str]:
+    media_ord_ids = []
+    for creative in creatives:
+        # {'content_type': msg.content_type, 'file_id': ut.get_file_id(msg), 'text': msg.text}
+
+        file_id = creative.get('file_id')
+        if file_id:
+            media_ord_id = get_ord_id(user_id, delimiter=Delimiter.M.value)
+
+            # скачиваем файл
+            file_info = await bot.get_file(file_id)
+            tg_file = await bot.download_file(file_info.file_path)
+
+            if not os.path.exists(Config.storage_path):
+                os.mkdir(Config.storage_path)
+
+            if creative['content_type'] == ContentType.PHOTO:
+                file_path = os.path.join(Config.storage_path, creative['video_name'])
+            else:
+                file_path = os.path.join(Config.storage_path, f'{file_info.file_unique_id}.jpg')
+
+            with open(file_path, 'wb') as new_file:
+                new_file.write(tg_file.read())
+
+            # тут нужно видео сжимать
+
+            await register_media_file(file_path=str(file_path), ord_id=media_ord_id, description=descriptions)
+            media_ord_ids.append(media_ord_id)
+
+            await db.add_media(
+                user_id=user_id,
+                creative_ord_id=creative_ord_id,
+                content_type=creative['content_type'],
+                file_id=file_id,
+                ord_id=media_ord_id
+            )
+
+            # Удаление файла после обработки
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
+    return media_ord_ids

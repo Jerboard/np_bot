@@ -12,9 +12,6 @@ class CreativeRow(t.Protocol):
     created_at: datetime
     user_id: int
     campaign_id: int
-    content_type: str
-    file_id: str
-    file_path: str
     token: str
     status: str
 
@@ -27,10 +24,8 @@ CreativeTable: sa.Table = sa.Table(
     sa.Column('created_at', sa.DateTime(timezone=True), default=datetime.now()),
     sa.Column('user_id', sa.BigInteger),
     sa.Column('campaign_id', sa.Integer),
-    sa.Column('content_type', sa.String(255)),
     sa.Column('text', sa.Text),
-    sa.Column('file_id', sa.String(255)),
-    sa.Column('file_path', sa.String(255)),
+    sa.Column('ord_id', sa.String(255)),
     sa.Column('token', sa.String(255)),
     sa.Column('status', sa.String(255), default=Status.ACTIVE.value),
 )
@@ -40,21 +35,17 @@ CreativeTable: sa.Table = sa.Table(
 async def add_creative(
         user_id: int,
         campaign_id: int,
-        content_type: str,
+        ord_id: str,
         token: str,
         text: str = None,
-        file_path: str = None,
-        file_id: str = None,
 ) -> int:
     now = datetime.now()
     query = CreativeTable.insert().values(
             created_at=now,
             user_id=user_id,
             campaign_id=campaign_id,
-            content_type=content_type,
             text=text,
-            file_id=file_id,
-            file_path=file_path,
+            ord_id=ord_id,
             token=token,
         )
 

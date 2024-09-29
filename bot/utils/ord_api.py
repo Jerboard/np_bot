@@ -135,22 +135,22 @@ async def send_platform_to_ord(ord_id: str, platform_name: str, platform_url: st
 
 
 # регистрация медиа
-async def register_media_file(file_path: str, campaign_id: int, description: str) -> str:
-    media_id = f"{campaign_id}_media_{uuid.uuid4()}"
-    url = f'https://api-sandbox.ord.vk.com/v1/media/{media_id}'
+async def register_media_file(file_path: str, ord_id: str, description: str) -> int:
+    url = f'https://api-sandbox.ord.vk.com/v1/media/{ord_id}'
     headers = {
         'Authorization': f'Bearer {Config.bearer}'
     }
     files = {
         'media_file': open(file_path, 'rb')
     }
-    # description = db.query_db('SELECT service FROM ad_campaigns WHERE campaign_id = ?', (campaign_id,), one=True)[0]
     data = {
         'description': description
     }
     async with httpx.AsyncClient() as client:
-        await client.put(url, headers=headers, json=data, files=files)
-    return media_id
+        response = await client.put(url, headers=headers, json=data, files=files)
+
+    log_error(f'send_media_to_ord code:{response.status_code}\nresponse: {response.text}', wt=False)
+    return response.status_code
 
 
 async def send_creative_to_ord(
@@ -159,8 +159,8 @@ async def send_creative_to_ord(
         creative_name: str,
         creative_text: str,
         description,
-        # media_ids: list,
-        media_ids: str,
+        media_ids: list,
+        # media_ids: str,
         contract_ord_id: str,
 ):
 
@@ -178,13 +178,17 @@ async def send_creative_to_ord(
         "description": description,
         "pay_type": "cpc",
         "form": "text_graphic_block",
-        "targeting": "Школьники",
-        "url": "https://www.msu.ru",
-        "texts": creative_text,
-        "media_external_ids": media_ids
+        # "targeting": "Школьники",
+        # "url": "https://www.msu.ru",
+        "texts": [creative_text],
+        "media_external_ids": media_ids,
+        "flags": [
+            "social"
+        ]
     }
 
     async with httpx.AsyncClient() as client:
         response = await client.put(url, headers=headers, json=data)
 
+    log_error(f'send_creative_to_ord code:{response.status_code}\nresponse: {response.text}', wt=False)
     return response.json()

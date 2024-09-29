@@ -2,15 +2,16 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command as CommandFilter, StateFilter
 from aiogram.fsm.context import FSMContext
 from datetime import datetime
+from yookassa import Payment
 from asyncio import sleep
 
 import db
 import keyboards as kb
 from config import Config
-from init import dp, log_error
+from init import dp, log_error, bot
 import utils as ut
-from .base import start_campaign_base, add_creative_start, start_bot
-from enums import CB, Command, UserState, JStatus, Role, Delimiter
+from .base import start_campaign_base, register_creative, start_bot
+from enums import CB, Command, UserState, Action, Role, Delimiter
 
 
 # Обработчик для команды /add_creative
@@ -28,199 +29,205 @@ async def add_creative(msg: Message, state: FSMContext):
         await start_campaign_base(msg, state)
 
     else:
-        await msg.answer(
-            text="Выберите рекламную кампанию для этого креатива:",
-            reply_markup=kb.get_add_creative_kb(campaigns)
-        )
+        text = (f'Загрузите файл своего рекламного креатива или введите текст.\n'
+                f'Вы можете загрузить несколько файлов для одного креатива. '
+                f'Например, несколько идущих подряд видео в сторис.')
+        await msg.answer(text)
+
+        # await msg.answer(
+        #     text="Выберите рекламную кампанию для этого креатива:",
+        #     reply_markup=kb.get_add_creative_kb(campaigns)
+        # )
 
 
-# Обработчик выбора рекламной кампании CREATIVE_SELECT_CAMPAIGN
-@dp.callback_query(lambda cb: cb.data.startswith(CB.CREATIVE_SELECT_CAMPAIGN.value))
-async def choose_campaign_callback(cb: CallbackQuery, state: FSMContext):
-    _, campaign_id = cb.data.split(':')
-    await add_creative_start(msg=cb.message, campaign_id=campaign_id, state=state)
-
-
+# media_ord_id: 524275902-m-8688379168, 524275902-m-8258534790, 524275902-m-4984138183
 # Обработчик загрузки креатива
 @dp.message(StateFilter(UserState.ADD_CREATIVE))
+@dp.message()
 async def handle_creative_upload(msg: Message, state: FSMContext):
     # Попробовать с медиагруппой
     if msg.content_type in ['text', 'photo', 'video', 'audio', 'document']:
+        if msg.video and msg.video.file_size >= 50000000:
+            await msg.answer(f'❌ Слишком большое видео. Размер видео не должен быть больше 50 МВ ')
+            return
+
+        current_state = await state.get_state()
+        if not current_state:
+            await state.set_state(UserState.ADD_CREATIVE)
+
         data = await state.get_data()
 
         creative = {
             'content_type': msg.content_type,
             'file_id': ut.get_file_id(msg),
-            'text': msg.text
+            'video_name': msg.video.file_name if msg.video else None
         }
+
+        # сохраняем текст, если есть
+        creative_text = msg.text or msg.caption
+        if creative_text:
+            await state.update_data(data={'text': creative_text})
 
         creatives = data.get('creatives', [])
         creatives.append(creative)
         await state.update_data(data={'creatives': creatives})
 
-        # creative_content = save_creative(msg)
-        # creative_count = db.query_db('SELECT COUNT(*) FROM creatives WHERE chat_id = ? AND campaign_id = ?',
-        #                              (chat_id, campaign_id), one=True)
-        # if creative_count is None:
-        #     creative_count = [0]
+        # campaigns = data.get('campaigns')
+        # if not campaigns:
+        #     campaigns = await db.get_user_campaigns(msg.from_user.id)
+        #     await state.update_data(data={'campaigns': campaigns})
 
-        # campaign_data = await db.get_campaign(data['campaign_id'])
+        message_id = data.get('message_id')
+        if message_id:
+            try:
+                await bot.delete_message(chat_id=msg.chat.id, message_id=message_id)
+            except:
+                pass
 
-        # if ord_id_data is None:
-        #     await msg.answer("Ошибка: Не удалось найти ord_id для указанной кампании.")
-        #     return
-
-        # ord_id = ut.get_ord_id(msg.from_user.id, delimiter=Delimiter.C.value)
-
-        await msg.answer(
-            "Креатив успешно добавлен. Добавить еще файл или текст для этого креатива?",
-            reply_markup=kb.get_handle_creative_upload_kb(campaign_id)
+        sent = await msg.answer(
+            "✅ Креатив успешно добавлен.\n\n "
+            "❓❓❓\n"
+            "Что бы добавить еще файл или текст для этого креатива просто отправьте его сообщением",
+            reply_markup=kb.get_select_campaigns_kb()
         )
+        await state.update_data(data={'message_id': sent.message_id})
     else:
         sent = await msg.answer("❌ Ошибка. Пожалуйста, попробуйте еще раз и пришлите креатив.")
         await sleep(3)
         await sent.delete()
 
 
-# Обработчик кнопки "Добавить файл или текст"
-@dp.callback_query(lambda cb: cb.data.startswith(CB.CREATIVE_ADD_CREATIVE.value))
-async def add_more_creative(cb: CallbackQuery):
-    await cb.answer('📲 Отправьте ещё контент для вашего креатива', show_alert=True)
+# Обработчик выбора рекламной кампании CREATIVE_SELECT_CAMPAIGN
+@dp.callback_query(lambda cb: cb.data.startswith(CB.CREATIVE_SELECT_CAMPAIGN.value))
+async def choose_campaign(cb: CallbackQuery, state: FSMContext):
+    _, page_str, action = cb.data.split(':')
+    page = int(page_str)
+
+    if action == Action.CONT:
+        data = await state.get_data()
+
+        campaigns = data.get('campaigns')
+        if not campaigns:
+            campaigns = await db.get_user_campaigns(cb.from_user.id)
+            await state.update_data(data={'campaigns': campaigns})
+
+        text = (
+            f'Выберите рекламную кампанию для этого креатива:\n'
+            f'{page + 1}/{len(campaigns)}:\n\n'
+            f'{campaigns[page].brand}'
+            f'{campaigns[page].service}'
+        ).replace('None', '')
+
+        await cb.message.edit_text(text=text, reply_markup=kb.get_select_page_kb(
+            end_page=(page + 1) == len(campaigns),
+            select_id=campaigns[page].id,
+            page=page,
+            cb=CB.CREATIVE_SELECT_CAMPAIGN.value
+        ))
+
+    else:
+        await state.update_data(data={'campaign_id': page})
+        data = await state.get_data()
+
+        # ищем карточки для быстрой оплаты
+        sent = await cb.message.answer('⏳')
+        save_cards = await db.get_user_card(cb.from_user.id)
+
+        # pay_id = ut.create_pay_link(data['campaign_id'])
+        await sent.delete()
+        await cb.message.answer(
+            text='Для получения маркировки необходимо осуществить оплату\n\n'
+                 'Выберите карту для оплаты',
+            reply_markup=kb.get_select_card_kb(save_cards)
+        )
 
 
 # создаёт ссылку на оплату
-@dp.callback_query(lambda cb: cb.data.startswith('pay_yk'))
+@dp.callback_query(lambda cb: cb.data.startswith(CB.PAY_YK_NEW.value))
 async def pay_yk(cb: CallbackQuery, state: FSMContext):
-    _, campaign_id = cb.data.split(':')
-    # ищем карточки для быстрой оплаты
-    sent = await cb.message.answer('⏳')
-    save_cards = await db.get_user_save_cards(cb.from_user.id)
+    _, save_card = cb.data.split(':')
+    save_card = bool(int(save_card))
+    await state.update_data(data={'save_card': save_card})
 
-    pay_id = ut.create_pay_link(campaign_id)
-    await sent.delete()
-    await cb.message.answer(
-        'Для получения маркировки необходимо осуществить оплату',
-        reply_markup=kb.get_yk_pay_kb(pay_id, save_cards)
-    )
+    data = await state.get_data()
+    pay_id = data.get('pay_id')
+    if not pay_id:
+        user = await db.get_user_info(cb.from_user.id)
+        pay_id = ut.create_pay_link(user.email)
+        await state.update_data(data={'pay_id': pay_id})
+
+    text = 'Перейдите по ссылке и оплатите маркировку креатива, затем нажмите "Продолжить"\n\n'
+
+    if save_card:
+        text += '✔️ Карта сохранена для быстрой оплаты\n\n'
+    else:
+        text += '❕ Поставьте галочку "Сохранить карту", чтоб сохранить данные для быстрой оплаты\n\n'
+
+    text += 'Мы не храним данные о картах и пользователя все данные хранит сервис Юкасса...❓❓❓'
+
+    await cb.message.edit_text(text=text, reply_markup=kb.get_yk_pay_kb(pay_id, save_card))
 
 
-# Обработчик кнопки "Продолжить"
-@dp.callback_query(lambda cb: cb.data.startswith('continue_creative_'))
+# Обработчик кнопки "Продолжить". Обычная оплата
+@dp.callback_query(lambda cb: cb.data.startswith(CB.PAY_YK_CHECK.value))
 async def choose_campaign(cb: CallbackQuery, state: FSMContext):
     _, pay_id = cb.data.split(':')
 
     sent = await cb.message.answer('⏳')
-    pay_data = ut.check_pay_yoo(pay_id)
-
-    log_error(pay_data, wt=False)
-    if pay_data:
-        card_info, campaign_id = pay_data
-
+    # pay_data = ut.check_pay_yoo(pay_id)
+    pay_data = Payment.find_one(pay_id)
+    print(pay_id)
+    print(pay_data)
+    if pay_data.paid:
         # сохраняем данные платежа
         await db.add_payment(
             user_id=cb.from_user.id,
-            pay_id=pay_id,
-            card=card_info,
-            save_card=False
+            pay_id=pay_data.id,
         )
 
         data = await state.get_data()
-        creatives = data.get('creatives', [])
-
-        campaign = await db.get_campaign(data['campaign_id'])
-        contract = await db.get_contract(campaign.contract_id)
-        user = await db.get_user_info(cb.from_user.id)
-
-        contract_ord_id = contract.ord_id
-        contractor_id_part = contract.contractor_id
-
-        # contract_ord_id, contractor_id_part = contract
-
-        # Использование правильного ord_id для контракта
-        contract_external_id = contract_ord_id
-
-        if user.role == Role.ADVERTISER:
-            fio_or_title = user.name
-            user_inn = user.inn
-        else:
-            contractor_info = await db.get_contractor(contract.contractor_id)
-
-            fio_or_title = contractor_info.name
-            user_inn = contractor_info.inn
-
-        media_ids = []
-        creative_data = []
-        creative_text = ''
-        for creative in creatives:
-            # {'content_type': msg.content_type, 'file_id': ut.get_file_id(msg), 'text': msg.text}
-
-            file_id = creative.get('file_id')
-            if file_id:
-                # тут медиа регистрируются в ОРД
-                file_path = await ut.save_media(file_id=file_id, user_id=cb.from_user.id)
-                media_id = await ut.register_media_file(file_path, campaign_id, campaign.service)
-                media_ids.append(media_id)
-            else:
-                creative_text += f'{creative.text}\n\n'
-                file_path = None
-                media_id = None
-
-            # await db.add_creative(
-            #     user_id=cb.from_user.id,
-            #     campaign_id=campaign.id,
-            #     content_type=creative['content_type'],
-            #     text=creative.get('text'),
-            #     file_id=file_id,
-            #     file_path=file_path
-            # )
-            # creative_data.append((creative[0], creative[2], creative))
-
-        # for creative_id, _, _ in creative_data:
-        # тут регистрируется весь весь креатив со списком медиа
-            response = await ut.send_creative_to_ord(
-                creative_id='',
-                brand=campaign.brand,
-                creative_name=f'{fio_or_title}',
-                creative_text=creative_text.strip(),
-                description=campaign.service,
-                media_ids=media_id,
-                contract_ord_id=contract.ord_id
-            )
-            log_error(f'response: {response}')
-            if response is None or 'marker' not in response:
-                await cb.message.answer("Ошибка при отправке креатива в ОРД.")
-                # тут ещё возврат денег
-                return
-
-            marker = response['marker']
-            await db.add_creative(
+        if data.get('save_card'):
+            await db.add_card(
                 user_id=cb.from_user.id,
-                campaign_id=campaign.id,
-                content_type=creative['content_type'],
-                text=creative.get('text'),
-                file_id=file_id,
-                file_path=file_path,
-                token=marker
+                pay_id=pay_id,
+                card_info=f'{pay_data.card.card_type} **{pay_data.card.last4}'
             )
 
-        await cb.message.answer(
-            text=f"Креативы успешно промаркированы. Ваш токен - {marker}.\n"
-                 f"Для копирования нажмите на текст ниже👇\n\n"
-                 f"Реклама. {fio_or_title}. ИНН: {user_inn}. erid: {marker}`")
-        # Сохранение данных в таблицу statistics
-        # date_start_actual = datetime.now().strftime('%Y-%m-%d')
-        # db.query_db('INSERT INTO statistics (chat_id, campaign_id, creative_id, date_start_actual) VALUES (?, ?, ?, ?)',
-        #             (chat_id, campaign_id, creative_id, date_start_actual))
-
-        # Запрос ссылки на креатив
-        # ask_for_creative_link(chat_id, contract_external_id)
+        await register_creative(data=data, user_id=cb.from_user.id, del_msg_id=sent.message_id)
 
     else:
-        await cb.answer('❗️  Оплата не прошла нажмите оплатить и совершите платёж', show_alert=True)
+        await sent.delete()
+        await cb.answer('❗️  Оплата не прошла нажмите "Оплатить" и совершите платёж', show_alert=True)
+
+
+# Быстрая оплата
+@dp.callback_query(lambda cb: cb.data.startswith(CB.PAY_YK_FAST.value))
+async def choose_campaign(cb: CallbackQuery, state: FSMContext):
+    _, card_id_str = cb.data.split(':')
+    card_id = int(card_id_str)
+
+    sent = await cb.message.answer('⏳')
+    card_info = await db.get_card(card_id=card_id)
+    user_info = await db.get_user_info(user_id=cb.from_user.id)
+
+    pay_data = ut.fast_pay(last_pay_id=card_info.last_pay_id, email=user_info.email)
+
+    if pay_data.paid:
+        # сохраняем данные платежа
+        await db.add_payment(user_id=cb.from_user.id, pay_id=pay_data.id)
+        # обновляем пей айди
+        await db.update_card(card_id=card_id, pay_id=pay_data.id)
+
+        data = await state.get_data()
+        await register_creative(data=data, user_id=cb.from_user.id, del_msg_id=sent.message_id)
+
+    else:
+        await sent.delete()
+        await cb.answer('❗️ Ошибка оплаты. Выберите другую карту или добавьте новую ❓❓❓', show_alert=True)
 
 
 # Добавление ссылки на креатив
-@dp.callback_query(lambda cb: cb.data.startswith('add_link_'))
+@dp.callback_query(lambda cb: cb.data.startswith(CB.CREATIVE_ADD_LINK.value))
 async def add_link(cb: CallbackQuery):
     ord_id = cb.data.split('_')[2]
     msg = await cb.message.answer(
@@ -229,10 +236,15 @@ async def add_link(cb: CallbackQuery):
     # dp.register_next_step(msg, lambda message: cf.handle_creative_link(message, ord_id))
 
 
-@dp.callback_query(lambda cb: cb.data.startswith('link_done_'))
+@dp.callback_query(lambda cb: cb.data.startswith(CB.CREATIVE_DONE.value))
 async def link_done(cb: CallbackQuery):
-    chat_id = cb.message.chat.id
     await cb.message.answer(
         "Вы успешно добавили все ссылки на креатив. "
         "Подать отчетность по показам нужно будет в конце месяца или при завершении публикации. "
         "В конце месяца мы вам напомним о подаче отчетности.")
+
+
+# Обработчик кнопки "Добавить файл или текст"
+# @dp.callback_query(lambda cb: cb.data.startswith(CB.CREATIVE_ADD_CREATIVE.value))
+# async def add_more_creative(cb: CallbackQuery):
+#     await cb.answer('📲 Отправьте ещё контент для вашего креатива', show_alert=True)

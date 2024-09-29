@@ -10,7 +10,7 @@ import utils as ut
 from config import Config
 from init import dp, log_error, bot
 from utils import ord_api
-from enums import CB, JStatus, UserState, Command
+from enums import CB, JStatus, UserState, Command, Delimiter, Role
 
 
 # стартовый экран
@@ -127,9 +127,10 @@ async def finalize_platform_data(msg: Message, state: FSMContext):
             ord_id=ord_id,
         )
 
-        # await msg.answer("Площадка успешно зарегистрирована в ОРД.")
-        await msg.answer("Площадка успешно зарегистрирована в ОРД.\n\n"
-                         "Добавить новую площадку или продолжить?", reply_markup=kb.get_finalize_platform_data_kb())
+        await msg.answer(
+            text="Площадка успешно зарегистрирована в ОРД.\n\nДобавить новую площадку или продолжить?",
+            reply_markup=kb.get_finalize_platform_data_kb()
+        )
 
     else:
         await msg.answer(
@@ -155,9 +156,9 @@ async def select_contract(
         f'Дата завершения договора: {contract.end_date}'
     ).replace('None', 'нет')
 
-    keyboard = kb.get_select_contract_kb(
+    keyboard = kb.get_select_page_kb(
         end_page=(current + 1) == len(contracts),
-        contract_id=contract.contract_id,
+        select_id=contract.contract_id,
         page=current
     )
 
@@ -193,8 +194,75 @@ async def add_creative_start(msg: Message, state: FSMContext, campaign_id: int):
     await state.set_state(UserState.ADD_CREATIVE)
     await state.update_data(data={'campaign_id': campaign_id})
 
-    msg = await msg.answer(
+    await msg.answer(
         "Загрузите файл своего рекламного креатива или введите текст. "
         "Вы можете загрузить несколько файлов для одного креатива."
     )
-    # dp.register_next_step(msg, lambda message: handle_creative_upload(message, campaign_id))
+
+
+async def register_creative(data: dict, user_id: int, del_msg_id: int):
+    creatives = data.get('creatives', [])
+
+    creative_ord_id = ut.get_ord_id(user_id, delimiter=Delimiter.CR.value)
+    campaign_id = data['campaign_id']
+
+    campaign = await db.get_campaign(data['campaign_id'])
+    contract = await db.get_contract(campaign.contract_id)
+    user = await db.get_user_info(user_id)
+
+    if user.role == Role.ADVERTISER:
+        contractor_name = user.name
+        contractor_inn = user.inn
+    else:
+        contractor_info = await db.get_contractor(contract.contractor_id)
+        contractor_name = contractor_info.name
+        contractor_inn = contractor_info.inn
+
+    media_ord_ids = await ut.save_media_ord(
+        creatives=creatives,
+        creative_ord_id=creative_ord_id,
+        user_id=user_id,
+        descriptions=campaign.service
+    )
+
+    response = await ut.send_creative_to_ord(
+        creative_id='',
+        brand=campaign.brand,
+        creative_name=f'{contractor_name}',
+        creative_text=data.get('text', ''),
+        description=campaign.service,
+        media_ids=media_ord_ids,
+        contract_ord_id=contract.ord_id
+    )
+    log_error(f'response: {response}', wt=False)
+    erid = response.get('erid')
+    if not erid:
+        await bot.send_message(chat_id=user_id, text="Ошибка при отправке креатива в ОРД.❓❓❓")
+        # тут ещё возврат денег
+        return
+
+    await db.add_creative(
+        user_id=user_id,
+        campaign_id=campaign.id,
+        text=data.get('text'),
+        token=erid,
+        ord_id=creative_ord_id,
+    )
+
+    text = (f'Креатив успешно промаркирован.\n'
+            f'Ваш токен - <code>{erid}</code>.\n'
+            f'Реклама. {contractor_name}. ИНН: {contractor_inn}. erid: <code>{erid}</code>. \n'
+            f'Теперь прикрепите маркировку к вашему креативу, опубликуйте и пришлите ссылку на него. \n'
+            f'Если вы публикуете один креатив на разных площадках - пришлите ссылку на каждую площадку. \n'
+            f'❓❓❓'
+            )
+
+    await bot.delete_message(chat_id=user_id, message_id=del_msg_id)
+    await bot.send_message(chat_id=user_id, text=text, reply_markup=kb.get_end_creative_kb())
+
+# Кнопка:
+# 1. Добавить ссылку на другую площадку (переход к п.58)
+# 2. Готово (переход к п.60)
+# Важно:
+# "Реклама..." должны копироваться при клике.
+# Если не прислали ссылку в течение 1 часа - (переход к п.57)'

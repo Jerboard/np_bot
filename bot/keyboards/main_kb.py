@@ -112,76 +112,78 @@ def get_confirm_ad_campaign_kb() -> InlineKeyboardMarkup:
 
 
 # Подтвердить замену промо
-def get_select_contract_kb(end_page: bool, contract_id: int, page: int) -> InlineKeyboardMarkup:
+def get_select_page_kb(end_page: bool, select_id: int, page: int, cb: str = CB.CONTRACT_PAGE.value) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     btn_count = 0
     if page > 0:
         btn_count += 1
-        kb.button(text=f'⬅️ Пред стр.', callback_data=f'{CB.CONTRACT_PAGE.value}:{page - 1}:{Action.CONT.value}')
+        kb.button(text=f'⬅️ Пред стр.', callback_data=f'{cb}:{page - 1}:{Action.CONT.value}')
     if not end_page:
         btn_count += 1
-        kb.button(text=f'След стр. ➡️ ', callback_data=f'{CB.CONTRACT_PAGE.value}:{page + 1}:{Action.CONT.value}')
+        kb.button(text=f'След стр. ➡️ ', callback_data=f'{cb}:{page + 1}:{Action.CONT.value}')
 
-    kb.button(text=f'✔️ Выбрать', callback_data=f'{CB.CONTRACT_PAGE.value}:{contract_id}:{Action.YES.value}')
+    kb.button(text=f'✔️ Выбрать', callback_data=f'{cb}:{select_id}:{Action.YES.value}')
     kb.adjust(2, 1) if btn_count == 2 else kb.adjust(1)
     return kb.as_markup()
+
 
 # кб для ask_for_additional_link
 def get_ask_for_additional_link_kb() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text="Да", callback_data=f"{CB.CAMPAIGN_ADD_ANOTHER_LINK.value}:1"),
-    kb.button(text="Нет", callback_data=f"{CB.CAMPAIGN_ADD_ANOTHER_LINK.value}:0"),
+    kb.button(text="Да", callback_data=f"{CB.CAMPAIGN_ADD_ANOTHER_LINK.value}:1")
+    kb.button(text="Нет", callback_data=f"{CB.CAMPAIGN_ADD_ANOTHER_LINK.value}:0")
     return kb.adjust(2).as_markup()
-    
+
+
+# кб переход к выбору рекламной компании
+def get_select_campaigns_kb() -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    kb.button(
+        text="Перейти к выбору рекламной компании",
+        callback_data=f"{CB.CREATIVE_SELECT_CAMPAIGN.value}:0:{ Action.CONT.value}"
+    )
+    return kb.adjust(1).as_markup()
+
 
 # кб для add_creative
-def get_add_creative_kb(campaigns: tuple[db.CampaignRow]) -> InlineKeyboardMarkup:
-    kb = InlineKeyboardBuilder()
-    for campaign in campaigns:
-        # Создаем кнопку с текстом из названия бренда и описания услуги
-        kb.button(
-            text=f"{campaign.brand} - {campaign.service}",
-            callback_data=f"{CB.CREATIVE_SELECT_CAMPAIGN.value}_{campaign.id}")
-    return kb.adjust(1).as_markup()
-
-
-# кб для handle_creative_upload
-def get_handle_creative_upload_kb(campaign_id) -> InlineKeyboardMarkup:
-    kb = InlineKeyboardBuilder()
-    kb.button(text="Добавить файл или текст", callback_data=f"{CB.CREATIVE_ADD_CREATIVE.value}:1")
-    # kb.button(text="Продолжить", callback_data=f"{CB.CREATIVE_ADD_CREATIVE.value}:1")
-    # kb.button(text="Добавить файл или текст", callback_data=f"add_more_{campaign_id}")
-    kb.button(text="Продолжить", callback_data=f"pay_yk:{campaign_id}")
-    return kb.adjust(1).as_markup()
-
-
-# кб для handle_creative_link
-def get_handle_creative_link_kb(ord_id) -> InlineKeyboardMarkup:
-    # Предложение добавить еще одну ссылку или закончить
-    kb = InlineKeyboardBuilder()
-    kb.button(text="Добавить ссылку на другую площадку", callback_data=f"add_link_{ord_id}")
-    kb.button(text="Готово", callback_data=f"link_done_{ord_id}")
-    return kb.adjust(1).as_markup()
+# def get_add_creative_kb(campaigns: tuple[db.CampaignRow]) -> InlineKeyboardMarkup:
+#     kb = InlineKeyboardBuilder()
+#     for campaign in campaigns:
+#         # Создаем кнопку с текстом из названия бренда и описания услуги
+#         kb.button(
+#             text=f"{campaign.brand} - {campaign.service}",
+#             callback_data=f"{CB.CREATIVE_SELECT_CAMPAIGN.value}:{campaign.id}")
+#     return kb.adjust(1).as_markup()
 
 
 # кб для generate_link
-def generate_link_markup() -> InlineKeyboardMarkup:
+def get_end_creative_kb() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text="Добавить ссылку на другую площадку", callback_data="add_link")
-    kb.button(text="Готово", callback_data="link_done")
+    kb.button(text="Добавить ссылку на другую площадку", callback_data=CB.CREATIVE_ADD_LINK.value)
+    kb.button(text="Готово", callback_data=CB.CREATIVE_DONE.value)
+    return kb.adjust(1).as_markup()
+
+
+# выбор карты
+def get_select_card_kb(save_cards: tuple[db.SaveCardRow]) -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    kb.button(text="Оплатить новой картой", callback_data=f"{CB.PAY_YK_NEW.value}:{1}")
+    for card in save_cards:
+        kb.button(text=f"Оплатить {card.card_info}", callback_data=f"{CB.PAY_YK_FAST.value}:{card.id}")
+
+    # markup.add(kb.button(text="Продолжить", callback_data=f"continue_creative_:{pay_id}:{campaign_id}"))
     return kb.adjust(1).as_markup()
 
 
 # кб со ссылкой на оплату в юкассе
 # def get_yk_pay_kb(pay_id: str, campaign_id: str, save_cards: tuple) -> InlineKeyboardMarkup:
-def get_yk_pay_kb(pay_id: str, save_cards: tuple) -> InlineKeyboardMarkup:
+def get_yk_pay_kb(pay_id: str, save_card: bool) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text="Оплатить 400 р.", url=Config.pay_link.format(payment_id=pay_id))
-    for card in save_cards:
-        kb.button(text=f"Оплатить {card}", callback_data=f"in_dev")
-
-    # markup.add(kb.button(text="Продолжить", callback_data=f"continue_creative_:{pay_id}:{campaign_id}"))
-    kb.button(text="Продолжить", callback_data=f"continue_creative_:{pay_id}")
+    checkbox = '✔️ ' if save_card else ''
+    edit_save_card = 0 if save_card else 1
+    kb.button(text=f"{checkbox} Сохранить карту", callback_data=f"{CB.PAY_YK_NEW.value}:{int(not save_card)}")
+    kb.button(text=f"Оплатить 400 р.", url=Config.pay_link.format(payment_id=pay_id))
+    kb.button(text="Продолжить", callback_data=f"{CB.PAY_YK_CHECK.value}:{pay_id}")
     return kb.adjust(1).as_markup()
 
 
