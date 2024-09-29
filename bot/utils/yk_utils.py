@@ -63,7 +63,7 @@ def fast_pay(last_pay_id: str, email: str = Config.default_email) -> Payment:
         },
         "receipt": {
             "customer": {
-                "email": email
+                "email": Config.default_email
             },
             "items": [
                 {
@@ -84,6 +84,10 @@ def fast_pay(last_pay_id: str, email: str = Config.default_email) -> Payment:
     return payment
 
 
+# проверка оплаты по ю кассе
+def get_payment_card_info(payment: Payment) -> str:
+    pay_data = json.loads(payment.payment_method.json())
+    return f'{pay_data["card"]["card_type"]} **{pay_data["card"]["last4"]}'
 
 '''
 {"card": {"card_product": {"code": "E"}, "card_type": "MasterCard", "expiry_month": "12", "expiry_year": "2024", 

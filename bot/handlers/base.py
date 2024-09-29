@@ -225,17 +225,20 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int):
         descriptions=campaign.service
     )
 
+    print(f'media_ord_ids:{media_ord_ids}')
+    print(f'media_ord_ids:{media_ord_ids}')
+
     response = await ut.send_creative_to_ord(
-        creative_id='',
+        creative_id=creative_ord_id,
         brand=campaign.brand,
         creative_name=f'{contractor_name}',
-        creative_text=data.get('text', ''),
+        creative_text=data.get('text', 'Реклама'),
         description=campaign.service,
         media_ids=media_ord_ids,
         contract_ord_id=contract.ord_id
     )
     log_error(f'response: {response}', wt=False)
-    erid = response.get('erid')
+    erid = response.get('erid') if response else None
     if not erid:
         await bot.send_message(chat_id=user_id, text="Ошибка при отправке креатива в ОРД.❓❓❓")
         # тут ещё возврат денег
@@ -251,7 +254,9 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int):
 
     text = (f'Креатив успешно промаркирован.\n'
             f'Ваш токен - <code>{erid}</code>.\n'
-            f'Реклама. {contractor_name}. ИНН: {contractor_inn}. erid: <code>{erid}</code>. \n'
+            f'Реклама. {contractor_name}. \n'
+            f'ИНН: {contractor_inn}. \n'
+            f'erid: <code>{erid}</code>. \n'
             f'Теперь прикрепите маркировку к вашему креативу, опубликуйте и пришлите ссылку на него. \n'
             f'Если вы публикуете один креатив на разных площадках - пришлите ссылку на каждую площадку. \n'
             f'❓❓❓'

@@ -29,7 +29,8 @@ MediaTable: sa.Table = sa.Table(
     sa.Column('user_id', sa.BigInteger),
     sa.Column('creative_ord_id', sa.String(255)),
     sa.Column('ord_id', sa.String(255)),
-    sa.Column('file_id', sa.String(255))
+    sa.Column('file_id', sa.String(255)),
+    sa.Column('content_type', sa.String(255)),
 )
 
 

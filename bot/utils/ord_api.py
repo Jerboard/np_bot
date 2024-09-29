@@ -1,4 +1,5 @@
 import logging
+import os.path
 import typing as t
 import httpx
 import uuid
@@ -136,15 +137,18 @@ async def send_platform_to_ord(ord_id: str, platform_name: str, platform_url: st
 
 # регистрация медиа
 async def register_media_file(file_path: str, ord_id: str, description: str) -> int:
+    print(f'file_path: {os.path.exists(file_path)} {file_path}')
+    print(f'description: {description}')
+
     url = f'https://api-sandbox.ord.vk.com/v1/media/{ord_id}'
     headers = {
         'Authorization': f'Bearer {Config.bearer}'
     }
     files = {
-        'media_file': open(file_path, 'rb')
+        'media_file': open(file_path, 'rb'),
     }
     data = {
-        'description': description
+        'description': 'Мы не храним данные о картах и пользователя все данные хранит сервис Юкасса'
     }
     async with httpx.AsyncClient() as client:
         response = await client.put(url, headers=headers, json=data, files=files)
@@ -158,7 +162,7 @@ async def send_creative_to_ord(
         brand: str,
         creative_name: str,
         creative_text: str,
-        description,
+        description: str,
         media_ids: list,
         # media_ids: str,
         contract_ord_id: str,
@@ -191,4 +195,8 @@ async def send_creative_to_ord(
         response = await client.put(url, headers=headers, json=data)
 
     log_error(f'send_creative_to_ord code:{response.status_code}\nresponse: {response.text}', wt=False)
-    return response.json()
+    if response.status_code <= 201:
+        return response.json()
+
+    else:
+        response

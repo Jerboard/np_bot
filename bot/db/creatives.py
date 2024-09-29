@@ -14,6 +14,7 @@ class CreativeRow(t.Protocol):
     campaign_id: int
     token: str
     status: str
+    ord_id: str
 
 
 CreativeTable: sa.Table = sa.Table(

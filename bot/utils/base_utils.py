@@ -104,7 +104,7 @@ def validate_inn(inn: str, j_type: str):
 #  возвращает id файла
 def get_file_id(msg: Message) -> t.Union[str, None]:
     if msg.content_type == ContentType.PHOTO:
-        file_id = msg.photo[0].file_id
+        file_id = msg.photo[-1].file_id
 
     elif msg.content_type == ContentType.VIDEO:
         file_id = msg.video.file_id
@@ -149,18 +149,19 @@ async def save_media_ord(creatives: list[dict], creative_ord_id: str, user_id: i
             if not os.path.exists(Config.storage_path):
                 os.mkdir(Config.storage_path)
 
-            if creative['content_type'] == ContentType.PHOTO:
+            if creative['content_type'] == ContentType.VIDEO:
                 file_path = os.path.join(Config.storage_path, creative['video_name'])
             else:
-                file_path = os.path.join(Config.storage_path, f'{file_info.file_unique_id}.jpg')
+                file_path = os.path.join(Config.storage_path, f'{file_info.file_unique_id}')
 
             with open(file_path, 'wb') as new_file:
                 new_file.write(tg_file.read())
 
             # тут нужно видео сжимать
 
-            await register_media_file(file_path=str(file_path), ord_id=media_ord_id, description=descriptions)
-            media_ord_ids.append(media_ord_id)
+            status_code = await register_media_file(file_path=str(file_path), ord_id=media_ord_id, description=descriptions)
+            if status_code <= 201:
+                media_ord_ids.append(media_ord_id)
 
             await db.add_media(
                 user_id=user_id,
@@ -171,7 +172,7 @@ async def save_media_ord(creatives: list[dict], creative_ord_id: str, user_id: i
             )
 
             # Удаление файла после обработки
-            if os.path.exists(file_path):
-                os.remove(file_path)
-
+            # if os.path.exists(file_path):
+            #     os.remove(file_path)
+    #
     return media_ord_ids

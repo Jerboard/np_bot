@@ -102,6 +102,7 @@ async def handle_creative_upload(msg: Message, state: FSMContext):
 async def choose_campaign(cb: CallbackQuery, state: FSMContext):
     _, page_str, action = cb.data.split(':')
     page = int(page_str)
+    print(f'page: {page}')
 
     if action == Action.CONT:
         data = await state.get_data()
@@ -114,7 +115,7 @@ async def choose_campaign(cb: CallbackQuery, state: FSMContext):
         text = (
             f'Выберите рекламную кампанию для этого креатива:\n'
             f'{page + 1}/{len(campaigns)}:\n\n'
-            f'{campaigns[page].brand}'
+            f'{campaigns[page].brand}\n'
             f'{campaigns[page].service}'
         ).replace('None', '')
 
@@ -130,11 +131,11 @@ async def choose_campaign(cb: CallbackQuery, state: FSMContext):
         data = await state.get_data()
 
         # ищем карточки для быстрой оплаты
-        sent = await cb.message.answer('⏳')
+        # sent = await cb.message.answer('⏳')
         save_cards = await db.get_user_card(cb.from_user.id)
 
         # pay_id = ut.create_pay_link(data['campaign_id'])
-        await sent.delete()
+        # await sent.delete()
         await cb.message.answer(
             text='Для получения маркировки необходимо осуществить оплату\n\n'
                  'Выберите карту для оплаты',
@@ -174,10 +175,7 @@ async def choose_campaign(cb: CallbackQuery, state: FSMContext):
     _, pay_id = cb.data.split(':')
 
     sent = await cb.message.answer('⏳')
-    # pay_data = ut.check_pay_yoo(pay_id)
     pay_data = Payment.find_one(pay_id)
-    print(pay_id)
-    print(pay_data)
     if pay_data.paid:
         # сохраняем данные платежа
         await db.add_payment(
@@ -190,7 +188,7 @@ async def choose_campaign(cb: CallbackQuery, state: FSMContext):
             await db.add_card(
                 user_id=cb.from_user.id,
                 pay_id=pay_id,
-                card_info=f'{pay_data.card.card_type} **{pay_data.card.last4}'
+                card_info=ut.get_payment_card_info(pay_data)
             )
 
         await register_creative(data=data, user_id=cb.from_user.id, del_msg_id=sent.message_id)
