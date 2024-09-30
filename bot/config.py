@@ -20,9 +20,9 @@ class Config:
         token = os.getenv('TEST_TOKEN')  # test (test)
         bearer = os.getenv('VK_TEST_API_KEY')
     else:
-        token = os.getenv('TEST_TOKEN')
+        # token = os.getenv('TEST_TOKEN')
         bearer = os.getenv('VK_TEST_API_KEY')
-        # token = os.getenv('TOKEN')
+        token = os.getenv('TOKEN')
         # bearer = os.getenv('VK_API_KEY')
 
     default_email = 'dgushch@gmail.com'
