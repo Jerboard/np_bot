@@ -24,8 +24,6 @@ def print_dict(data: dict, title: str = None) -> None:
         print(f'{k}: {v}')
 
 
-
-
 # Функция для получения ord_id
 def get_ord_id(user_id: int, delimiter: str = Delimiter.BASE.value) -> str:
     return f"{user_id}{delimiter}{randint(100000000, 9999999999)}"

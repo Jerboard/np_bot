@@ -88,10 +88,13 @@ async def send_contract_to_ord(
             "vat_included",
             "contractor_is_creatives_reporter"
         ],
-        "amount": str(amount)
+        # "amount": str(amount)
     }
     if serial:
         data['serial'] = serial
+
+    if amount:
+        data['amount'] = str(amount)
 
     url = f"https://api-sandbox.ord.vk.com/v1/contract/{ord_id}"
 
@@ -161,7 +164,8 @@ async def send_creative_to_ord(
         creative_id,
         brand: str,
         creative_name: str,
-        creative_text: str,
+        # creative_text: str,
+        creative_text: list,
         description: str,
         media_ids: list,
         # media_ids: str,
@@ -184,7 +188,7 @@ async def send_creative_to_ord(
         "form": "text_graphic_block",
         # "targeting": "Школьники",
         # "url": "https://www.msu.ru",
-        "texts": [creative_text],
+        "texts": creative_text,
         "media_external_ids": media_ids,
         "flags": [
             "social"

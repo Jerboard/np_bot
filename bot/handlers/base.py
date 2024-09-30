@@ -202,8 +202,10 @@ async def add_creative_start(msg: Message, state: FSMContext, campaign_id: int):
 async def register_creative(data: dict, user_id: int, del_msg_id: int):
     creatives = data.get('creatives', [])
 
+    ut.print_dict(data, '>>creative data')
+    print('---')
+
     creative_ord_id = ut.get_ord_id(user_id, delimiter=Delimiter.CR.value)
-    campaign_id = data['campaign_id']
 
     campaign = await db.get_campaign(data['campaign_id'])
     contract = await db.get_contract(campaign.contract_id)
@@ -223,9 +225,6 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int):
         user_id=user_id,
         descriptions=campaign.service
     )
-
-    print(f'media_ord_ids:{media_ord_ids}')
-    print(f'media_ord_ids:{media_ord_ids}')
 
     response = await ut.send_creative_to_ord(
         creative_id=creative_ord_id,

@@ -161,7 +161,6 @@ async def add_contract_next_step_check(cb: CallbackQuery, state: FSMContext):
 # Обработчик для выбора НДС
 @dp.callback_query(lambda cb: cb.data.startswith(CB.CONTRACT_END.value))
 async def handle_vat_selection(cb: CallbackQuery, state: FSMContext):
-
     user = await db.get_user_info(cb.from_user.id)
     data = await state.get_data()
     await state.clear()
@@ -170,6 +169,8 @@ async def handle_vat_selection(cb: CallbackQuery, state: FSMContext):
     #     print(f'{k}: {v}')
 
     ord_id = ut.get_ord_id(cb.from_user.id, delimiter=Delimiter.C.value)
+
+    print(ord_id)
 
     contractor = await db.get_contractor(contractor_id=data['dist_id'])
     if user.role == Role.ADVERTISER:
@@ -189,7 +190,7 @@ async def handle_vat_selection(cb: CallbackQuery, state: FSMContext):
         amount=data.get('sum')
     )
 
-    if response:
+    if response <= 201:
         start_date = datetime.strptime(data['start_date'], Config.ord_date_form) if data.get('start_date') else None
         end_date = datetime.strptime(data['end_date'], Config.ord_date_form) if data.get('end_date') else None
         contract_id = await db.add_contract(
@@ -200,8 +201,9 @@ async def handle_vat_selection(cb: CallbackQuery, state: FSMContext):
             ord_id=ord_id,
             end_date=end_date,
             serial=data.get('num'),
-            amount=data.get('sum'),
+            amount=data.get('sum', 0),
         )
+
         await cb.message.answer("Договор успешно зарегистрирован в ОРД.")
         await start_campaign_base(msg=cb.message, state=state, user_id=cb.from_user.id, contract_id=contract_id)
 

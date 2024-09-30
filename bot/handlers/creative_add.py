@@ -17,6 +17,20 @@ from enums import CB, Command, UserState, Action, Role, Delimiter
 # Обработчик для команды /add_creative
 @dp.message(CommandFilter(Command.ADD_CREATIVE.value), StateFilter('*'))
 async def add_creative(msg: Message, state: FSMContext):
+    # creative_ord_id = ut.get_ord_id(msg.from_user.id, delimiter=Delimiter.CR.value)
+    #
+    # response = await ut.send_creative_to_ord(
+    #     creative_id=creative_ord_id,
+    #     brand='Тестовый бренд',
+    #     creative_name=f'Тестовый бренд',
+    #     creative_text=['Тут описания чё чего почём'],
+    #     description='Да прост всякая фигня',
+    #     media_ids=['524275902-m-4566922434', '524275902-m-6830202514', '524275902-m-4360940154'],
+    #     contract_ord_id='524275902-c-1146478275'
+    # )
+    # log_error(f'response: {response}', wt=False)
+    # erid = response.get('erid') if response else None
+
     user = await db.get_user_info(msg.from_user.id)
     if not user:
         await start_bot(msg, state)
@@ -34,11 +48,6 @@ async def add_creative(msg: Message, state: FSMContext):
                 f'Например, несколько идущих подряд видео в сторис.')
         await msg.answer(text)
 
-        # await msg.answer(
-        #     text="Выберите рекламную кампанию для этого креатива:",
-        #     reply_markup=kb.get_add_creative_kb(campaigns)
-        # )
-
 
 # media_ord_id: 524275902-m-8688379168, 524275902-m-8258534790, 524275902-m-4984138183
 # Обработчик загрузки креатива
@@ -53,7 +62,17 @@ async def handle_creative_upload(msg: Message, state: FSMContext):
 
         current_state = await state.get_state()
         if not current_state:
+            campaigns = await db.get_user_campaigns(msg.from_user.id)
+            if not campaigns:
+                await msg.answer(
+                    "❌ У вас нет активных рекламных кампаний. Пожалуйста, создайте кампанию перед добавлением креатива."
+                )
+                await state.clear()
+                await start_campaign_base(msg=msg, state=state)
+                return
+
             await state.set_state(UserState.ADD_CREATIVE)
+            await state.update_data(data={'campaigns': campaigns})
 
         data = await state.get_data()
 
@@ -72,11 +91,6 @@ async def handle_creative_upload(msg: Message, state: FSMContext):
         creatives.append(creative)
         await state.update_data(data={'creatives': creatives})
 
-        # campaigns = data.get('campaigns')
-        # if not campaigns:
-        #     campaigns = await db.get_user_campaigns(msg.from_user.id)
-        #     await state.update_data(data={'campaigns': campaigns})
-
         message_id = data.get('message_id')
         if message_id:
             try:
@@ -86,7 +100,6 @@ async def handle_creative_upload(msg: Message, state: FSMContext):
 
         sent = await msg.answer(
             "✅ Креатив успешно добавлен.\n\n "
-            "❓❓❓\n"
             "Что бы добавить еще файл или текст для этого креатива просто отправьте его сообщением",
             reply_markup=kb.get_select_campaigns_kb()
         )
@@ -102,7 +115,6 @@ async def handle_creative_upload(msg: Message, state: FSMContext):
 async def choose_campaign(cb: CallbackQuery, state: FSMContext):
     _, page_str, action = cb.data.split(':')
     page = int(page_str)
-    print(f'page: {page}')
 
     if action == Action.CONT:
         data = await state.get_data()
