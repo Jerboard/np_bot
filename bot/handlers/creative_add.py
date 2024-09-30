@@ -17,6 +17,7 @@ from enums import CB, Command, UserState, Action, Role, Delimiter
 # Обработчик для команды /add_creative
 @dp.message(CommandFilter(Command.ADD_CREATIVE.value), StateFilter('*'))
 async def add_creative(msg: Message, state: FSMContext):
+    await state.set_state(UserState.ADD_CREATIVE)
     # creative_ord_id = ut.get_ord_id(msg.from_user.id, delimiter=Delimiter.CR.value)
     #
     # response = await ut.send_creative_to_ord(
@@ -85,7 +86,9 @@ async def handle_creative_upload(msg: Message, state: FSMContext):
         # сохраняем текст, если есть
         creative_text = msg.text or msg.caption
         if creative_text:
-            await state.update_data(data={'text': creative_text})
+            tests = data.get('text', [])
+            tests.append(creative_text)
+            await state.update_data(data={'text': tests})
 
         creatives = data.get('creatives', [])
         creatives.append(creative)

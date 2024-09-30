@@ -80,12 +80,18 @@ async def inn_collector_advertiser(msg: Message, state: FSMContext):
 
     if not ut.validate_inn(msg.text, j_type=data['j_type']):
         await msg.answer(
-            text="Неверный формат ИНН. Пожалуйста, введите корректный ИНН:",
+            text="❌ Неверный формат ИНН. Пожалуйста, введите корректный ИНН:",
             reply_markup=kb.get_close_kb()
         )
         return
 
     user = await db.get_user_info(user_id=msg.from_user.id)
+    if user.inn == msg.text:
+        await msg.answer(
+            text="❌ ИНН контрагента не должен совпадать с вашим",
+            reply_markup=kb.get_close_kb()
+        )
+        return
 
     # Определение роли контрагента
     contractor_role = Role.ADVERTISER.value if user.role == Role.PUBLISHER.value else Role.PUBLISHER.value

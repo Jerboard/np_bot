@@ -10,7 +10,7 @@ from config import Config
 from init import dp
 import utils as ut
 from . import base
-from enums import CB, Command, UserState, Action, Role, AddContractStep
+from enums import CB, Command, UserState, Action, Role, Step
 
 
 # Обработчик для команды /start_campaign
@@ -68,13 +68,20 @@ async def save_service(msg: Message, state: FSMContext):
     await state.set_state(UserState.ADD_CAMPAIGN_LINK)
     await state.update_data(data={'service': msg.text[:60]})
 
-    await msg.answer("Пришлите ссылку на товар или услугу, которые вы планируете рекламировать.")
+    await msg.answer(
+        text="Пришлите ссылку на товар или услугу, которые вы планируете рекламировать.",
+        reply_markup=kb.get_continue_add_link_kb()
+    )
 
 
 # Обработчик для сохранения целевой ссылки
 @dp.message(StateFilter(UserState.ADD_CAMPAIGN_LINK))
 async def save_target_link(msg: Message, state: FSMContext):
     target_link = msg.text
+    if not target_link:
+        await msg.answer('❌ Неверный формат. Отправьте ссылку сообщением')
+        return
+
     if not target_link.startswith("http://") and not target_link.startswith("https://"):
         target_link = f"https://{target_link}"
 
@@ -98,7 +105,10 @@ async def handle_additional_link(cb: CallbackQuery, state: FSMContext):
 
     else:
         data = await state.get_data()
-        links_str = "\n".join([f"Целевая ссылка: {link}" for link in data['links']])
+        if data.get('links'):
+            links_str = "\n".join([f"Целевая ссылка: {link}" for link in data['links']])
+        else:
+            links_str = ''
 
         await cb.message.answer(
             f"Проверьте, правильно ли указана информация о рекламной кампании:\n"
@@ -121,7 +131,7 @@ async def handle_ad_campaign_callback(cb: CallbackQuery, state: FSMContext):
             contract_id=data['contract_id'],
             brand=data['brand'],
             service=data['service'],
-            links=data['links'],
+            links=data.get('links', []),
         )
 
         await cb.message.answer(

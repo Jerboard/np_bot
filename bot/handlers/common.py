@@ -21,7 +21,7 @@ import utils as ut
 import config
 import keyboards as kb
 from init import dp, log_error
-from enums import AddContractStep
+from enums import Step
 
 
 # Валидатор ИНН

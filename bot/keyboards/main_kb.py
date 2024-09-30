@@ -30,6 +30,13 @@ def get_register_kb() -> InlineKeyboardMarkup:
     return kb.adjust(2).as_markup()
 
 
+# кнопка пропустить при добавлении данных
+def get_continue_btn_kb() -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    kb.button(text='Пропустить', callback_data=f'{CB.USER_CONTINUE.value}')
+    return kb.adjust(1).as_markup()
+
+
 # кб для  inn_collector
 def get_select_role_kb() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
@@ -105,8 +112,8 @@ def get_finalize_platform_data_kb() -> InlineKeyboardMarkup:
 # кб для confirm_ad_campaign
 def get_confirm_ad_campaign_kb() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text="✅ Да, верно", callback_data=f"{CB.CAMPAIGN_ADD_CONFIRM.value}:1"),
-    kb.button(text="🖍 Изменить", callback_data=f"{CB.CAMPAIGN_ADD_CONFIRM.value}:0"),
+    kb.button(text="✅ Да, верно", callback_data=f"{CB.CAMPAIGN_ADD_CONFIRM.value}:{Action.ADD.value}"),
+    kb.button(text="🖍 Изменить", callback_data=f"{CB.CAMPAIGN_ADD_CONFIRM.value}:{Action.NO.value}"),
     kb.button(text="❌ Удалить", callback_data=f"{CB.CAMPAIGN_ADD_CONFIRM.value}:0"),
     # kb.button(text="❌ Удалить", callback_data=f"{CB.CLOSE.value}")
     return kb.adjust(3).as_markup()
@@ -126,6 +133,13 @@ def get_select_page_kb(end_page: bool, select_id: int, page: int, cb: str = CB.C
     kb.button(text=f'✔️ Выбрать', callback_data=f'{cb}:{select_id}:{Action.YES.value}')
     kb.adjust(2, 1) if btn_count == 2 else kb.adjust(1)
     return kb.as_markup()
+
+
+# кнопка пропустить добавление ссылки
+def get_continue_add_link_kb() -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    kb.button(text="Пропустить", callback_data=f"{CB.CAMPAIGN_ADD_ANOTHER_LINK.value}:0")
+    return kb.adjust(1).as_markup()
 
 
 # кб для ask_for_additional_link

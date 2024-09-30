@@ -202,8 +202,7 @@ async def add_creative_start(msg: Message, state: FSMContext, campaign_id: int):
 async def register_creative(data: dict, user_id: int, del_msg_id: int):
     creatives = data.get('creatives', [])
 
-    ut.print_dict(data, '>>creative data')
-    print('---')
+    # ut.print_dict(data, '>>creative data')
 
     creative_ord_id = ut.get_ord_id(user_id, delimiter=Delimiter.CR.value)
 
@@ -230,7 +229,7 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int):
         creative_id=creative_ord_id,
         brand=campaign.brand,
         creative_name=f'{contractor_name}',
-        creative_text=data.get('text', 'Реклама'),
+        creative_text=data.get('text', []),
         description=campaign.service,
         media_ids=media_ord_ids,
         contract_ord_id=contract.ord_id
@@ -252,9 +251,7 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int):
 
     text = (f'Креатив успешно промаркирован.\n'
             f'Ваш токен - <code>{erid}</code>.\n'
-            f'Реклама. {contractor_name}. \n'
-            f'ИНН: {contractor_inn}. \n'
-            f'erid: <code>{erid}</code>. \n'
+            f'<code>Реклама. {contractor_name}. ИНН: {contractor_inn}. erid: {erid}</code>. \n'
             f'Теперь прикрепите маркировку к вашему креативу, опубликуйте и пришлите ссылку на него. \n'
             f'Если вы публикуете один креатив на разных площадках - пришлите ссылку на каждую площадку. \n'
             f'❓❓❓'

@@ -3,6 +3,7 @@ from enum import Enum
 
 class CB(str, Enum):
     CONFIRM_USER = 'confirm_user'
+    USER_CONTINUE = 'user_continue'
     CHANGE_ROLE = 'change_role'
     USER_SELECT_ROLE = 'user_select_role'
     AGREE = 'agree'

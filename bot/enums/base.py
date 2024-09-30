@@ -1,11 +1,14 @@
 from enum import Enum
 
 
-class AddContractStep(str, Enum):
+class Step(str, Enum):
     START_DATE = 'start_date'
     END_DATE = 'end_date'
     NUM = 'num'
     SUM = 'sum'
+    INN = 'inn'
+    PHONE = 'phone'
+    EMAIL = 'email'
 
 
 class Role(str, Enum):
@@ -29,6 +32,7 @@ class JStatus(str, Enum):
 class Action(str, Enum):
     ADD = 'add'
     DEL = 'del'
+    EDIT = 'edit'
     YES = 'yes'
     NO = 'no'
     CONT = 'continue'

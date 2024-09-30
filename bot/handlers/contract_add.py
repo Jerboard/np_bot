@@ -10,7 +10,7 @@ from config import Config
 from init import dp
 import utils as ut
 from .base import start_contract, start_bot, end_contract, start_campaign_base
-from enums import CB, Command, UserState, JStatus, Role, AddContractStep, Delimiter
+from enums import CB, Command, UserState, JStatus, Role, Step, Delimiter
 
 
 # Обработчик для команды /start_contract
@@ -39,7 +39,7 @@ async def process_contract_start_date(cb: CallbackQuery, state: FSMContext):
     await state.clear()
     await state.set_state(UserState.ADD_CONTRACT)
     await state.update_data(data={
-        'step': AddContractStep.START_DATE.value,
+        'step': Step.START_DATE.value,
         'dist_id': int(dist_id_str)
     })
     await cb.message.answer(
@@ -54,52 +54,52 @@ async def process_contract_start_date(msg: Message, state: FSMContext):
     data = await state.get_data()
     error_text = ''
 
-    if data['step'] == AddContractStep.START_DATE.value:
+    if data['step'] == Step.START_DATE.value:
         date_str = ut.convert_date(msg.text)
         if date_str:
             await state.update_data(data={
-                'step': AddContractStep.END_DATE.value,
+                'step': Step.END_DATE.value,
                 'start_date': date_str,
                 'input_start_date': msg.text,
             })
             await msg.answer(
                 "Указана ли в договоре дата завершения?",
-                reply_markup=kb.get_check_next_step_contract_kb(AddContractStep.END_DATE.value)
+                reply_markup=kb.get_check_next_step_contract_kb(Step.END_DATE.value)
             )
         else:
             error_text = '❌ Неверный формат даты. Пожалуйста, введите дату в формате дд.мм.гггг:'
 
-    elif data['step'] == AddContractStep.END_DATE.value:
+    elif data['step'] == Step.END_DATE.value:
         date_str = ut.convert_date(msg.text)
         if date_str:
             await state.update_data(data={
-                'step': AddContractStep.NUM.value,
+                'step': Step.NUM.value,
                 'end_date': date_str,
                 'input_end_date': msg.text
             })
 
             await msg.answer(
                 "Есть ли номер у вашего договора?",
-                reply_markup=kb.get_check_next_step_contract_kb(AddContractStep.NUM.value)
+                reply_markup=kb.get_check_next_step_contract_kb(Step.NUM.value)
             )
 
         else:
             error_text = '❌ Неверный формат даты. Пожалуйста, введите дату в формате дд.мм.гггг:'
 
-    elif data['step'] == AddContractStep.NUM.value:
+    elif data['step'] == Step.NUM.value:
         await state.update_data(data={
-            'step': AddContractStep.SUM.value,
+            'step': Step.SUM.value,
             'num': msg.text
         })
         await msg.answer(
             "Указана ли в договоре сумма?",
-            reply_markup=kb.get_check_next_step_contract_kb(AddContractStep.SUM.value)
+            reply_markup=kb.get_check_next_step_contract_kb(Step.SUM.value)
         )
 
-    elif data['step'] == AddContractStep.SUM.value:
+    elif data['step'] == Step.SUM.value:
         if ut.is_float(msg.text):
             await state.update_data(data={
-                'step': AddContractStep.SUM.value,
+                'step': Step.SUM.value,
                 'sum': float(msg.text)
             })
             await end_contract(state=state, chat_id=msg.chat.id)
@@ -123,34 +123,34 @@ async def add_contract_next_step_check(cb: CallbackQuery, state: FSMContext):
     answer = bool(int(answer_str))
 
     if answer:
-        if step == AddContractStep.END_DATE:
+        if step == Step.END_DATE:
             await cb.message.answer("Введите дату завершения договора (дд.мм.гггг):")
 
-        elif step == AddContractStep.NUM:
+        elif step == Step.NUM:
             await cb.message.answer("Введите номер договора:")
 
-        elif step == AddContractStep.SUM:
+        elif step == Step.SUM:
             await cb.message.answer("Введите сумму договора:")
 
         else:
             await cb.message.answer("❗️Что-то сломалось. Перезапустите бот \n\n/start")
 
     else:
-        if step == AddContractStep.END_DATE:
-            await state.update_data(data={'step': AddContractStep.NUM.value})
+        if step == Step.END_DATE:
+            await state.update_data(data={'step': Step.NUM.value})
             await cb.message.answer(
                 "Есть ли номер у вашего договора?",
-                reply_markup=kb.get_check_next_step_contract_kb(AddContractStep.NUM.value)
+                reply_markup=kb.get_check_next_step_contract_kb(Step.NUM.value)
             )
 
-        elif step == AddContractStep.NUM:
-            await state.update_data(data={'step': AddContractStep.SUM.value})
+        elif step == Step.NUM:
+            await state.update_data(data={'step': Step.SUM.value})
             await cb.message.answer(
                 "Указана ли в договоре сумма?",
-                reply_markup=kb.get_check_next_step_contract_kb(AddContractStep.SUM.value)
+                reply_markup=kb.get_check_next_step_contract_kb(Step.SUM.value)
             )
 
-        elif step == AddContractStep.SUM:
+        elif step == Step.SUM:
             await end_contract(state=state, chat_id=cb.message.chat.id)
 
         else:
