@@ -99,7 +99,9 @@ async def process_average_views(msg: Message, state: FSMContext):
         if user.role == Role.ADVERTISER:
             contractors = await db.get_all_contractors(msg.from_user.id)
             if contractors:
-                await msg.answer("Выберите контрагента:", reply_markup=kb.get_process_average_views_kb(contractors))
+                await msg.answer("Выберите контрагента\n"
+                                 "(Контрагент - это другая сторона вашего договора)",
+                                 reply_markup=kb.get_process_average_views_kb(contractors))
             else:
                 await msg.answer("Не найдено контрагентов. Пожалуйста, добавьте контрагентов и повторите попытку.")
 

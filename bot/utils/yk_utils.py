@@ -1,13 +1,51 @@
-from yookassa import Payment
+from yookassa import Payment, Refund
 
 import json
+import uuid
 
 from init import log_error
 from config import Config
 
 
-def create_pay_link(email: str = Config.default_email) -> str:
-    print(f'email: {email}')
+def create_simple_pay_link(email: str = None) -> str:
+    print(Config.service_price)
+    if not email:
+        email = Config.default_email
+
+    payment = Payment.create({
+        "amount": {
+            "value": str(Config.service_price),
+            "currency": "RUB"
+        },
+        "confirmation": {
+            "type": "redirect",
+            "return_url": "https://t.me/markirovkaNP_bot"
+        },
+        "capture": True,
+        "description": "Оплата услуг маркировки рекламы",
+        "receipt": {
+                "customer": {
+                    "email": email
+                },
+                "items": [
+                    {
+                        "description": f"Оплата услуг маркировки рекламы",
+                        "quantity": "1.00",
+                        "amount": {
+                            "value": Config.service_price,
+                            "currency": "RUB"
+                        },
+                        "vat_code": 0,
+                        "payment_mode": "full_payment",
+                        "payment_subject": "service"
+                    }
+                ]
+            },
+    }, uuid.uuid4())
+    return payment.id
+
+
+def create_recurrent_pay_link(email: str = Config.default_email) -> str:
     payment = Payment.create({
         "amount": {
             "value": Config.service_price,
@@ -42,8 +80,18 @@ def create_pay_link(email: str = Config.default_email) -> str:
             ]
         },
     })
-
     return payment.id
+
+
+# вернуть деньги
+def refund_payment(pay_id: str):
+    refund = Refund.create({
+        "amount": {
+            "value": Config.service_price,
+            "currency": "RUB"
+        },
+        "payment_id": pay_id
+    })
 
 
 # быстрая оплата рекурент
@@ -63,7 +111,7 @@ def fast_pay(last_pay_id: str, email: str = Config.default_email) -> Payment:
         },
         "receipt": {
             "customer": {
-                "email": Config.default_email
+                "email": email
             },
             "items": [
                 {

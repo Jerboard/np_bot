@@ -87,16 +87,21 @@ async def add_inn(msg: Message, state: FSMContext):
             return
 
         # await state.set_state(UserState.USER_ADD_INN)
-        await state.update_data(data={'inn': msg.text, 'step': Step.PHONE.value})
-        await msg.answer('Введите ваш контактный номер телефона', reply_markup=kb.get_continue_btn_kb())
-
-    elif data['step'] == Step.PHONE:
-        await state.update_data(data={'phone': msg.text, 'step': Step.EMAIL.value})
+        await state.update_data(data={'inn': msg.text, 'step': Step.EMAIL.value})
+        # await state.update_data(data={'phone': msg.text, 'step': Step.EMAIL.value})
         await msg.answer(
             text='Введите ваш адрес электронной почты\n\n'
                  'Адрес почты нужен для отправки чеков при оплате маркировки',
             reply_markup=kb.get_continue_btn_kb()
         )
+
+# elif data['step'] == Step.PHONE:
+#         await state.update_data(data={'phone': msg.text, 'step': Step.EMAIL.value})
+#         await msg.answer(
+#             text='Введите ваш адрес электронной почты\n\n'
+#                  'Адрес почты нужен для отправки чеков при оплате маркировки',
+#             reply_markup=kb.get_continue_btn_kb()
+#         )
 
     else:
         await state.update_data(data={'email': msg.text})
@@ -168,16 +173,20 @@ async def collect_role(cb: CallbackQuery, state: FSMContext):
         name=name,
         role=role,
         j_type=j_type,
-        inn=inn,
-        # rs_url=rs_url
+        inn=inn
     )
 
     if response in [200, 201]:
         await cb.message.answer(text)
+
         if is_update:
             await db.update_user(user_id=cb.from_user.id, role=role)
 
         else:
+            # тут регистрируем посредника
+            # ord_id = f'{Config.partner_data["inn"]}-m-{cb.from_user.id}'
+            # await ut.send_mediation_to_ord(ord_id=ord_id, client_ord_id=str(cb.from_user.id))
+
             await db.add_user(
                 user_id=cb.from_user.id,
                 full_name=cb.from_user.full_name,
@@ -195,4 +204,4 @@ async def collect_role(cb: CallbackQuery, state: FSMContext):
             await preloader_choose_platform(cb.message)
 
     else:
-        await cb.message.answer("❗️ Произошла ошибка при регистрации в ОРД")
+        await cb.message.answer("Сообщение при ошибки регистрации в орд")

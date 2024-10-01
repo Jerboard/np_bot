@@ -7,14 +7,13 @@ from init import log_error, set_main_menu, bot
 from config import Config
 from handlers import dp
 from db.base_db import init_models
-# from handlers.common import auto_submit_statistics
-# from db.create_db import create_tables
-
+from utils.ord_api import send_user_to_ord
 
 async def main() -> None:
     # await db_command()
     if not os.path.exists(Config.storage_path):
         os.mkdir(Config.storage_path)
+
     await init_models()
     await set_main_menu()
     await bot.delete_webhook (drop_pending_updates=True)

@@ -154,7 +154,7 @@ def get_ask_for_additional_link_kb() -> InlineKeyboardMarkup:
 def get_select_campaigns_kb() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     kb.button(
-        text="Перейти к выбору рекламной компании",
+        text="Продолжить",
         callback_data=f"{CB.CREATIVE_SELECT_CAMPAIGN.value}:0:{ Action.CONT.value}"
     )
     return kb.adjust(1).as_markup()
@@ -197,7 +197,7 @@ def get_yk_pay_kb(pay_id: str, save_card: bool) -> InlineKeyboardMarkup:
     checkbox = '✔️ ' if save_card else ''
     edit_save_card = 0 if save_card else 1
     kb.button(text=f"{checkbox} Сохранить карту", callback_data=f"{CB.PAY_YK_NEW.value}:{int(not save_card)}")
-    kb.button(text=f"Оплатить 400 р.", url=Config.pay_link.format(payment_id=pay_id))
+    kb.button(text=f"Оплатить {Config.service_price} р.", url=Config.pay_link.format(payment_id=pay_id))
     kb.button(text="Продолжить", callback_data=f"{CB.PAY_YK_CHECK.value}:{pay_id}")
     return kb.adjust(1).as_markup()
 

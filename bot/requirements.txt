@@ -6,7 +6,6 @@ aiogram
 pytz
 apscheduler
 uvloop
-redis
 yookassa
 sqlalchemy
 httpx

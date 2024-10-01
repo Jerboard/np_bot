@@ -14,7 +14,8 @@ class Step(str, Enum):
 class Role(str, Enum):
     ADVERTISER = 'advertiser'
     PUBLISHER = 'publisher'
-    ORS = 'ors'
+    # ORS = 'ors'
+    # MEDIATION = 'mediation'
 
 
 class Status(str, Enum):

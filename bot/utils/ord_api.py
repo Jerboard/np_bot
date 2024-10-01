@@ -1,8 +1,8 @@
+from datetime import datetime
+
 import logging
-import os.path
 import typing as t
 import httpx
-import uuid
 
 import db
 from config import Config
@@ -16,11 +16,9 @@ async def send_user_to_ord(
         name: str,
         role: str,
         j_type: str,
-        inn: str,
-        phone: str = None,
-        rs_url=None
+        inn: str
 ) -> int:
-    url = f"https://api-sandbox.ord.vk.com/v1/person/{ord_id}"
+    url = f"{Config.ord_url}/v1/person/{ord_id}"
     headers = {
         "Authorization": f"Bearer {Config.bearer}",
         "Content-Type": "application/json"
@@ -30,8 +28,7 @@ async def send_user_to_ord(
         "roles": [role],
         "juridical_details": {
             "type": j_type,
-            "inn": inn,
-            "phone": phone or "+7(495)709-56-39"  # Используем заглушку, если номер телефона пуст
+            "inn": inn
         }
     }
 
@@ -45,27 +42,42 @@ async def send_user_to_ord(
     return response.status_code
 
 
-# Функция для отправки данных о контрагенте в ОРД API
-# async def send_contractor_to_ord(ord_id: str, name: str, role: str, j_type: str, inn: str, phone: str):
-#     url = f"https://api-sandbox.ord.vk.com/v1/person/{ord_id}"
-#     headers = {
-#         "Authorization": f"Bearer {Config.bearer}",
-#         "Content-Type": "application/json"
-#     }
-#     data = {
-#         "name": name,
-#         "roles": [role],
-#         "juridical_details": {
-#             "type": j_type,
-#             "inn": inn,
-#             "phone": phone  # Используем номер телефона, переданный в функцию
-#         }
-#     }
-#
-#     async with httpx.AsyncClient() as client:
-#         response = await client.put(url, headers=headers, json=data)
-#
-#     return response
+# Функция для отправки посреднического договора при регистрации ОРД API
+async def send_mediation_to_ord(ord_id: str, client_ord_id: str):
+    today = datetime.now().date()
+
+    url = f"{Config.ord_url}/v1/contract/{ord_id}"
+    headers = {
+        "Authorization": f"Bearer {Config.bearer}",
+        "Content-Type": "application/json"
+    }
+    data = {
+          "type": "mediation",
+          "client_external_id": client_ord_id,
+          "contractor_external_id": Config.partner_data['ord_id'],
+          "date": today.strftime(Config.ord_date_form),
+          "action_type": "commercial",
+          "subject_type": "mediation",
+          "flags": [
+            "vat_included",
+            "agent_acting_for_publisher"
+          ],
+    }
+    async with httpx.AsyncClient() as client:
+        response = await client.put(url, headers=headers, json=data)
+
+    return response
+
+'''
+
+В договоре указываем:
+- серийный номер (номер договора): [ИД клиента]
+- тип: [оказание услуг]
+- заказчик: [Клиент]
+- исполнитель: [Мы] (ООО "ЮКЦ "ПАРТНЕР")
+- предмет договора: [Иное]
+- дата заключения: [дата регистрации клиента]
+'''
 
 
 # Функция для отправки данных о договоре в ОРД API
@@ -78,6 +90,7 @@ async def send_contract_to_ord(
         # vat_flag: list,
         amount: str
 ) -> int:
+    url = f"{Config.ord_url}/v1/contract/{ord_id}"
     data = {
         "type": "service",
         "client_external_id": client_external_id,
@@ -95,8 +108,6 @@ async def send_contract_to_ord(
 
     if amount:
         data['amount'] = str(amount)
-
-    url = f"https://api-sandbox.ord.vk.com/v1/contract/{ord_id}"
 
     # for k, v in data.items():
     #     print(f'{k}: {v}')
@@ -116,7 +127,7 @@ async def send_contract_to_ord(
 # Функция для отправки данных о платформе в ОРД API
 # async def send_platform_to_ord(ord_id: str, platform_name: str, platform_url: str, person_external_id: str):
 async def send_platform_to_ord(ord_id: str, platform_name: str, platform_url: str, dist_ord_id: str) -> int:
-    url = f"https://api-sandbox.ord.vk.com/v1/pad/{ord_id}"
+    url = f"{Config.ord_url}/v1/pad/{ord_id}"
 
     headers = {
         "Authorization": f"Bearer {Config.bearer}",
@@ -140,10 +151,7 @@ async def send_platform_to_ord(ord_id: str, platform_name: str, platform_url: st
 
 # регистрация медиа
 async def register_media_file(file_path: str, ord_id: str, description: str) -> int:
-    print(f'file_path: {os.path.exists(file_path)} {file_path}')
-    print(f'description: {description}')
-
-    url = f'https://api-sandbox.ord.vk.com/v1/media/{ord_id}'
+    url = f'{Config.ord_url}/v1/media/{ord_id}'
     headers = {
         'Authorization': f'Bearer {Config.bearer}'
     }
@@ -172,7 +180,7 @@ async def send_creative_to_ord(
         contract_ord_id: str,
 ):
 
-    url = f"https://api-sandbox.ord.vk.com/v1/creative/{creative_id}"
+    url = f"{Config.ord_url}/v1/creative/{creative_id}"
     headers = {
         "Authorization": f"Bearer {Config.bearer}",
         "Content-Type": "application/json"

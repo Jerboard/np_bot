@@ -18,6 +18,7 @@ from enums import CB, Command, UserState, Action, Role, Delimiter
 @dp.message(CommandFilter(Command.ADD_CREATIVE.value), StateFilter('*'))
 async def add_creative(msg: Message, state: FSMContext):
     await state.set_state(UserState.ADD_CREATIVE)
+
     # creative_ord_id = ut.get_ord_id(msg.from_user.id, delimiter=Delimiter.CR.value)
     #
     # response = await ut.send_creative_to_ord(
@@ -102,8 +103,9 @@ async def handle_creative_upload(msg: Message, state: FSMContext):
                 pass
 
         sent = await msg.answer(
-            "✅ Креатив успешно добавлен.\n\n "
-            "Что бы добавить еще файл или текст для этого креатива просто отправьте его сообщением",
+            '✅ Креатив успешно добавлен\n\n'
+            'Чтобы добавить еще файл или текст для этого креатива просто отправьте его сообщением или '
+            'нажмите "Продолжить", чтобы получить токен.',
             reply_markup=kb.get_select_campaigns_kb()
         )
         await state.update_data(data={'message_id': sent.message_id})
@@ -152,8 +154,8 @@ async def choose_campaign(cb: CallbackQuery, state: FSMContext):
         # pay_id = ut.create_pay_link(data['campaign_id'])
         # await sent.delete()
         await cb.message.answer(
-            text='Для получения маркировки необходимо осуществить оплату\n\n'
-                 'Выберите карту для оплаты',
+            text='Для получения токена (маркировки) произведите оплату.\n\n'
+                 'Выберите карту для оплаты или добавьте новую.',
             reply_markup=kb.get_select_card_kb(save_cards)
         )
 
@@ -169,7 +171,7 @@ async def pay_yk(cb: CallbackQuery, state: FSMContext):
     pay_id = data.get('pay_id')
     if not pay_id:
         user = await db.get_user_info(cb.from_user.id)
-        pay_id = ut.create_pay_link(user.email)
+        pay_id = ut.create_simple_pay_link(user.email)
         await state.update_data(data={'pay_id': pay_id})
 
     text = 'Перейдите по ссылке и оплатите маркировку креатива, затем нажмите "Продолжить"\n\n'
@@ -197,7 +199,6 @@ async def choose_campaign(cb: CallbackQuery, state: FSMContext):
             user_id=cb.from_user.id,
             pay_id=pay_data.id,
         )
-
         data = await state.get_data()
         if data.get('save_card'):
             await db.add_card(
@@ -219,24 +220,26 @@ async def choose_campaign(cb: CallbackQuery, state: FSMContext):
     _, card_id_str = cb.data.split(':')
     card_id = int(card_id_str)
 
-    sent = await cb.message.answer('⏳')
-    card_info = await db.get_card(card_id=card_id)
-    user_info = await db.get_user_info(user_id=cb.from_user.id)
+    await cb.answer('Быстрая оплата временно невозможна', show_alert=True)
 
-    pay_data = ut.fast_pay(last_pay_id=card_info.last_pay_id, email=user_info.email)
-
-    if pay_data.paid:
-        # сохраняем данные платежа
-        await db.add_payment(user_id=cb.from_user.id, pay_id=pay_data.id)
-        # обновляем пей айди
-        await db.update_card(card_id=card_id, pay_id=pay_data.id)
-
-        data = await state.get_data()
-        await register_creative(data=data, user_id=cb.from_user.id, del_msg_id=sent.message_id)
-
-    else:
-        await sent.delete()
-        await cb.answer('❗️ Ошибка оплаты. Выберите другую карту или добавьте новую ❓❓❓', show_alert=True)
+    # sent = await cb.message.answer('⏳')
+    # card_info = await db.get_card(card_id=card_id)
+    # user_info = await db.get_user_info(user_id=cb.from_user.id)
+    #
+    # pay_data = ut.fast_pay(last_pay_id=card_info.last_pay_id, email=user_info.email)
+    #
+    # if pay_data.paid:
+    #     # сохраняем данные платежа
+    #     await db.add_payment(user_id=cb.from_user.id, pay_id=pay_data.id)
+    #     # обновляем пей айди
+    #     await db.update_card(card_id=card_id, pay_id=pay_data.id)
+    #
+    #     data = await state.get_data()
+    #     await register_creative(data=data, user_id=cb.from_user.id, del_msg_id=sent.message_id)
+    #
+    # else:
+    #     await sent.delete()
+    #     await cb.answer('❗️ Ошибка оплаты. Выберите другую карту или добавьте новую ❓❓❓', show_alert=True)
 
 
 # Добавление ссылки на креатив

@@ -27,7 +27,6 @@ async def start_bot(msg: Message, state: FSMContext, user: db.UserRow = None):
                 f"{name_label}: <b>{msg.from_user.first_name}</b>\n"
                 f"ИНН: <b>{user.inn}</b>\n"
                 f"Правовой статус: <b>{dt.juridical_type_map.get(user.j_type, user.j_type)}</b>\n"
-                f"Баланс: <b>{user.balance} рублей</b>\n"
                 f"Текущая роль: <b>{dt.role_map.get(user.role, user.role)}</b>\n\n"
                 "Вы можете изменить свои данные и роль.\n\n"
                 "Чтобы воспользоваться функционалом бота - нажмите на синюю кнопку меню и выберите действие.\n\n")
@@ -53,7 +52,9 @@ async def start_contract(msg: Message, user_id: int = None, selected_contractor:
         contractors = await db.get_all_contractors(user_id)
         await msg.answer("Контрагент не был выбран. Пожалуйста, выберите контрагента.")
         if contractors:
-            await msg.answer("Выберите контрагента:", reply_markup=kb.get_select_distributor_kb(contractors))
+            await msg.answer("Выберите контрагента\n"
+                             "(Контрагент - это другая сторона вашего договора)",
+                             reply_markup=kb.get_select_distributor_kb(contractors))
 
         else:
             await msg.answer(
@@ -68,12 +69,11 @@ async def end_contract(state: FSMContext, chat_id: int):
     await state.update_data(data={'contractor_ord_id': contractor.ord_id})
     text = (
         f'❕ Проверьте, правильно ли указана информация по вашему договору с рекламодателем:\n\n'
-        f'Контрагент: {contractor.name}\n'
-        f'Дата заключения договора: {data["input_start_date"]}\n'
-        f'Дата завершения договора: {data.get("input_end_date", "нет")}\n'
-        f'Номер договора: {data.get("num", "нет")}\n'
-        f'Сумма договора: {data.get("sum", "нет")} руб\n'
-        f'Дата завершения договора: {data.get("input_end_date", "нет")}'
+        f'<b>Контрагент:</b> {contractor.name}\n'
+        f'<b>Дата заключения договора:</b> {data["input_start_date"]}\n'
+        f'<b>Номер договора:</b> {data.get("num", "нет")}\n'
+        f'<b>Сумма договора:</b> {data.get("sum", "нет")} руб\n'
+        f'<b>Дата завершения договора:</b> {data.get("input_end_date", "нет")}'
     )
     await bot.send_message(chat_id=chat_id, text=text, reply_markup=kb.get_contract_end_kb(data['dist_id']))
 
@@ -133,9 +133,7 @@ async def finalize_platform_data(msg: Message, state: FSMContext):
 
     else:
         await msg.answer(
-            f"❌ Произошла ошибка при добавлении платформы в ОРД: "
-            f"{response if response else 'Нет ответа'}. "
-            f"Попробуйте снова.")
+            f"Сообщение при ошибки регистрации в орд")
 
 
 async def select_contract(
@@ -237,8 +235,9 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int):
     log_error(f'response: {response}', wt=False)
     erid = response.get('erid') if response else None
     if not erid:
-        await bot.send_message(chat_id=user_id, text="Ошибка при отправке креатива в ОРД.❓❓❓")
+        await bot.send_message(chat_id=user_id, text="Сообщение при ошибки регистрации в орд")
         # тут ещё возврат денег
+        ut.refund_payment(data['pay_id'])
         return
 
     await db.add_creative(
@@ -254,7 +253,6 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int):
             f'<code>Реклама. {contractor_name}. ИНН: {contractor_inn}. erid: {erid}</code>. \n'
             f'Теперь прикрепите маркировку к вашему креативу, опубликуйте и пришлите ссылку на него. \n'
             f'Если вы публикуете один креатив на разных площадках - пришлите ссылку на каждую площадку. \n'
-            f'❓❓❓'
             )
 
     await bot.delete_message(chat_id=user_id, message_id=del_msg_id)

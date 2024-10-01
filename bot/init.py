@@ -12,7 +12,6 @@ import traceback
 import os
 import asyncio
 import re
-import redis
 
 from config import Config
 from enums import Command
@@ -31,8 +30,6 @@ bot = Bot(Config.token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 
 scheduler = AsyncIOScheduler()
 ENGINE = create_async_engine(url=Config.db_url)
-
-redis_db = redis.Redis(host=Config.redis_host, port=Config.redis_port, db=Config.redis_db)
 
 Configuration.account_id = Config.yoo_account_id
 Configuration.secret_key = Config.yoo_secret_key

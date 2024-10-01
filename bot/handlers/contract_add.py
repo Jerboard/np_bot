@@ -170,8 +170,6 @@ async def handle_vat_selection(cb: CallbackQuery, state: FSMContext):
 
     ord_id = ut.get_ord_id(cb.from_user.id, delimiter=Delimiter.C.value)
 
-    print(ord_id)
-
     contractor = await db.get_contractor(contractor_id=data['dist_id'])
     if user.role == Role.ADVERTISER:
         client_external_id = f"{cb.from_user.id}"
@@ -197,7 +195,6 @@ async def handle_vat_selection(cb: CallbackQuery, state: FSMContext):
             user_id=cb.from_user.id,
             contractor_id=data['dist_id'],
             start_date=start_date,
-            # vat_code=vat,
             ord_id=ord_id,
             end_date=end_date,
             serial=data.get('num'),

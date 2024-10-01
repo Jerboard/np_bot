@@ -38,8 +38,8 @@ UserTable: sa.Table = sa.Table(
     sa.Column('phone', sa.String(255)),
     sa.Column('email', sa.String(255)),
     sa.Column('j_type', sa.String(255)),
-    sa.Column('balance', sa.Float(), default=0),
-    sa.Column('total_balance', sa.Float(), default=0),
+    # sa.Column('balance', sa.Float(), default=0),
+    # sa.Column('total_balance', sa.Float(), default=0),
     # sa.Column('is_agree', sa.Boolean, default=False),
 )
 

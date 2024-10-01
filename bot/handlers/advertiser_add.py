@@ -96,8 +96,8 @@ async def inn_collector_advertiser(msg: Message, state: FSMContext):
     # Определение роли контрагента
     contractor_role = Role.ADVERTISER.value if user.role == Role.PUBLISHER.value else Role.PUBLISHER.value
 
-    if data['j_type'] == JStatus.JURIDICAL and user.role == Role.PUBLISHER:
-        contractor_role = Role.ORS.value
+    # if data['j_type'] == JStatus.JURIDICAL and user.role == Role.PUBLISHER:
+    #     contractor_role = Role.ORS.value
 
     ord_id = ut.get_ord_id(msg.from_user.id, delimiter=Delimiter.U.value)
 
@@ -124,10 +124,7 @@ async def inn_collector_advertiser(msg: Message, state: FSMContext):
             reply_markup=kb.get_add_distributor_finish_kb()
         )
     else:
-        await msg.answer(
-            f"❌ Произошла ошибка при добавлении контрагента в ОРД: "
-            f"{response if response else 'Нет ответа'}. "
-            f"Попробуйте снова.")
+        await msg.answer(f"Сообщение при ошибки регистрации в орд")
 
         # перенёс
         # register_advertiser_entity(message)

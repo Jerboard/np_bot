@@ -9,7 +9,7 @@ import os
 import db
 from init import bot, log_error
 from config import Config
-from .ord_api import register_media_file
+from .ord_api import register_media_file, send_mediation_to_ord
 from .media_utils import compress_video
 from enums import JStatus, Delimiter
 
@@ -118,19 +118,7 @@ def get_file_id(msg: Message) -> t.Union[str, None]:
     return file_id
 
 
-# async def save_media(file_id: str, user_id: int) -> str:
-#     file_info = await bot.get_file(file_id)
-#     photo_file = await bot.download_file(file_info.file_path)
-#
-#     path = os.path.join(Config.storage_path, str(user_id), file_info.file_unique_id)
-#     with open(path, 'wb') as new_file:
-#         new_file.write(photo_file.read())
-#
-#     return path, file_info.file_size
-
-
 # тут медиа регистрируются в ОРД
-
 async def save_media_ord(creatives: list[dict], creative_ord_id: str, user_id: int, descriptions: str) -> list[str]:
     media_ord_ids = []
     for creative in creatives:
