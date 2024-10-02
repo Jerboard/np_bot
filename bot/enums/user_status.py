@@ -15,6 +15,7 @@ class UserState(str, Enum):
     ADD_CAMPAIGN_LINK = 'add_campaign_link'
 
     ADD_CREATIVE = 'add_creative'
+    ADD_CREATIVE_LINK = 'add_creative_link'
 
     ADD_CONTRACT_START_DATE = 'add_contract_start_date'
     ADD_CONTRACT_END_DATE = 'add_contract_end_date'

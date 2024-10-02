@@ -15,6 +15,7 @@ class CreativeRow(t.Protocol):
     token: str
     status: str
     ord_id: str
+    links: list[str]
 
 
 CreativeTable: sa.Table = sa.Table(
@@ -29,6 +30,7 @@ CreativeTable: sa.Table = sa.Table(
     sa.Column('ord_id', sa.String(255)),
     sa.Column('token', sa.String(255)),
     sa.Column('status', sa.String(255), default=Status.ACTIVE.value),
+    sa.Column('links', psql.ARRAY(sa.String(255))),
 )
 
 
@@ -52,22 +54,43 @@ async def add_creative(
 
     async with begin_connection() as conn:
         result = await conn.execute(query)
-    return result.inserted_primary_key
+    return result.inserted_primary_key[0]
+
+
+# возвращает креатив
+async def get_creative(creative_id: int) -> CreativeRow:
+    query = CreativeTable.select().where(CreativeTable.c.id == creative_id)
+
+    async with begin_connection() as conn:
+        result = await conn.execute(query)
+    return result.first()
 
 
 # обновляет креатив
 async def update_creative(
         creative_id: int,
-        token: str,
-        status: str,
+        token: str = None,
+        status: str = None,
+        links: list = None,
+        link: str = None
 ) -> None:
-    query = CreativeTable.update().where(creative_id=creative_id)
+    query = CreativeTable.update().where(CreativeTable.c.id == creative_id)
 
     if token:
         query = query.values(token=token)
 
     if status:
         query = query.values(status=status)
+
+    if links:
+        query = query.values(links=links)
+
+    if link:
+        query = query.values(links=links)
+
+    if link:
+        query = query.values (
+            links=sa.func.array_append (CreativeTable.c.links, link))
 
     async with begin_connection() as conn:
         await conn.execute(query)

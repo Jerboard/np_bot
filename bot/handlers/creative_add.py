@@ -1,6 +1,7 @@
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command as CommandFilter, StateFilter
 from aiogram.fsm.context import FSMContext
+from aiogram.enums.message_entity_type import MessageEntityType
 from datetime import datetime
 from yookassa import Payment
 from asyncio import sleep
@@ -49,6 +50,21 @@ async def add_creative(msg: Message, state: FSMContext):
                 f'Вы можете загрузить несколько файлов для одного креатива. '
                 f'Например, несколько идущих подряд видео в сторис.')
         await msg.answer(text)
+
+
+# Обработчик загрузки креатива
+@dp.message(StateFilter(UserState.ADD_CREATIVE_LINK))
+async def handle_creative_upload(msg: Message, state: FSMContext):
+    if msg.entities and msg.entities[0].type == MessageEntityType.URL:
+        data = await state.get_data()
+        await db.update_creative(creative_id=data['creative_id'], link=msg.text)
+        await msg.answer(
+            text='Вы успешно добавили ссылку на ваш рекламный креатив\n\n'
+                 'Добавьте ещё ссылки или нажмите "Готово"',
+            reply_markup=kb.get_end_creative_kb(data['creative_id'], with_add=False))
+
+    else:
+        await msg.answer('❌ Некорректный формат ссылки')
 
 
 # media_ord_id: 524275902-m-8688379168, 524275902-m-8258534790, 524275902-m-4984138183
@@ -220,44 +236,76 @@ async def choose_campaign(cb: CallbackQuery, state: FSMContext):
     _, card_id_str = cb.data.split(':')
     card_id = int(card_id_str)
 
-    await cb.answer('Быстрая оплата временно невозможна', show_alert=True)
+    if not Config.debug:
+        await cb.answer('Быстрая оплата временно невозможна', show_alert=True)
+        return
 
-    # sent = await cb.message.answer('⏳')
-    # card_info = await db.get_card(card_id=card_id)
-    # user_info = await db.get_user_info(user_id=cb.from_user.id)
-    #
-    # pay_data = ut.fast_pay(last_pay_id=card_info.last_pay_id, email=user_info.email)
-    #
-    # if pay_data.paid:
-    #     # сохраняем данные платежа
-    #     await db.add_payment(user_id=cb.from_user.id, pay_id=pay_data.id)
-    #     # обновляем пей айди
-    #     await db.update_card(card_id=card_id, pay_id=pay_data.id)
-    #
-    #     data = await state.get_data()
-    #     await register_creative(data=data, user_id=cb.from_user.id, del_msg_id=sent.message_id)
-    #
-    # else:
-    #     await sent.delete()
-    #     await cb.answer('❗️ Ошибка оплаты. Выберите другую карту или добавьте новую ❓❓❓', show_alert=True)
+    sent = await cb.message.answer('⏳')
+    card_info = await db.get_card(card_id=card_id)
+    user_info = await db.get_user_info(user_id=cb.from_user.id)
+
+    pay_data = ut.fast_pay(last_pay_id=card_info.last_pay_id, email=user_info.email)
+
+    if pay_data.paid:
+        # сохраняем данные платежа
+        await db.add_payment(user_id=cb.from_user.id, pay_id=pay_data.id)
+        # обновляем пей айди
+        await db.update_card(card_id=card_id, pay_id=pay_data.id)
+
+        data = await state.get_data()
+        await register_creative(data=data, user_id=cb.from_user.id, del_msg_id=sent.message_id)
+
+    else:
+        await sent.delete()
+        await cb.answer('❗️ Ошибка оплаты. Выберите другую карту или добавьте новую ❓❓❓', show_alert=True)
 
 
 # Добавление ссылки на креатив
 @dp.callback_query(lambda cb: cb.data.startswith(CB.CREATIVE_ADD_LINK.value))
-async def add_link(cb: CallbackQuery):
-    ord_id = cb.data.split('_')[2]
-    msg = await cb.message.answer(
+async def add_link(cb: CallbackQuery, state: FSMContext):
+    _, creative_id = cb.data.split(':')
+
+    await state.set_state(UserState.ADD_CREATIVE_LINK)
+    await state.update_data(data={'creative_id': int(creative_id)})
+    await cb.message.answer(
         "Опубликуйте ваш креатив и пришлите ссылку на него. Если вы публикуете один креатив на разных площадках - "
         "пришлите ссылку на каждую площадку.")
-    # dp.register_next_step(msg, lambda message: cf.handle_creative_link(message, ord_id))
+
+
+# # Обработчик загрузки креатива
+# @dp.message(StateFilter(UserState.ADD_CREATIVE_LINK))
+# async def handle_creative_upload(msg: Message, state: FSMContext):
+#     if msg.entities and msg.entities[0].type == MessageEntityType.URL:
+#         data = await state.get_data()
+#         await db.update_creative(creative_id=data['creative_id'], link=msg.text)
+#         await msg.answer(
+#             text='Вы успешно добавили ссылку на ваш рекламный креатив\n\n'
+#                  'Добавьте ещё ссылки или нажмите "Готово"',
+#             reply_markup=kb.get_end_creative_kb(data['creative_id'], with_add=False))
+#
+#     else:
+#         await msg.answer('❌ Некорректный формат ссылки')
 
 
 @dp.callback_query(lambda cb: cb.data.startswith(CB.CREATIVE_DONE.value))
-async def link_done(cb: CallbackQuery):
-    await cb.message.answer(
-        "Вы успешно добавили все ссылки на креатив. "
-        "Подать отчетность по показам нужно будет в конце месяца или при завершении публикации. "
-        "В конце месяца мы вам напомним о подаче отчетности.")
+async def link_done(cb: CallbackQuery, state: FSMContext):
+    _, creative_id = cb.data.split(':')
+
+    creative = await db.get_creative(int(creative_id))
+    if creative.links:
+        await state.clear()
+        await cb.message.answer(
+            "Вы успешно добавили все ссылки на креатив. "
+            "Подать отчетность по показам нужно будет в конце месяца или при завершении публикации. "
+            "В конце месяца мы вам напомним о подаче отчетности.")
+
+    else:
+        await cb.message.answer(
+            "❌ Вы не добавили ссылки на креатив\n\n"
+            "Опубликуйте ваш креатив и пришлите ссылку на него. Если вы публикуете один креатив на разных площадках - "
+            "пришлите ссылку на каждую площадку.",
+            reply_markup=kb.get_end_creative_kb(int(creative_id))
+        )
 
 
 # Обработчик кнопки "Добавить файл или текст"

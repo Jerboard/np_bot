@@ -187,7 +187,6 @@ async def start_campaign_base(msg: Message, state: FSMContext, contract_id: int 
                 current=0,
                 chat_id=user_id,
             )
-
         else:
             await msg.answer('У вас нет контрактов')
             await start_contract(msg=msg, user_id=user_id)
@@ -248,7 +247,7 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int):
         ut.refund_payment(data['pay_id'])
         return
 
-    await db.add_creative(
+    creative_id = await db.add_creative(
         user_id=user_id,
         campaign_id=campaign.id,
         text=data.get('text'),
@@ -259,12 +258,13 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int):
     text = (f'Креатив успешно промаркирован.\n'
             f'Ваш токен - <code>{erid}</code>.\n'
             f'<code>Реклама. {contractor_name}. ИНН: {contractor_inn}. erid: {erid}</code>. \n'
+            f'<i>(нажмите на текст, чтобы скопировать)</i>\n\n'
             f'Теперь прикрепите маркировку к вашему креативу, опубликуйте и пришлите ссылку на него. \n'
             f'Если вы публикуете один креатив на разных площадках - пришлите ссылку на каждую площадку. \n'
             )
 
     await bot.delete_message(chat_id=user_id, message_id=del_msg_id)
-    await bot.send_message(chat_id=user_id, text=text, reply_markup=kb.get_end_creative_kb())
+    await bot.send_message(chat_id=user_id, text=text, reply_markup=kb.get_end_creative_kb(creative_id))
 
 # Кнопка:
 # 1. Добавить ссылку на другую площадку (переход к п.58)

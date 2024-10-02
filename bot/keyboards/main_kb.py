@@ -172,10 +172,11 @@ def get_select_campaigns_kb() -> InlineKeyboardMarkup:
 
 
 # кб для generate_link
-def get_end_creative_kb() -> InlineKeyboardMarkup:
+def get_end_creative_kb(creative_id: int, with_add: bool = True) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text="Добавить ссылку на другую площадку", callback_data=CB.CREATIVE_ADD_LINK.value)
-    kb.button(text="Готово", callback_data=CB.CREATIVE_DONE.value)
+    if with_add:
+        kb.button(text="Добавить ссылку на площадку", callback_data=f'{CB.CREATIVE_ADD_LINK.value}:{creative_id}')
+    kb.button(text="Готово", callback_data=f'{CB.CREATIVE_DONE.value}:{creative_id}')
     return kb.adjust(1).as_markup()
 
 

@@ -95,7 +95,9 @@ def refund_payment(pay_id: str):
 
 
 # быстрая оплата рекурент
-def fast_pay(last_pay_id: str, email: str = Config.default_email) -> Payment:
+def fast_pay(last_pay_id: str, email: str = None) -> Payment:
+    if not email:
+        email = Config.default_email
     payment = Payment.create({
         "amount": {
             "value": Config.service_price,
