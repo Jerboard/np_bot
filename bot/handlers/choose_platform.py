@@ -106,7 +106,7 @@ async def process_average_views(msg: Message, state: FSMContext):
                 await msg.answer("Не найдено контрагентов. Пожалуйста, добавьте контрагентов и повторите попытку.")
 
         else:
-            await state.update_data(data={'dist_id': msg.from_user.id})
+            await state.update_data(data={'dist_id': str(msg.from_user.id)})
             await finalize_platform_data(msg, state)
     else:
         sent = await msg.answer(
