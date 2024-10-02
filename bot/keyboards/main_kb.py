@@ -113,7 +113,7 @@ def get_finalize_platform_data_kb() -> InlineKeyboardMarkup:
 def get_confirm_ad_campaign_kb() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     kb.button(text="✅ Да, верно", callback_data=f"{CB.CAMPAIGN_ADD_CONFIRM.value}:{Action.ADD.value}"),
-    kb.button(text="🖍 Изменить", callback_data=f"{CB.CAMPAIGN_ADD_CONFIRM.value}:{Action.NO.value}"),
+    kb.button(text="🖍 Изменить", callback_data=f"{CB.CAMPAIGN_ADD_CONFIRM.value}:{Action.EDIT.value}"),
     kb.button(text="❌ Удалить", callback_data=f"{CB.CAMPAIGN_ADD_CONFIRM.value}:0"),
     # kb.button(text="❌ Удалить", callback_data=f"{CB.CLOSE.value}")
     return kb.adjust(3).as_markup()

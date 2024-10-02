@@ -198,8 +198,6 @@ async def send_creative_to_ord(
         "description": description,
         "pay_type": "cpc",
         "form": "text_graphic_block",
-        # "targeting": "Школьники",
-        # "url": "https://www.msu.ru",
         "texts": creative_text,
         "media_external_ids": media_ids,
         "flags": [

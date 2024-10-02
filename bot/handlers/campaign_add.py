@@ -111,11 +111,12 @@ async def handle_additional_link(cb: CallbackQuery, state: FSMContext):
             links_str = ''
 
         await cb.message.answer(
-            f"Проверьте, правильно ли указана информация о рекламной кампании:\n"
-            f"Бренд: {data['brand']}\n"
-            f"Услуга: {data['service']}\n"
+            f"❕ Проверьте, правильно ли указана информация о рекламной кампании:\n\n"
+            f"<b>Бренд:</b> {data['brand']}\n"
+            f"<b>Услуга:</b> {data['service']}\n"
             f"{links_str}",
-            reply_markup=kb.get_confirm_ad_campaign_kb()
+            reply_markup=kb.get_confirm_ad_campaign_kb(),
+            disable_web_page_preview=True
         )
 
 
@@ -123,7 +124,7 @@ async def handle_additional_link(cb: CallbackQuery, state: FSMContext):
 @dp.callback_query(lambda cb: cb.data.startswith(CB.CAMPAIGN_ADD_CONFIRM.value))
 async def handle_ad_campaign_callback(cb: CallbackQuery, state: FSMContext):
     _, action = cb.data.split(':')
-    if action == '1':
+    if action == Action.ADD:
         data = await state.get_data()
         await state.clear()
         campaign_id = await db.add_campaign(
@@ -138,5 +139,20 @@ async def handle_ad_campaign_callback(cb: CallbackQuery, state: FSMContext):
             f"Рекламная кампания с брендом {data['brand']} успешно создана!"
         )
         await base.add_creative_start(cb.message, state, campaign_id)
+
+    elif action == Action.EDIT:
+        data = await state.get_data()
+        await base.start_campaign_base(
+            msg=cb.message,
+            state=state,
+            contract_id=data['contract_id'],
+            user_id=cb.from_user.id
+        )
+
+    else:
+        await state.clear()
+        await base.start_campaign_base(msg=cb.message, state=state, user_id=cb.from_user.id)
+
+
 
 
