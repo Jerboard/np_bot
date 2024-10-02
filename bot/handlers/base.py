@@ -41,6 +41,10 @@ async def start_bot(msg: Message, state: FSMContext, user: db.UserRow = None):
         await msg.answer(dt.start_text, reply_markup=kb.get_agree_button(), disable_web_page_preview=True)
 
 
+async def preloader_advertiser_entity(message: Message):
+    await message.answer("Перейти к созданию контрагента?", reply_markup=kb.get_preloader_advertiser_entity_kb())
+
+
 async def start_contract(msg: Message, user_id: int = None, selected_contractor: int = None):
     if selected_contractor:
         await msg.answer(f"Выбранный ранее контрагент будет использован: № {selected_contractor}")
@@ -57,9 +61,11 @@ async def start_contract(msg: Message, user_id: int = None, selected_contractor:
                              reply_markup=kb.get_select_distributor_kb(contractors))
 
         else:
-            await msg.answer(
-                text=f"❗️У вас нет контрагентов.\n\n"
-                     f"Чтобы добавить контрагента воспользуйтесь командой /{Command.PRELOADER_ADVERTISER_ENTITY.value}")
+            # await msg.answer(
+            #     text=f"❗️У вас нет контрагентов.\n\n"
+            #          f"Чтобы добавить контрагента воспользуйтесь командой /{Command.PRELOADER_ADVERTISER_ENTITY.value}")
+            await msg.answer(text=f"❗️У вас нет контрагентов.")
+            await preloader_advertiser_entity(msg)
 
 
 async def end_contract(state: FSMContext, chat_id: int):
@@ -99,10 +105,6 @@ async def preloader_choose_platform(message: Message):
         text="Перейти к созданию рекламной площадки?",
         reply_markup=kb.get_preloader_choose_platform_kb()
     )
-
-
-async def preloader_advertiser_entity(message: Message):
-    await message.answer("Перейти к созданию контрагента?", reply_markup=kb.get_preloader_advertiser_entity_kb())
 
 
 # Функция для завершения процесса добавления данных платформы
@@ -179,11 +181,17 @@ async def start_campaign_base(msg: Message, state: FSMContext, contract_id: int 
         contracts = await db.get_all_user_contracts(user_id)
         await state.update_data(data={'contracts': contracts, 'current': 0})
 
-        await select_contract(
-            contracts=contracts,
-            current=0,
-            chat_id=user_id,
-        )
+        if contracts:
+            await select_contract(
+                contracts=contracts,
+                current=0,
+                chat_id=user_id,
+            )
+
+        else:
+            await msg.answer('У вас нет контрактов')
+            await start_contract(msg=msg, user_id=user_id)
+
 
 
 # Начало процесса добавления креатива
