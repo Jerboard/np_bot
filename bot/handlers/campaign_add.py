@@ -14,7 +14,7 @@ from enums import CB, Command, UserState, Action, Role, Step
 
 
 # Обработчик для команды /start_campaign
-@dp.message(CommandFilter(Command.START_CAMPAIGN.value))
+@dp.message(CommandFilter(Command.CAMPAIGN.value))
 async def start_campaign(msg: Message, state: FSMContext):
     user = await db.get_user_info(msg.from_user.id)
     if user:

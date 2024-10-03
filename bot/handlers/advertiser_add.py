@@ -11,7 +11,7 @@ from enums import CB, Command, UserState, JStatus, Role, Delimiter
 
 
 # Добавление контрагента начало
-@dp.message(CommandFilter(Command.PRELOADER_ADVERTISER_ENTITY.value))
+@dp.message(CommandFilter(Command.COUNTERAGENT.value))
 async def preloader_advertiser_entity_command(msg: Message, state: FSMContext):
     user = await db.get_user_info(msg.from_user.id)
     if user:

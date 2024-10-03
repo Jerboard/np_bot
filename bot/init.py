@@ -37,16 +37,30 @@ Configuration.secret_key = Config.yoo_secret_key
 
 async def set_main_menu():
     main_menu_commands = [
-        BotCommand(command=f'/{Command.START.value}', description='Главный экран'),
-        BotCommand(command=f'/{Command.PRELOADER_ADVERTISER_ENTITY.value}', description='Контрагент'),
-        BotCommand(command=f'/{Command.PRELOADER_CHOOSE_PLATFORM.value}', description='Выбор платформы'),
-        BotCommand(command=f'/{Command.START_CONTRACT.value}', description='Контракт'),
-        BotCommand(command=f'/{Command.START_CAMPAIGN.value}', description='Начать компанию'),
-        BotCommand(command=f'/{Command.ADD_CREATIVE.value}', description='Добавить креатив'),
-        BotCommand(command=f'/{Command.START_STATISTICS.value}', description='Статистика'),
+        BotCommand(command=f'/{Command.START.value}', description='Главное меню'),
+        BotCommand(command=f'/{Command.COUNTERAGENT.value}', description='Добавить контрагента'),
+        BotCommand(command=f'/{Command.PLATFORM.value}', description='Добавить площадку'),
+        BotCommand(command=f'/{Command.CONTRACT.value}', description='Добавить договор'),
+        BotCommand(command=f'/{Command.CAMPAIGN.value}', description='Добавить рекламную кампанию'),
+        BotCommand(command=f'/{Command.TOKEN.value}', description='Промаркировать креатив'),
+        BotCommand(command=f'/{Command.STATS.value}', description='Добавить статистику'),
+        BotCommand(command=f'/{Command.ACTS.value}', description='Добавить акт'),
+        BotCommand(command=f'/{Command.HELP.value}', description='Написать в поддержку'),
     ]
 
     await bot.set_my_commands(main_menu_commands)
+
+'''
+Главное меню /start
+Добавить контрагента /counteragent
+Добавить площадку /platform
+Добавить договор /contract 
+Добавить рекламную кампанию /campaign
+Промаркировать креатив /token
+Добавить статистику /stats
+Добавить акт /acts
+Написать в поддержку /help
+'''
 
 
 # запись ошибок

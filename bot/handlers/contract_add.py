@@ -15,7 +15,7 @@ from enums import CB, Command, UserState, JStatus, Role, Step, Delimiter
 
 # Обработчик для команды /start_contract
 # перенёс функцию в base поменял название, чтоб не совпадали
-@dp.message(CommandFilter(Command.START_CONTRACT.value))
+@dp.message(CommandFilter(Command.CONTRACT.value))
 async def start_contract_hnd(msg: Message, state: FSMContext):
     user = await db.get_user_info(msg.from_user.id)
     if user:

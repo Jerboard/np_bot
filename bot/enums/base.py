@@ -41,12 +41,14 @@ class Action(str, Enum):
 
 class Command(str, Enum):
     START = 'start'
-    PRELOADER_ADVERTISER_ENTITY = 'preloader_advertiser_entity'
-    PRELOADER_CHOOSE_PLATFORM = 'preloader_choose_platform'
-    START_CONTRACT = 'start_contract'
-    START_CAMPAIGN = 'start_campaign'
-    ADD_CREATIVE = 'add_creative'
-    START_STATISTICS = 'start_statistics'
+    COUNTERAGENT = 'counteragent'
+    PLATFORM = 'platform'
+    CONTRACT = 'contract'
+    CAMPAIGN = 'campaign'
+    TOKEN = 'token'
+    STATS = 'stats'
+    ACTS = 'acts'
+    HELP = 'help'
 
 
 class Platform(str, Enum):

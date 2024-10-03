@@ -1,6 +1,6 @@
 from aiogram.types import Message
 from aiogram.types import CallbackQuery
-from aiogram.filters import CommandStart, StateFilter
+from aiogram.filters import CommandStart, StateFilter, Command as CommandFilter
 from aiogram.fsm.context import FSMContext
 
 import db
@@ -11,7 +11,7 @@ from config import Config
 from init import dp, log_error, bot
 from .base import preloader_choose_platform, start_bot, preloader_advertiser_entity
 from utils import ord_api
-from enums import CB, JStatus, UserState, Role
+from enums import CB, Command, UserState, Role
 
 
 # 781602290203
@@ -19,6 +19,27 @@ from enums import CB, JStatus, UserState, Role
 @dp.message(CommandStart())
 async def start(msg: Message, state: FSMContext):
     await start_bot(msg, state)
+
+
+# Обработчик команды /help
+@dp.message(CommandFilter(Command.HELP))
+async def start(msg: Message, state: FSMContext):
+    await msg.answer(
+        'Напишите свой вопрос или пожелание по улучшению сервиса @id_np61',
+        reply_markup=kb.get_help_button()
+    )
+
+
+# Обработчик команды /help
+@dp.message(CommandFilter(Command.ACTS))
+async def start(msg: Message, state: FSMContext):
+    pass
+
+
+# Обработчик команды /help
+@dp.message(CommandFilter(Command.STATS))
+async def start(msg: Message, state: FSMContext):
+    pass
 
 
 # универсальный ответ на кнопку "нет"

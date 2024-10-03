@@ -14,7 +14,7 @@ from enums import CB, Command, UserState, JStatus, Role
 
 
 # Обработка команды /start_statistics
-@dp.message(CommandFilter(Command.START_STATISTICS.value))
+@dp.message(CommandFilter(Command.STATS.value))
 async def send_welcome(message: Message):
     user_id = message.from_user.id
     user_state = {}

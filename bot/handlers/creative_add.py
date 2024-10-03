@@ -16,7 +16,7 @@ from enums import CB, Command, UserState, Action, Role, Delimiter
 
 
 # Обработчик для команды /add_creative
-@dp.message(CommandFilter(Command.ADD_CREATIVE.value), StateFilter('*'))
+@dp.message(CommandFilter(Command.TOKEN.value), StateFilter('*'))
 async def add_creative(msg: Message, state: FSMContext):
     await state.set_state(UserState.ADD_CREATIVE)
 

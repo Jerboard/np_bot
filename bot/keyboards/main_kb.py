@@ -6,6 +6,13 @@ from init import log_error
 from enums import CB, Role, JStatus, Platform, Action
 
 
+# написать в поддержку
+def get_help_button() -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    kb.button(text='Написать в поддержку', url='https://t.me/id_np61')
+    return kb.adjust(1).as_markup()
+
+
 def get_agree_button() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     kb.button(text='Я согласен', callback_data=CB.AGREE.value)

@@ -15,7 +15,7 @@ from enums import CB, Command, UserState, platform_dict, Role, Action
 
 
 # выбора платформы старт
-@dp.message(CommandFilter(Command.PRELOADER_CHOOSE_PLATFORM.value))
+@dp.message(CommandFilter(Command.PLATFORM.value))
 async def preloader_choose_platform_base(msg: Message, state: FSMContext):
     user = await db.get_user_info(msg.from_user.id)
     if user:
