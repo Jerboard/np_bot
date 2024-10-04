@@ -204,4 +204,4 @@ async def collect_role(cb: CallbackQuery, state: FSMContext):
             await preloader_choose_platform(cb.message)
 
     else:
-        await cb.message.answer("Сообщение при ошибки регистрации в орд")
+        await cb.message.answer("Сообщение при ошибки регистрации в орд", reply_markup=kb.get_help_button())

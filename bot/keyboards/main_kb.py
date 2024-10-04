@@ -227,10 +227,10 @@ def get_check_next_step_contract_kb(step: str) -> InlineKeyboardMarkup:
 
 
 # после добавления контрагента
-def get_add_distributor_finish_kb() -> InlineKeyboardMarkup:
+def get_add_distributor_finish_kb(contractor_id: int) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     kb.button(text='Добавить еще контрагента', callback_data=CB.ADD_ANOTHER_DISTRIBUTOR.value)
-    kb.button(text='Продолжить', callback_data=CB.CONTINUE.value)
+    kb.button(text='Продолжить', callback_data=f'{CB.CONTINUE.value}:{contractor_id}')
     return kb.adjust(2).as_markup()
 
 

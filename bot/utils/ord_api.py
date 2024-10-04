@@ -38,7 +38,7 @@ async def send_user_to_ord(
     async with httpx.AsyncClient() as client:
         response = await client.put(url, headers=headers, json=data)
 
-    if response.status_code < 201:
+    if response.status_code > 201:
         log_error(f'send_user_to_ord\nrequest:\n{data} response:\n{response.text}', wt=False)
     return response.status_code
 
@@ -121,7 +121,7 @@ async def send_contract_to_ord(
     async with httpx.AsyncClient() as client:
         response = await client.put(url, headers=headers, json=data)
 
-    if response.status_code < 201:
+    if response.status_code > 201:
         log_error(f'send_contract_to_ord\nrequest:\n{data} response:\n{response.text}', wt=False)
     return response.status_code
 
@@ -147,7 +147,7 @@ async def send_platform_to_ord(ord_id: str, platform_name: str, platform_url: st
     async with httpx.AsyncClient() as client:
         response = await client.put(url, headers=headers, json=data)
 
-    if response.status_code < 201:
+    if response.status_code > 201:
         log_error(f'send_contract_to_ord\nrequest:\n{data} response:\n{response.text}', wt=False)
     return response.status_code
 
@@ -167,7 +167,7 @@ async def register_media_file(file_path: str, ord_id: str, description: str) -> 
     async with httpx.AsyncClient() as client:
         response = await client.put(url, headers=headers, json=data, files=files)
 
-    if response.status_code < 201:
+    if response.status_code > 201:
         log_error(f'send_media_to_ord\nrequest:\n{data} response:\n{response.text}', wt=False)
     return response.status_code
 

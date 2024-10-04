@@ -6,7 +6,7 @@ import db
 import keyboards as kb
 from init import dp
 import utils as ut
-from .base import preloader_advertiser_entity, start_bot
+from .base import preloader_advertiser_entity, start_bot, start_contract
 from enums import CB, Command, UserState, JStatus, Role, Delimiter
 
 
@@ -76,7 +76,6 @@ async def add_advisor_name(msg: Message, state: FSMContext):
 @dp.message(StateFilter(UserState.ADD_ADVERTISER_INN))
 async def inn_collector_advertiser(msg: Message, state: FSMContext):
     data = await state.get_data()
-    await state.clear()
 
     if not ut.validate_inn(msg.text, j_type=data['j_type']):
         await msg.answer(
@@ -93,6 +92,7 @@ async def inn_collector_advertiser(msg: Message, state: FSMContext):
         )
         return
 
+    await state.clear()
     # Определение роли контрагента
     contractor_role = Role.ADVERTISER.value if user.role == Role.PUBLISHER.value else Role.PUBLISHER.value
 
@@ -112,7 +112,7 @@ async def inn_collector_advertiser(msg: Message, state: FSMContext):
     # Функция для обработки ответа от ОРД и дальнейшего выполнения кода для контрагента
     if response and response in [200, 201]:
         # async def add_campaign(user_id: int, contract_id: int, brand: str, service: str, links: list) -> int:
-        await db.add_contractor(
+        contractor_id = await db.add_contractor(
             user_id=msg.from_user.id,
             name=data['name'],
             inn=msg.text,
@@ -121,7 +121,7 @@ async def inn_collector_advertiser(msg: Message, state: FSMContext):
         )
         await msg.answer(
             text="✅ Контрагент успешно добавлен!\nВы всегда можете добавить новых контрагентов позже.",
-            reply_markup=kb.get_add_distributor_finish_kb()
+            reply_markup=kb.get_add_distributor_finish_kb(contractor_id=contractor_id)
         )
     else:
         await msg.answer(f"Сообщение при ошибки регистрации в орд")
@@ -144,6 +144,9 @@ async def handle_success_add_distributor(cb: CallbackQuery):
 # Обработчик для кнопок после успешного добавления контрагента
 @dp.callback_query(lambda cb: cb.data.startswith(CB.CONTINUE.value))
 async def handle_success_add_distributor(cb: CallbackQuery):
+    _, contractor_id_str = cb.data.split(':')
+    contractor_id = int(contractor_id_str)
+
     user = await db.get_user_info(cb.from_user.id)
     if user.role == Role.ADVERTISER:
         await cb.message.answer(
@@ -151,5 +154,6 @@ async def handle_success_add_distributor(cb: CallbackQuery):
             reply_markup=kb.get_preloader_choose_platform_kb()
         )
     elif user.role == Role.PUBLISHER:
-        await cb.message.answer("Теперь укажите информацию о договоре.")
+        await start_contract(msg=cb.message, user_id=cb.from_user.id, selected_contractor=contractor_id)
+        # await cb.message.answer("Теперь укажите информацию о договоре.")
 

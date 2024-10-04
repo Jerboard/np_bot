@@ -31,10 +31,10 @@ DistributorTable: sa.Table = sa.Table(
 
 
 # добавляет контрагента
-async def add_contractor(user_id: int, name: str, inn: str, j_type: str, ord_id: str) -> None:
-    print('------')
-    print(f'{user_id}, {name}, {inn}, {j_type}, {ord_id}, ')
-    '524275902, ООО ЮКЦ Партнер, 7727563778, juridical, 524275902-u-283548423,'
+async def add_contractor(user_id: int, name: str, inn: str, j_type: str, ord_id: str) -> int:
+    # print('------')
+    # print(f'{user_id}, {name}, {inn}, {j_type}, {ord_id}, ')
+    # '524275902, ООО ЮКЦ Партнер, 7727563778, juridical, 524275902-u-283548423,'
     now = datetime.now()
     query = (
         psql.insert(DistributorTable)
@@ -52,7 +52,9 @@ async def add_contractor(user_id: int, name: str, inn: str, j_type: str, ord_id:
         )
     )
     async with begin_connection() as conn:
-        await conn.execute(query)
+        result = await conn.execute(query)
+
+    return result.inserted_primary_key[0]
 
 
 '''

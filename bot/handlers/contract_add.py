@@ -208,7 +208,7 @@ async def handle_vat_selection(cb: CallbackQuery, state: FSMContext):
         # await cb.message.answer("Введите название бренда, который вы планируете рекламировать.")
         # ask_for_brand(chat_id)
     else:
-        await cb.message.answer("Произошла ошибка при регистрации договора в ОРД.")
+        await cb.message.answer("Произошла ошибка при регистрации договора в ОРД.", reply_markup=kb.get_help_button())
         # logging.error(f"Error registering contract in ORD: {response}")
 
 

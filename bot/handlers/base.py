@@ -134,8 +134,7 @@ async def finalize_platform_data(msg: Message, state: FSMContext):
         )
 
     else:
-        await msg.answer(
-            f"Сообщение при ошибки регистрации в орд")
+        await msg.answer(f"Сообщение при ошибки регистрации в орд", reply_markup=kb.get_help_button())
 
 
 async def select_contract(
@@ -242,7 +241,7 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int):
     log_error(f'response: {response}', wt=False)
     erid = response.get('erid') if response else None
     if not erid:
-        await bot.send_message(chat_id=user_id, text="Сообщение при ошибки регистрации в орд")
+        await bot.send_message(chat_id=user_id, text="Сообщение при ошибки регистрации в орд", reply_markup=kb.get_help_button())
         # тут ещё возврат денег
         ut.refund_payment(data['pay_id'])
         return
