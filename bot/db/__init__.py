@@ -7,4 +7,5 @@ from .payments import *
 from .creatives import *
 from .media import *
 from .save_card import *
+from .statistic import *
 from .common import *

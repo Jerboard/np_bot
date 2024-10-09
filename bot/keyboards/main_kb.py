@@ -127,7 +127,13 @@ def get_confirm_ad_campaign_kb() -> InlineKeyboardMarkup:
 
 
 # Подтвердить замену промо
-def get_select_page_kb(end_page: bool, select_id: int, page: int, cb: str = CB.CONTRACT_PAGE.value) -> InlineKeyboardMarkup:
+def get_select_page_kb(
+        end_page: bool,
+        select_id: int,
+        page: int,
+        cb: str = CB.CONTRACT_PAGE.value,
+        with_select_btn: bool = True
+) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     btn_count = 0
     if page > 0:
@@ -137,7 +143,8 @@ def get_select_page_kb(end_page: bool, select_id: int, page: int, cb: str = CB.C
         btn_count += 1
         kb.button(text=f'След стр. ➡️ ', callback_data=f'{cb}:{page + 1}:{Action.CONT.value}')
 
-    kb.button(text=f'✔️ Выбрать', callback_data=f'{cb}:{select_id}:{Action.YES.value}')
+    if with_select_btn:
+        kb.button(text=f'✔️ Выбрать', callback_data=f'{cb}:{select_id}:{Action.YES.value}')
     kb.adjust(2, 1) if btn_count == 2 else kb.adjust(1)
     return kb.as_markup()
 

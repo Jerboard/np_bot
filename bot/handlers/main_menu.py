@@ -36,12 +36,6 @@ async def start(msg: Message, state: FSMContext):
     pass
 
 
-# Обработчик команды /help
-@dp.message(CommandFilter(Command.STATS))
-async def start(msg: Message, state: FSMContext):
-    pass
-
-
 # универсальный ответ на кнопку "нет"
 @dp.callback_query(lambda cb: cb.data == 'in_dev')
 async def in_dev(cb: CallbackQuery):
@@ -60,9 +54,6 @@ async def close(cb: CallbackQuery, state: FSMContext):
     await cb.message.delete()
 
     await state.clear()
-    await cb.message.answer('❓❓❓ Тут нужно поставить универсальную заглушку. '
-                            'Куда отправляем пользователя после отмены действия\n\n'
-                            'Пример\n\n'
-                            'В начало /start')
+    await cb.message.answer('В начало /start')
     # user = await db.get_user_info(cb.from_user.id)
     # await start_bot(cb.message, state, user=user)

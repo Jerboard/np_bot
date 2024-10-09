@@ -33,6 +33,7 @@ class CB(str, Enum):
     PAY_YK_NEW = 'pay_yk_new'
     PAY_YK_FAST = 'pay_yk_fast'
     PAY_YK_CHECK = 'pay_yk_check'
+    STATISTIC_SELECT_PAGE = 'statistic_select_page'
 
     IP = 'ip'
     JURIDICAL = 'juridical'

@@ -6,7 +6,7 @@ import sqlalchemy.dialects.postgresql as psql
 from .base_db import METADATA, begin_connection
 
 
-class DistributorRow(t.Protocol):
+class PlatformRow(t.Protocol):
     id: int
     created_at: datetime
     user_id: int
@@ -62,3 +62,18 @@ async def add_platform(
     )
     async with begin_connection() as conn:
         await conn.execute(query)
+
+
+# Возвращает данные платформы
+async def get_platform(platform_id: int = None, url: str = None) -> PlatformRow:
+    query = PlatformTable.select()
+
+    if platform_id:
+        query = query.where(PlatformTable.c.platform_id == platform_id)
+
+    if url:
+        query = query.where(PlatformTable.c.url == url)
+
+    async with begin_connection() as conn:
+        result = await conn.execute(query)
+    return result.first()

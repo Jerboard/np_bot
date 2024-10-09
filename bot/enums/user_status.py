@@ -21,3 +21,5 @@ class UserState(str, Enum):
     ADD_CONTRACT_END_DATE = 'add_contract_end_date'
     ADD_CONTRACT_SERIAL = 'add_contract_serial'
     ADD_CONTRACT_AMOUNT = 'add_contract_amount'
+
+    SEND_STATISTIC = 'send_statistic'

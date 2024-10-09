@@ -67,6 +67,7 @@ async def collect_advertiser_link(msg: Message, state: FSMContext):
         return
 
     advertiser_link = f'https://{msg.text}' if not msg.text.startswith("https://") else msg.text
+    advertiser_link = advertiser_link[:-1] if advertiser_link[-1] == '/' else advertiser_link
 
     await state.update_data(data={'platform_url': advertiser_link})
     data = await state.get_data()

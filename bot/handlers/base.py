@@ -1,7 +1,6 @@
 from aiogram.types import Message
-from aiogram.types import CallbackQuery
-from aiogram.filters import CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
+from asyncio import sleep
 
 import db
 import data as dt
@@ -191,7 +190,6 @@ async def start_campaign_base(msg: Message, state: FSMContext, contract_id: int 
             await start_contract(msg=msg, user_id=user_id)
 
 
-
 # Начало процесса добавления креатива
 async def add_creative_start(msg: Message, state: FSMContext, campaign_id: int):
     await state.set_state(UserState.ADD_CREATIVE)
@@ -201,6 +199,66 @@ async def add_creative_start(msg: Message, state: FSMContext, campaign_id: int):
         "Загрузите файл своего рекламного креатива или введите текст. "
         "Вы можете загрузить несколько файлов для одного креатива."
     )
+
+
+async def creative_upload(msg: Message, state: FSMContext):
+    # Попробовать с медиагруппой
+    if msg.content_type in ['text', 'photo', 'video', 'audio', 'document']:
+        if msg.video and msg.video.file_size >= 50000000:
+            await msg.answer(f'❌ Слишком большое видео. Размер видео не должен быть больше 50 МВ ')
+            return
+
+        current_state = await state.get_state()
+        if not current_state:
+            campaigns = await db.get_user_campaigns(msg.from_user.id)
+            if not campaigns:
+                await msg.answer(
+                    "❌ У вас нет активных рекламных кампаний. Пожалуйста, создайте кампанию перед добавлением креатива."
+                )
+                await state.clear()
+                await start_campaign_base(msg=msg, state=state)
+                return
+
+            await state.set_state(UserState.ADD_CREATIVE)
+            await state.update_data(data={'campaigns': campaigns})
+
+        data = await state.get_data()
+
+        creative = {
+            'content_type': msg.content_type,
+            'file_id': ut.get_file_id(msg),
+            'video_name': msg.video.file_name if msg.video else None
+        }
+
+        # сохраняем текст, если есть
+        creative_text = msg.text or msg.caption
+        if creative_text:
+            tests = data.get('text', [])
+            tests.append(creative_text)
+            await state.update_data(data={'text': tests})
+
+        creatives = data.get('creatives', [])
+        creatives.append(creative)
+        await state.update_data(data={'creatives': creatives})
+
+        message_id = data.get('message_id')
+        if message_id:
+            try:
+                await bot.delete_message(chat_id=msg.chat.id, message_id=message_id)
+            except:
+                pass
+
+        sent = await msg.answer(
+            '✅ Креатив успешно добавлен\n\n'
+            'Чтобы добавить еще файл или текст для этого креатива просто отправьте его сообщением или '
+            'нажмите "Продолжить", чтобы получить токен.',
+            reply_markup=kb.get_select_campaigns_kb()
+        )
+        await state.update_data(data={'message_id': sent.message_id})
+    else:
+        sent = await msg.answer("❌ Ошибка. Пожалуйста, попробуйте еще раз и пришлите креатив.")
+        await sleep(3)
+        await sent.delete()
 
 
 async def register_creative(data: dict, user_id: int, del_msg_id: int):
@@ -265,9 +323,40 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int):
     await bot.delete_message(chat_id=user_id, message_id=del_msg_id)
     await bot.send_message(chat_id=user_id, text=text, reply_markup=kb.get_end_creative_kb(creative_id))
 
-# Кнопка:
-# 1. Добавить ссылку на другую площадку (переход к п.58)
-# 2. Готово (переход к п.60)
-# Важно:
-# "Реклама..." должны копироваться при клике.
-# Если не прислали ссылку в течение 1 часа - (переход к п.57)'
+
+# выбор креатива для подачи статистики
+async def start_statistic(
+        user_id: int,
+        active_creatives: tuple[db.StatisticRow],
+        sending_list: list[int],
+        state: FSMContext,
+        page: int = 0,
+        message_id: int = 0,
+):
+    text = (f'Отправьте количество просмотров по креативу:\n\n'
+            f'{active_creatives[page].url}')
+
+    if page in sending_list:
+        text += '\n\n✅ Вы уже отправили статистику по этому креативу'
+
+    keyboard = kb.get_select_page_kb(
+        end_page=(page + 1) == len(active_creatives),
+        select_id=active_creatives[page].id,
+        page=page,
+        cb=CB.STATISTIC_SELECT_PAGE.value,
+        with_select_btn=False
+    )
+
+    if message_id:
+        try:
+            await bot.edit_message_text(
+                chat_id=user_id,
+                message_id=message_id,
+                text=text,
+                reply_markup=keyboard
+            )
+        except Exception as ex:
+            pass
+    else:
+        sent = await bot.send_message(chat_id=user_id, text=text, reply_markup=keyboard)
+        await state.update_data(data={'message_id': sent.message_id})

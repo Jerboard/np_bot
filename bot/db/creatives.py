@@ -30,7 +30,7 @@ CreativeTable: sa.Table = sa.Table(
     sa.Column('ord_id', sa.String(255)),
     sa.Column('token', sa.String(255)),
     sa.Column('status', sa.String(255), default=Status.ACTIVE.value),
-    sa.Column('links', psql.ARRAY(sa.String(255))),
+    # sa.Column('links', psql.ARRAY(sa.String(255))),
 )
 
 
@@ -70,9 +70,7 @@ async def get_creative(creative_id: int) -> CreativeRow:
 async def update_creative(
         creative_id: int,
         token: str = None,
-        status: str = None,
-        links: list = None,
-        link: str = None
+        status: str = None
 ) -> None:
     query = CreativeTable.update().where(CreativeTable.c.id == creative_id)
 
@@ -81,16 +79,6 @@ async def update_creative(
 
     if status:
         query = query.values(status=status)
-
-    if links:
-        query = query.values(links=links)
-
-    if link:
-        query = query.values(links=links)
-
-    if link:
-        query = query.values (
-            links=sa.func.array_append (CreativeTable.c.links, link))
 
     async with begin_connection() as conn:
         await conn.execute(query)
