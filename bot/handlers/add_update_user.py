@@ -80,11 +80,11 @@ async def add_fio(msg: Message, state: FSMContext):
     if data['j_type'] == JStatus.IP:
         await msg.answer("Введите ваш ИНН. \n"
                          "Например, 563565286576. ИНН индивидуального предпринимателя совпадает с ИНН физического лица.")
-    elif data['j_type'] == JStatus.JURIDICAL:
-        await msg.answer("Введите ваш ИНН. Например, 563565286576.")
-
     elif data['j_type'] == JStatus.PHYSICAL:
-        await msg.answer("Введите ИНН вашей организации. Например, 6141027912.")
+        await msg.answer("Введите ваш ИНН. \nНапример, 563565286576.")
+
+    elif data['j_type'] == JStatus.JURIDICAL:
+        await msg.answer("Введите ИНН вашей организации. \nНапример, 6141027912.")
 
 
 # принимает ИНН
