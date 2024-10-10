@@ -2,6 +2,7 @@ from aiogram.types import Message
 from aiogram.types import CallbackQuery
 from aiogram.filters import CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
+from aiogram.enums.message_entity_type import MessageEntityType
 
 import db
 import data as dt
@@ -18,7 +19,6 @@ from enums import CB, JStatus, UserState, Role, Step
 @dp.callback_query(lambda cb: cb.data == CB.AGREE.value)
 async def agree(cb: CallbackQuery):
     await cb.answer('Спасибо за согласие!')
-
     await cb.message.answer("Укажите свой правовой статус", reply_markup=kb.get_register_kb())
 
 
@@ -56,15 +56,26 @@ async def collect_info(cb: CallbackQuery, state: FSMContext):
         await cb.message.answer("Укажите ваши фамилию, имя и отчество. \nНапример, Иванов Иван Иванович.")
 
     await state.set_state(UserState.USER_ADD_NAME)
-    await state.update_data(data={'j_type': juridical_type})
+    await state.update_data(data={'j_type': juridical_type, 'step': Step.NAME.value})
 
 
 # принимает имя
 @dp.message(StateFilter(UserState.USER_ADD_NAME))
 async def add_fio(msg: Message, state: FSMContext):
     data = await state.get_data()
+
+    if data['j_type'] == JStatus.JURIDICAL and data['step'] == Step.NAME:
+        await state.update_data(data={'name': msg.text, 'step': Step.FIO.value})
+        await msg.answer("Укажите ФИО ответственного лица")
+        return
+
+    elif data['j_type'] == JStatus.JURIDICAL and data['step'] == Step.FIO:
+        await state.update_data(data={'fio': msg.text, 'step': Step.INN.value})
+
+    else:
+        await state.update_data(data={'name': msg.text, 'step': Step.INN.value})
+
     await state.set_state(UserState.USER_ADD_INN)
-    await state.update_data(data={'name': msg.text, 'step': Step.INN.value})
 
     if data['j_type'] == JStatus.IP:
         await msg.answer("Введите ваш ИНН. \n"
@@ -86,58 +97,64 @@ async def add_inn(msg: Message, state: FSMContext):
             await msg.answer("❌ Неверный формат ИНН. Пожалуйста, введите корректный ИНН:")
             return
 
-        # await state.set_state(UserState.USER_ADD_INN)
-        await state.update_data(data={'inn': msg.text, 'step': Step.EMAIL.value})
-        # await state.update_data(data={'phone': msg.text, 'step': Step.EMAIL.value})
+        await state.update_data(data={'inn': msg.text, 'step': Step.PHONE.value})
+        if data['j_type'] == JStatus.JURIDICAL:
+            text = 'Укажите номер телефона ответственного лица'
+
+        else:
+            text = 'Укажите контактный номер телефона'
+
+        await msg.answer(text=text)
+
+    elif data['step'] == Step.PHONE:
+        await state.update_data(data={'phone': msg.text, 'step': Step.EMAIL.value})
         await msg.answer(
-            text='Введите ваш адрес электронной почты\n\n'
+            text='Укажите адрес электронной почты\n\n'
                  'Адрес почты нужен для отправки чеков при оплате маркировки',
-            reply_markup=kb.get_continue_btn_kb()
+            # reply_markup=kb.get_continue_btn_kb()
         )
 
-# elif data['step'] == Step.PHONE:
-#         await state.update_data(data={'phone': msg.text, 'step': Step.EMAIL.value})
-#         await msg.answer(
+    else:
+        if msg.entities and msg.entities[0].type == MessageEntityType.EMAIL:
+            await state.update_data(data={'email': msg.text})
+
+            await msg.answer(
+                text="Выберите свою роль:\n\n"
+                     "<b>Рекламодатель</b> - тот, кто заказывает и оплачивает рекламу.\n"
+                     "<b>Рекламораспространитель</b> - тот, кто распространяет рекламу на площадках, "
+                     "чтобы привлечь внимание к товару или услуге.\n\n"
+                     "Выберите свою роль",
+                reply_markup=kb.get_select_role_kb()
+            )
+
+        else:
+            await msg.answer(text=f'❌ Некорректный адрес электронной почты\n\n'
+                                  f'Укажите адрес электронной почты\n\n'
+                                  f'Адрес почты нужен для отправки чеков при оплате маркировки')
+
+
+# Пропускает ввод данных
+# @dp.callback_query(lambda cb: cb.data.startswith(CB.USER_CONTINUE.value))
+# async def collect_role(cb: CallbackQuery, state: FSMContext):
+#     data = await state.get_data()
+#
+#     if data['step'] == Step.PHONE:
+#         await state.update_data(data={'step': Step.EMAIL.value})
+#         await cb.message.answer(
 #             text='Введите ваш адрес электронной почты\n\n'
 #                  'Адрес почты нужен для отправки чеков при оплате маркировки',
 #             reply_markup=kb.get_continue_btn_kb()
 #         )
-
-    else:
-        await state.update_data(data={'email': msg.text})
-
-        await msg.answer(
-            text="Выберите свою роль:\n\n"
-                 "<b>Рекламодатель</b> - тот, кто заказывает и оплачивает рекламу.\n"
-                 "<b>Рекламораспространитель</b> - тот, кто распространяет рекламу на площадках, "
-                 "чтобы привлечь внимание к товару или услуге.\n\n"
-                 "Выберите свою роль",
-            reply_markup=kb.get_select_role_kb()
-        )
-
-
-# Пропускает ввод данных
-@dp.callback_query(lambda cb: cb.data.startswith(CB.USER_CONTINUE.value))
-async def collect_role(cb: CallbackQuery, state: FSMContext):
-    data = await state.get_data()
-
-    if data['step'] == Step.PHONE:
-        await state.update_data(data={'step': Step.EMAIL.value})
-        await cb.message.answer(
-            text='Введите ваш адрес электронной почты\n\n'
-                 'Адрес почты нужен для отправки чеков при оплате маркировки',
-            reply_markup=kb.get_continue_btn_kb()
-        )
-
-    else:
-        await cb.message.answer(
-            text="Выберите свою роль:\n\n"
-                 "<b>Рекламодатель</b> - тот, кто заказывает и оплачивает рекламу.\n"
-                 "<b>Рекламораспространитель</b> - тот, кто распространяет рекламу на площадках, "
-                 "чтобы привлечь внимание к товару или услуге.\n\n"
-                 "Выберите свою роль",
-            reply_markup=kb.get_select_role_kb()
-        )
+#
+#     else:
+#         await cb.message.answer(
+#             text="Выберите свою роль:\n\n"
+#                  "<b>Рекламодатель</b> - тот, кто заказывает и оплачивает рекламу.\n"
+#                  "<b>Рекламораспространитель</b> - тот, кто распространяет рекламу на площадках, "
+#                  "чтобы привлечь внимание к товару или услуге.\n\n"
+#                  "Выберите свою роль",
+#             reply_markup=kb.get_select_role_kb()
+#         )
 
 
 # Обработчик для выбора роли CB.USER_SELECT_ROLE.value
@@ -187,14 +204,16 @@ async def collect_role(cb: CallbackQuery, state: FSMContext):
             # ord_id = f'{Config.partner_data["inn"]}-m-{cb.from_user.id}'
             # await ut.send_mediation_to_ord(ord_id=ord_id, client_ord_id=str(cb.from_user.id))
 
-            await db.add_user(
+            await db.update_user(
                 user_id=cb.from_user.id,
-                full_name=cb.from_user.full_name,
-                username=cb.from_user.username,
                 role=role,
                 inn=data['inn'],
                 name=data['name'],
-                j_type=data['j_type']
+                j_type=data['j_type'],
+                phone=data.get('phone'),
+                email=data.get('email'),
+                fio=data.get('fio'),
+                in_ord=True
             )
 
         if role == Role.ADVERTISER:

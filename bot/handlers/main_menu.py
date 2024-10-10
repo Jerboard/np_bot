@@ -18,7 +18,17 @@ from enums import CB, Command, UserState, Role
 # Обработчик команды /start
 @dp.message(CommandStart())
 async def start(msg: Message, state: FSMContext):
-    await start_bot(msg, state)
+    check_referrer = msg.text.split(' ')
+    ref_code = check_referrer[1] if len(check_referrer) == 2 else None
+
+    # определяем реферала
+    if ref_code:
+        referrer = await db.get_user_info(ref_code=ref_code)
+        referrer_id = referrer.user_id
+    else:
+        referrer_id = None
+
+    await start_bot(msg=msg, state=state, referrer=referrer_id)
 
 
 # Обработчик команды /help

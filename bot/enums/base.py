@@ -9,6 +9,8 @@ class Step(str, Enum):
     INN = 'inn'
     PHONE = 'phone'
     EMAIL = 'email'
+    NAME = 'name'
+    FIO = 'fio'
 
 
 class Role(str, Enum):

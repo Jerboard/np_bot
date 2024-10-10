@@ -13,27 +13,36 @@ from enums import CB, JStatus, UserState, Command, Delimiter, Role
 
 
 # стартовый экран
-async def start_bot(msg: Message, state: FSMContext, user: db.UserRow = None):
+async def start_bot(msg: Message, state: FSMContext, user: db.UserRow = None, referrer: int = None):
     await state.clear()
     if not user:
         user = await db.get_user_info(msg.from_user.id)
 
-    if user:
+    # обновляем данные пользователя
+    await db.add_user(
+        user_id=msg.from_user.id,
+        full_name=msg.from_user.full_name,
+        username=msg.from_user.username,
+        referrer=referrer,
+    )
+
+    if user and user.in_ord:
         # Если пользователь найден в базе данных, выводим информацию о нем
-        name_label = "ФИО" if user.j_type != JStatus.JURIDICAL else "Название организации"
+        if user.j_type == JStatus.JURIDICAL:
+            name_label = f'Название организации: {user.name}\nОтветственный: {user.fio}\n'
+        else:
+            name_label = f'ФИО: <b>{user.name}</b>\n'
 
         text = (f"Информация о вас:\n\n"
-                f"{name_label}: <b>{msg.from_user.first_name}</b>\n"
+                f"{name_label}"
                 f"ИНН: <b>{user.inn}</b>\n"
                 f"Правовой статус: <b>{dt.juridical_type_map.get(user.j_type, user.j_type)}</b>\n"
                 f"Текущая роль: <b>{dt.role_map.get(user.role, user.role)}</b>\n\n"
-                "Вы можете изменить свои данные и роль.\n\n"
-                "Чтобы воспользоваться функционалом бота - нажмите на синюю кнопку меню и выберите действие.\n\n")
+                f"Вы можете изменить свои данные и роль.\n\n"
+                f"Реферальная ссылка:\n"
+                f"<code>{Config.bot_link}?start={user.ref_code}</code>\n\n"
+                f"Чтобы воспользоваться функционалом бота - нажмите на синюю кнопку меню и выберите действие.\n\n")
         await msg.answer(text, reply_markup=kb.get_start_kb())
-
-        # обновляем данные пользователя
-        if msg.from_user.full_name != user.full_name or msg.from_user.username != user.username:
-            await db.add_user(user_id=msg.from_user.id, full_name=msg.from_user.full_name, username=msg.from_user.username)
 
     else:
         # Если пользователь не найден в базе данных, предлагаем согласиться с офертой

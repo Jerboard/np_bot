@@ -1,4 +1,6 @@
 from datetime import datetime
+from random import choice
+
 import typing as t
 import sqlalchemy as sa
 import sqlalchemy.dialects.postgresql as psql
@@ -18,9 +20,10 @@ class UserRow(t.Protocol):
     phone: str
     email: str
     j_type: str
-    balance: float
-    total_balance: float
-    # is_agree: bool
+    fio: str
+    ref_code: str
+    referrer: int
+    in_ord: bool
 
 
 UserTable: sa.Table = sa.Table(
@@ -38,10 +41,16 @@ UserTable: sa.Table = sa.Table(
     sa.Column('phone', sa.String(255)),
     sa.Column('email', sa.String(255)),
     sa.Column('j_type', sa.String(255)),
-    # sa.Column('balance', sa.Float(), default=0),
-    # sa.Column('total_balance', sa.Float(), default=0),
-    # sa.Column('is_agree', sa.Boolean, default=False),
+    sa.Column('fio', sa.String(255)),
+    sa.Column('referrer', sa.BigInteger()),
+    sa.Column('ref_code', sa.String(255)),
+    sa.Column('in_ord', sa.Boolean(), default=False),
 )
+
+
+# даёт случайную сроку для реферальной ссылки
+def get_ref_code() -> str:
+    return ''.join([choice('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789') for _ in range(10)])
 
 
 # Добавляет пользователя
@@ -49,12 +58,7 @@ async def add_user(
         user_id: int,
         full_name: str,
         username: str,
-        role: str = None,
-        inn: str = None,
-        name: str = None,
-        phone: str = None,
-        email: str = None,
-        j_type: str = None,
+        referrer: int = None,
 ) -> None:
     now = datetime.now()
     query = (
@@ -65,12 +69,13 @@ async def add_user(
             username=username,
             first_visit=now,
             last_visit=now,
-            role=role,
-            inn=inn,
-            name=name,
-            phone=phone,
-            email=email,
-            j_type=j_type
+            ref_code=get_ref_code(),
+            referrer=referrer,
+            # inn=inn,
+            # name=name,
+            # phone=phone,
+            # email=email,
+            # j_type=j_type
         )
         .on_conflict_do_update(
             index_elements=[UserTable.c.user_id],
@@ -82,8 +87,16 @@ async def add_user(
         
         
 # возвращает данные пользователя
-async def get_user_info(user_id: int) -> UserRow:
-    query = UserTable.select().where(UserTable.c.user_id == user_id)
+async def get_user_info(user_id: int = None, ref_code: str = None) -> UserRow:
+    query = UserTable.select()
+
+    if user_id:
+        query = query.where(UserTable.c.user_id == user_id)
+    elif ref_code:
+        query = query.where(UserTable.c.ref_code == ref_code)
+    else:
+        return None
+
     async with begin_connection() as conn:
         result = await conn.execute(query)
 
@@ -95,15 +108,31 @@ async def update_user(
         user_id: int,
         role: str = None,
         j_type: str = None,
-        agree: bool = None,
+        in_ord: bool = None,
+        inn: str = None,
+        name: str = None,
+        phone: str = None,
+        email: str = None,
+        fio: str = None,
 ) -> None:
     query = UserTable.update().where(UserTable.c.user_id == user_id)
+
     if role:
         query = query.values(role=role)
     if j_type:
         query = query.values(j_type=j_type)
-    if agree is not None:
-        query = query.values(is_agree=agree)
+    if in_ord is not None:
+        query = query.values(in_ord=in_ord)
+    if inn:
+        query = query.values(inn=inn)
+    if name:
+        query = query.values(name=name)
+    if phone:
+        query = query.values(phone=phone)
+    if email:
+        query = query.values(email=email)
+    if fio:
+        query = query.values(fio=fio)
 
     async with begin_connection() as conn:
         await conn.execute(query)

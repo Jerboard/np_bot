@@ -9,6 +9,7 @@ from handlers import dp
 from db.base_db import init_models
 from utils.ord_api import send_user_to_ord
 
+
 async def main() -> None:
     # await db_command()
     if not os.path.exists(Config.storage_path):
