@@ -18,10 +18,10 @@ from enums import CB, Command, UserState, JStatus, Role, Step, Delimiter
 @dp.message(CommandFilter(Command.CONTRACT.value))
 async def start_contract_hnd(msg: Message, state: FSMContext):
     user = await db.get_user_info(msg.from_user.id)
-    if user:
+    if user and user.in_ord:
         await start_contract(msg)
     else:
-        await start_bot(msg, state)
+        await start_bot(msg, state, user=user)
 
 
 # возвращает к старту контракта
@@ -57,6 +57,11 @@ async def process_contract_start_date(msg: Message, state: FSMContext):
     if data['step'] == Step.START_DATE.value:
         date_str = ut.convert_date(msg.text)
         if date_str:
+            start_date = datetime.strptime(date_str, Config.ord_date_form)
+            if start_date > datetime.now().date():
+                await msg.answer("❌ Неверный формат даты.\n\n Дата начала договора не должна быть больше сегодняшней")
+                return
+
             await state.update_data(data={
                 'step': Step.END_DATE.value,
                 'start_date': date_str,

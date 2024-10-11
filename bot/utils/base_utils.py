@@ -9,9 +9,9 @@ import os
 import db
 from init import bot, log_error
 from config import Config
-from .ord_api import register_media_file, send_mediation_to_ord
+from .ord_api import register_media_file
 from .media_utils import compress_video
-from enums import JStatus, Delimiter
+from enums import JStatus, Delimiter, MediaType
 
 
 # выводит данные словаря
@@ -159,3 +159,22 @@ async def save_media_ord(creatives: list[dict], creative_ord_id: str, user_id: i
             #     os.remove(file_path)
     #
     return media_ord_ids
+
+
+def proc_media_type(creatives: list[dict]) -> str:
+    media_types = set([creative['content_type'] for creative in creatives])
+    media_type = MediaType.BANNER.value
+    if len(media_types) == 4:
+        media_type = MediaType.TEXT_GRAPHIC_AUDIO_VIDEO_BLOCK.value
+
+    elif len(media_types) == 1 and ContentType.TEXT.value in media_types:
+        media_type = MediaType.TEXT_BLOCK.value
+
+    elif len(media_types) == 1 and ContentType.PHOTO.value in media_types:
+        media_type = MediaType.BANNER.value
+
+    elif len(media_types) == 1 and ContentType.VIDEO.value in media_types:
+        media_type = MediaType.VIDEO.value
+
+    elif len(media_types) == 1 and ContentType.TEXT.value in media_types:
+        media_type = MediaType.AUDIO.value

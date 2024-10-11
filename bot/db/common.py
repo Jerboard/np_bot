@@ -5,7 +5,7 @@ import typing as t
 
 from .base_db import METADATA, begin_connection
 from .distributor import DistributorTable
-from .contracts import ContractTable
+from .contracts import ContractTable, Status
 
 
 class ContractDistRow(t.Protocol):
@@ -31,7 +31,10 @@ async def get_all_user_contracts(user_id: int) -> tuple[ContractDistRow]:
         )
         .select_from (ContractTable.join (
             DistributorTable, ContractTable.c.contractor_id == DistributorTable.c.id, isouter=True), )
-    ).where(ContractTable.c.user_id == user_id)
+    ).where(
+        ContractTable.c.user_id == user_id,
+        ContractTable.c.status == Status.ACTIVE
+    )
     async with begin_connection () as conn:
         result = await conn.execute (query)
 

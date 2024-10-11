@@ -15,7 +15,7 @@ class CreativeRow(t.Protocol):
     token: str
     status: str
     ord_id: str
-    links: list[str]
+    texts: list[str]
 
 
 CreativeTable: sa.Table = sa.Table(
@@ -26,7 +26,8 @@ CreativeTable: sa.Table = sa.Table(
     sa.Column('created_at', sa.DateTime(timezone=True), default=datetime.now()),
     sa.Column('user_id', sa.BigInteger),
     sa.Column('campaign_id', sa.Integer),
-    sa.Column('text', sa.Text),
+    # sa.Column('text', sa.Text),
+    sa.Column('texts', psql.ARRAY(sa.Text)),
     sa.Column('ord_id', sa.String(255)),
     sa.Column('token', sa.String(255)),
     sa.Column('status', sa.String(255), default=Status.ACTIVE.value),
@@ -40,14 +41,14 @@ async def add_creative(
         campaign_id: int,
         ord_id: str,
         token: str,
-        text: str = None,
+        texts: list[str] = None,
 ) -> int:
     now = datetime.now()
     query = CreativeTable.insert().values(
             created_at=now,
             user_id=user_id,
             campaign_id=campaign_id,
-            text=text,
+            texts=texts,
             ord_id=ord_id,
             token=token,
         )

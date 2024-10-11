@@ -3,6 +3,7 @@ from aiogram.types import CallbackQuery
 from aiogram.filters import CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.enums.message_entity_type import MessageEntityType
+from datetime import datetime
 
 import db
 import data as dt
@@ -195,6 +196,16 @@ async def collect_role(cb: CallbackQuery, state: FSMContext):
 
     if response in [200, 201]:
         await cb.message.answer(text)
+
+        # регистрируем договор между партнер и пользователем
+        ord_id = f'{Config.partner_data["inn"]}-m-{cb.from_user.id}'
+        date_str = datetime.now().strftime(Config.ord_date_form)
+        await ut.send_contract_to_ord(
+            ord_id=ord_id,
+            client_external_id='my',
+            contractor_external_id=str(cb.from_user.id),
+            contract_date=date_str
+        )
 
         if is_update:
             await db.update_user(user_id=cb.from_user.id, role=role)

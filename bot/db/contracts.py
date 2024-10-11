@@ -4,6 +4,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql as psql
 
 from .base_db import METADATA, begin_connection
+from enums import Status
 
 
 class ContractRow(t.Protocol):
@@ -31,7 +32,7 @@ ContractTable: sa.Table = sa.Table(
     sa.Column('end_date', sa.Date()),
     sa.Column('serial', sa.String(255)),
     sa.Column('amount', sa.Float),
-    # sa.Column('vat_code', sa.Integer),
+    sa.Column('status', sa.String(255), default=Status.ACTIVE.value),
     sa.Column('ord_id', sa.String(255)),
 
 )
@@ -73,4 +74,15 @@ async def get_contract(contract_id: int) -> ContractRow:
     async with begin_connection() as conn:
         result = await conn.execute(query)
     return result.first()
+
+
+# возвращает договор
+async def get_user_contracts(user_id: int) -> tuple[ContractRow]:
+    query = ContractTable.select().where(
+        ContractTable.c.user_id == user_id
+    )
+
+    async with begin_connection() as conn:
+        result = await conn.execute(query)
+    return result.all()
 

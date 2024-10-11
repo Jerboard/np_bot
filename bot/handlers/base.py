@@ -9,7 +9,7 @@ import utils as ut
 from config import Config
 from init import dp, log_error, bot
 from utils import ord_api
-from enums import CB, JStatus, UserState, Command, Delimiter, Role
+from enums import CB, JStatus, UserState, MediaType, Delimiter, Role
 
 
 # стартовый экран
@@ -212,7 +212,7 @@ async def add_creative_start(msg: Message, state: FSMContext, campaign_id: int):
 
 async def creative_upload(msg: Message, state: FSMContext):
     # Попробовать с медиагруппой
-    if msg.content_type in ['text', 'photo', 'video', 'audio', 'document']:
+    if msg.content_type in ['text', 'photo', 'video', 'audio']:
         if msg.video and msg.video.file_size >= 50000000:
             await msg.answer(f'❌ Слишком большое видео. Размер видео не должен быть больше 50 МВ ')
             return
@@ -238,6 +238,7 @@ async def creative_upload(msg: Message, state: FSMContext):
             'file_id': ut.get_file_id(msg),
             'video_name': msg.video.file_name if msg.video else None
         }
+
 
         # сохраняем текст, если есть
         creative_text = msg.text or msg.caption
@@ -281,6 +282,8 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int):
     contract = await db.get_contract(campaign.contract_id)
     user = await db.get_user_info(user_id)
 
+    # определяем тип рекламы
+
     if user.role == Role.ADVERTISER:
         contractor_name = user.name
         contractor_inn = user.inn
@@ -316,7 +319,7 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int):
     creative_id = await db.add_creative(
         user_id=user_id,
         campaign_id=campaign.id,
-        text=data.get('text'),
+        texts=data.get('text', []),
         token=erid,
         ord_id=creative_ord_id,
     )
@@ -353,6 +356,46 @@ async def start_statistic(
         select_id=active_creatives[page].id,
         page=page,
         cb=CB.STATISTIC_SELECT_PAGE.value,
+        with_select_btn=False
+    )
+
+    if message_id:
+        try:
+            await bot.edit_message_text(
+                chat_id=user_id,
+                message_id=message_id,
+                text=text,
+                reply_markup=keyboard
+            )
+        except Exception as ex:
+            pass
+    else:
+        sent = await bot.send_message(chat_id=user_id, text=text, reply_markup=keyboard)
+        await state.update_data(data={'message_id': sent.message_id})
+
+
+# выбор контракта для отправки акта
+async def start_acts(
+        user_id: int,
+        active_contracts: tuple[db.ContractDistRow],
+        state: FSMContext,
+        page: int = 0,
+        message_id: int = 0,
+):
+    contract: db.ContractDistRow = active_contracts[page]
+    serial = contract.serial if contract.serial else contract.contract_id
+    amount = f'{contract.amount:.2f} руб' if contract.amount else 'нет'
+    text = (f'Выберите договор, чтобы подать информацию об акте выполненных работ.\n\n'
+            f'{serial}\n'
+            f'{contract.name}\n'
+            f'{contract.contract_date}\n'
+            f'{amount}\n')
+
+    keyboard = kb.get_select_page_kb(
+        end_page=(page + 1) == len(active_contracts),
+        select_id=contract.contract_id,
+        page=page,
+        cb=CB.ACTS_SELECT_PAGE.value,
         with_select_btn=False
     )
 

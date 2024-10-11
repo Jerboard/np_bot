@@ -189,7 +189,7 @@ def get_select_campaigns_kb() -> InlineKeyboardMarkup:
 def get_end_creative_kb(creative_id: int, with_add: bool = True) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     if with_add:
-        kb.button(text="Добавить ссылку на площадку", callback_data=f'{CB.CREATIVE_ADD_LINK.value}:{creative_id}')
+        kb.button(text="Добавить ссылку на опубликованный пост", callback_data=f'{CB.CREATIVE_ADD_LINK.value}:{creative_id}')
     kb.button(text="Готово", callback_data=f'{CB.CREATIVE_DONE.value}:{creative_id}')
     return kb.adjust(1).as_markup()
 
@@ -248,6 +248,15 @@ def get_select_distributor_kb(contractors: tuple[db.DistributorRow]) -> InlineKe
         kb.button(text=contractor.name, callback_data=f"{CB.CONTRACT_DIST_SELECT.value}:{contractor.id}")
 
     kb.button(text="❌ Отмена", callback_data=CB.CLOSE.value)
+    return kb.adjust(1).as_markup()
+
+
+# выбор контрагента
+def get_select_creative_platform_kb(platforms: tuple[db.PlatformRow]) -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    for platform in platforms:
+        kb.button(text=platform.url, callback_data=f"{CB.CREATIVE_SELECT_PLATFORM.value}:{platform.id}")
+
     return kb.adjust(1).as_markup()
 
 

@@ -27,6 +27,7 @@ class CB(str, Enum):
     CREATIVE_ADD_CREATIVE = 'creative_add_creative'
     CREATIVE_TOKEN = 'creative_token'
     CREATIVE_ADD_LINK = 'creative_add_link'
+    CREATIVE_SELECT_PLATFORM = 'creative_select_platform'
     CREATIVE_DONE = 'creative_done'
     RED_J_TYPE = 'red_j_type'
     NO = 'answer_no'
@@ -34,6 +35,7 @@ class CB(str, Enum):
     PAY_YK_FAST = 'pay_yk_fast'
     PAY_YK_CHECK = 'pay_yk_check'
     STATISTIC_SELECT_PAGE = 'statistic_select_page'
+    ACTS_SELECT_PAGE = 'acts_select_page'
 
     IP = 'ip'
     JURIDICAL = 'juridical'

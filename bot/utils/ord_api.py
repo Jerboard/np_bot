@@ -39,35 +39,35 @@ async def send_user_to_ord(
         response = await client.put(url, headers=headers, json=data)
 
     if response.status_code > 201:
-        log_error(f'send_user_to_ord\nrequest:\n{data} response:\n{response.text}', wt=False)
+        log_error(f'send_user_to_ord\nrequest:\nord_id: {ord_id}\n{data} \nresponse:\n{response.text}', wt=False)
     return response.status_code
 
 
 # Функция для отправки посреднического договора при регистрации ОРД API
-async def send_mediation_to_ord(ord_id: str, client_ord_id: str):
-    today = datetime.now().date()
-
-    url = f"{Config.ord_url}/v1/contract/{ord_id}"
-    headers = {
-        "Authorization": f"Bearer {Config.bearer}",
-        "Content-Type": "application/json"
-    }
-    data = {
-          "type": "mediation",
-          "client_external_id": client_ord_id,
-          "contractor_external_id": Config.partner_data['ord_id'],
-          "date": today.strftime(Config.ord_date_form),
-          "action_type": "commercial",
-          "subject_type": "mediation",
-          "flags": [
-            "vat_included",
-            "agent_acting_for_publisher"
-          ],
-    }
-    async with httpx.AsyncClient() as client:
-        response = await client.put(url, headers=headers, json=data)
-
-    return response
+# async def send_mediation_to_ord(ord_id: str, client_ord_id: str):
+#     today = datetime.now().date()
+#
+#     url = f"{Config.ord_url}/v1/contract/{ord_id}"
+#     headers = {
+#         "Authorization": f"Bearer {Config.bearer}",
+#         "Content-Type": "application/json"
+#     }
+#     data = {
+#           "type": "mediation",
+#           "client_external_id": client_ord_id,
+#           "contractor_external_id": Config.partner_data['ord_id'],
+#           "date": today.strftime(Config.ord_date_form),
+#           "action_type": "commercial",
+#           "subject_type": "mediation",
+#           "flags": [
+#             "vat_included",
+#             "agent_acting_for_publisher"
+#           ],
+#     }
+#     async with httpx.AsyncClient() as client:
+#         response = await client.put(url, headers=headers, json=data)
+#
+#     return response
 
 '''
 
@@ -87,9 +87,9 @@ async def send_contract_to_ord(
         client_external_id: str,
         contractor_external_id: str,
         contract_date: str,
-        serial: str,
+        serial: str = None,
         # vat_flag: list,
-        amount: str
+        amount: str = None
 ) -> int:
     url = f"{Config.ord_url}/v1/contract/{ord_id}"
     data = {
@@ -122,7 +122,7 @@ async def send_contract_to_ord(
         response = await client.put(url, headers=headers, json=data)
 
     if response.status_code > 201:
-        log_error(f'send_contract_to_ord\nrequest:\n{data} response:\n{response.text}', wt=False)
+        log_error(f'send_contract_to_ord\nrequest:\nord_id: {ord_id}\n{data} \nresponse:\n{response.text}', wt=False)
     return response.status_code
 
 
@@ -148,7 +148,7 @@ async def send_platform_to_ord(ord_id: str, platform_name: str, platform_url: st
         response = await client.put(url, headers=headers, json=data)
 
     if response.status_code > 201:
-        log_error(f'send_contract_to_ord\nrequest:\n{data} response:\n{response.text}', wt=False)
+        log_error(f'send_contract_to_ord\nrequest:\nord_id: {ord_id}\n{data} \nresponse:\n{response.text}', wt=False)
     return response.status_code
 
 
@@ -168,7 +168,7 @@ async def register_media_file(file_path: str, ord_id: str, description: str) -> 
         response = await client.put(url, headers=headers, json=data, files=files)
 
     if response.status_code > 201:
-        log_error(f'send_media_to_ord\nrequest:\n{data} response:\n{response.text}', wt=False)
+        log_error(f'send_media_to_ord\nrequest:\nord_id: {ord_id}\n{data} \nresponse:\n{response.text}', wt=False)
     return response.status_code
 
 
@@ -201,7 +201,7 @@ async def send_creative_to_ord(
         "texts": creative_text,
         "media_external_ids": media_ids,
         "flags": [
-            "social"
+            "native"
         ]
     }
 
@@ -212,5 +212,8 @@ async def send_creative_to_ord(
         return response.json()
 
     else:
-        log_error(f'send_creative_to_ord\nrequest:\n{data} response:\n{response.text}', wt=False)
+        log_error(
+            f'send_creative_to_ord\nrequest:\nord_id: {creative_id}\n{data} \nresponse:\n{response.text}',
+            wt=False
+        )
         response

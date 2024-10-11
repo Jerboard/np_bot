@@ -12,11 +12,11 @@ class PlatformRow(t.Protocol):
     user_id: int
     name: str
     url: str
-    advertiser_link: str
+    # advertiser_link: str
     average_views: int
-    link: str
+    # link: str
     ord_id: str
-    vat_included: str
+    # vat_included: str
 
 
 PlatformTable: sa.Table = sa.Table(
@@ -28,11 +28,11 @@ PlatformTable: sa.Table = sa.Table(
     sa.Column('user_id', sa.BigInteger),
     sa.Column('name', sa.String(255)),
     sa.Column('url', sa.String(255)),
-    sa.Column('advertiser_link', sa.String(255)),
+    # sa.Column('advertiser_link', sa.String(255)),
     sa.Column('average_views', sa.Integer),
-    sa.Column('link', sa.String(255)),
+    # sa.Column('link', sa.String(255)),
     sa.Column('ord_id', sa.String(255), unique=True),
-    sa.Column('vat_included', sa.String(255)),
+    # sa.Column('vat_included', sa.String(255)),
 )
 
 
@@ -62,6 +62,15 @@ async def add_platform(
     )
     async with begin_connection() as conn:
         await conn.execute(query)
+
+
+# Возвращает платформы пользователя
+async def get_user_platforms(user_id: int = None) -> tuple[PlatformRow]:
+    query = PlatformTable.select().where(PlatformTable.c.user_id == user_id)
+
+    async with begin_connection() as conn:
+        result = await conn.execute(query)
+    return result.all()
 
 
 # Возвращает данные платформы

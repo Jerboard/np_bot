@@ -35,7 +35,7 @@ async def add_creative(msg: Message, state: FSMContext):
     # erid = response.get('erid') if response else None
 
     user = await db.get_user_info(msg.from_user.id)
-    if not user:
+    if not user or not user.in_ord:
         await start_bot(msg, state)
 
     campaigns = await db.get_user_campaigns(msg.from_user.id)
@@ -228,7 +228,7 @@ async def add_link(cb: CallbackQuery, state: FSMContext):
         "пришлите ссылку на каждую площадку.")
 
 
-# Обработчик загрузки креатива
+# Обработчик загрузки ссылки на креатив
 @dp.message(StateFilter(UserState.ADD_CREATIVE_LINK))
 async def handle_creative_upload(msg: Message, state: FSMContext):
     if msg.entities and msg.entities[0].type == MessageEntityType.URL:
@@ -236,7 +236,7 @@ async def handle_creative_upload(msg: Message, state: FSMContext):
 
         # проверяем зарегистрирована ли платформа
         platform_url = msg.text.rsplit('/', 1)[0]
-        print(f'platform_url: {platform_url}')
+        # print(f'platform_url: {platform_url}')
         platform = await db.get_platform(url=platform_url)
 
         if platform:
@@ -247,16 +247,38 @@ async def handle_creative_upload(msg: Message, state: FSMContext):
                 platform_id=platform.id
             )
             text = 'Вы успешно добавили ссылку на ваш рекламный креатив\n\nДобавьте ещё ссылки или нажмите "Готово"'
-        else:
-            text = ('❌ Платформа не зарегистрирована в ОРД\n\n'
-                    'Креатив может быть размещён только на зарегистрированной платформе')
+            await msg.answer(
+                text=text,
+                reply_markup=kb.get_end_creative_kb(data['creative_id'], with_add=False))
 
-        await msg.answer(
-            text=text,
-            reply_markup=kb.get_end_creative_kb(data['creative_id'], with_add=False))
+        else:
+            platforms = await db.get_user_platforms(msg.from_user.id)
+            text = f'Укажите платформу размещения <a href="{msg.text}">креатива</a>'
+            await msg.answer(text=text, reply_markup=kb.get_select_creative_platform_kb(platforms))
 
     else:
         await msg.answer('❌ Некорректный формат ссылки')
+
+
+@dp.callback_query(lambda cb: cb.data.startswith(CB.CREATIVE_SELECT_PLATFORM.value))
+async def link_done(cb: CallbackQuery, state: FSMContext):
+    _, platform_id = cb.data.split(':')
+    data = await state.get_data()
+
+    url = cb.message.entities[0].url
+    # print(f'cb.message.entities[0].url: {url}')
+
+    await db.add_statistic(
+        user_id=cb.from_user.id,
+        creative_id=data['creative_id'],
+        url=url,
+        platform_id=int(platform_id)
+    )
+    text = 'Вы успешно добавили ссылку на ваш рекламный креатив\n\nДобавьте ещё ссылки или нажмите "Готово"'
+    await cb.message.edit_text(
+        text=text,
+        reply_markup=kb.get_end_creative_kb(data['creative_id'], with_add=False)
+    )
 
 
 @dp.callback_query(lambda cb: cb.data.startswith(CB.CREATIVE_DONE.value))
