@@ -28,15 +28,12 @@ PlatformTable: sa.Table = sa.Table(
     sa.Column('user_id', sa.BigInteger),
     sa.Column('name', sa.String(255)),
     sa.Column('url', sa.String(255)),
-    # sa.Column('advertiser_link', sa.String(255)),
     sa.Column('average_views', sa.Integer),
-    # sa.Column('link', sa.String(255)),
     sa.Column('ord_id', sa.String(255), unique=True),
-    # sa.Column('vat_included', sa.String(255)),
 )
 
 
-# Добавляет пользователя
+# Добавляет платформу
 async def add_platform(
         user_id: int,
         name: str,
@@ -78,7 +75,7 @@ async def get_platform(platform_id: int = None, url: str = None) -> PlatformRow:
     query = PlatformTable.select()
 
     if platform_id:
-        query = query.where(PlatformTable.c.platform_id == platform_id)
+        query = query.where(PlatformTable.c.id == platform_id)
 
     if url:
         query = query.where(PlatformTable.c.url == url)

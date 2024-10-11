@@ -204,7 +204,8 @@ async def collect_role(cb: CallbackQuery, state: FSMContext):
             ord_id=ord_id,
             client_external_id='my',
             contractor_external_id=str(cb.from_user.id),
-            contract_date=date_str
+            contract_date=date_str,
+            serial=str(cb.from_user.id)
         )
 
         if is_update:

@@ -57,8 +57,9 @@ async def process_contract_start_date(msg: Message, state: FSMContext):
     if data['step'] == Step.START_DATE.value:
         date_str = ut.convert_date(msg.text)
         if date_str:
-            start_date = datetime.strptime(date_str, Config.ord_date_form)
-            if start_date > datetime.now().date():
+            start_date = datetime.strptime(date_str, Config.ord_date_form).date()
+            today = datetime.now().date()
+            if start_date > today:
                 await msg.answer("❌ Неверный формат даты.\n\n Дата начала договора не должна быть больше сегодняшней")
                 return
 
@@ -105,7 +106,7 @@ async def process_contract_start_date(msg: Message, state: FSMContext):
         if ut.is_float(msg.text):
             await state.update_data(data={
                 'step': Step.SUM.value,
-                'sum': float(msg.text)
+                'sum': float(msg.text),
             })
             await end_contract(state=state, chat_id=msg.chat.id)
         else:

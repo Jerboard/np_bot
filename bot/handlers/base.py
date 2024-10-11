@@ -1,13 +1,15 @@
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 from asyncio import sleep
+from apscheduler.triggers.date import DateTrigger
+from datetime import datetime, timedelta
 
 import db
 import data as dt
 import keyboards as kb
 import utils as ut
 from config import Config
-from init import dp, log_error, bot
+from init import dp, log_error, bot, scheduler
 from utils import ord_api
 from enums import CB, JStatus, UserState, MediaType, Delimiter, Role
 
@@ -81,12 +83,14 @@ async def end_contract(state: FSMContext, chat_id: int):
 
     contractor = await db.get_contractor(contractor_id=data['dist_id'])
     await state.update_data(data={'contractor_ord_id': contractor.ord_id})
+
+    amount = f'{data["sum"]:.2f} руб' if data.get('sum') else 'нет'
     text = (
         f'❕ Проверьте, правильно ли указана информация по вашему договору с рекламодателем:\n\n'
         f'<b>Контрагент:</b> {contractor.name}\n'
         f'<b>Дата заключения договора:</b> {data["input_start_date"]}\n'
         f'<b>Номер договора:</b> {data.get("num", "нет")}\n'
-        f'<b>Сумма договора:</b> {data.get("sum", "нет")} руб\n'
+        f'<b>Сумма договора:</b> {amount}\n'
         f'<b>Дата завершения договора:</b> {data.get("input_end_date", "нет")}'
     )
     await bot.send_message(chat_id=chat_id, text=text, reply_markup=kb.get_contract_end_kb(data['dist_id']))
@@ -116,11 +120,14 @@ async def preloader_choose_platform(message: Message):
 
 
 # Функция для завершения процесса добавления данных платформы
-async def finalize_platform_data(msg: Message, state: FSMContext):
+async def finalize_platform_data(msg: Message, state: FSMContext, user_id: int = None):
+    if not user_id:
+        user_id = msg.from_user.id
+
     data = await state.get_data()
     await state.clear()
 
-    ord_id = ut.get_ord_id(msg.from_user.id, delimiter='-p-')
+    ord_id = ut.get_ord_id(user_id, delimiter='-p-')
     response = await ut.send_platform_to_ord(
         ord_id=ord_id,
         platform_name=data['platform_name'],
@@ -129,7 +136,7 @@ async def finalize_platform_data(msg: Message, state: FSMContext):
     )
     if response in [200, 201]:
         await db.add_platform(
-            user_id=msg.from_user.id,
+            user_id=user_id,
             name=data['platform_name'],
             url=data['platform_url'],
             average_views=data['view'],
@@ -271,7 +278,7 @@ async def creative_upload(msg: Message, state: FSMContext):
         await sent.delete()
 
 
-async def register_creative(data: dict, user_id: int, del_msg_id: int):
+async def register_creative(data: dict, user_id: int, del_msg_id: int, state: FSMContext):
     creatives = data.get('creatives', [])
 
     # ut.print_dict(data, '>>creative data')
@@ -331,6 +338,11 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int):
             f'Теперь прикрепите маркировку к вашему креативу, опубликуйте и пришлите ссылку на него. \n'
             f'Если вы публикуете один креатив на разных площадках - пришлите ссылку на каждую площадку. \n'
             )
+
+    # Создаем задание с триггером на определённую дату
+    trigger_time = datetime.now() + timedelta(hours=1)
+    # trigger_time = datetime.now() + timedelta(minutes=1)
+    scheduler.add_job(ut.check_post_link, DateTrigger(run_date=trigger_time), args=[creative_id, user_id])
 
     await bot.delete_message(chat_id=user_id, message_id=del_msg_id)
     await bot.send_message(chat_id=user_id, text=text, reply_markup=kb.get_end_creative_kb(creative_id))

@@ -135,7 +135,9 @@ async def save_media_ord(creatives: list[dict], creative_ord_id: str, user_id: i
             if creative['content_type'] == ContentType.VIDEO:
                 file_path = os.path.join(Config.storage_path, creative['video_name'])
             else:
-                file_path = os.path.join(Config.storage_path, f'{file_info.file_unique_id}')
+                # print(f'file_info.file_path: {file_info.file_path}')
+                file_name = os.path.basename(file_info.file_path)
+                file_path = os.path.join(Config.storage_path, f'{file_name}')
 
             with open(file_path, 'wb') as new_file:
                 new_file.write(tg_file.read())
@@ -178,3 +180,5 @@ def proc_media_type(creatives: list[dict]) -> str:
 
     elif len(media_types) == 1 and ContentType.TEXT.value in media_types:
         media_type = MediaType.AUDIO.value
+
+

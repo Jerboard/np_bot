@@ -124,7 +124,7 @@ async def handle_contractor_selection(cb: CallbackQuery, state: FSMContext):
     _, dist_ord_id_str = cb.data.split(':')
 
     await state.update_data(data={'dist_id': dist_ord_id_str})
-    await finalize_platform_data(cb.message, state)
+    await finalize_platform_data(cb.message, state, user_id=cb.from_user.id)
 
 
 # завершение создания платформы. Следующий шаг

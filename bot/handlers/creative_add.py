@@ -11,7 +11,7 @@ import keyboards as kb
 from config import Config
 from init import dp, log_error, bot
 import utils as ut
-from .base import start_campaign_base, register_creative, start_bot, creative_upload
+from . import base
 from enums import CB, Command, UserState, Action, Role, Delimiter
 
 
@@ -36,14 +36,14 @@ async def add_creative(msg: Message, state: FSMContext):
 
     user = await db.get_user_info(msg.from_user.id)
     if not user or not user.in_ord:
-        await start_bot(msg, state)
+        await base.start_bot(msg, state)
 
     campaigns = await db.get_user_campaigns(msg.from_user.id)
     if not campaigns:
         await msg.answer(
             "У вас нет активных рекламных кампаний. Пожалуйста, создайте кампанию перед добавлением креатива."
         )
-        await start_campaign_base(msg, state)
+        await base.start_campaign_base(msg, state)
 
     else:
         text = (f'Загрузите файл своего рекламного креатива или введите текст.\n'
@@ -79,7 +79,7 @@ async def add_creative(msg: Message, state: FSMContext):
 # Обработчик загрузки креатива
 @dp.message(StateFilter(UserState.ADD_CREATIVE))
 async def handle_creative_upload_st(msg: Message, state: FSMContext):
-    await creative_upload(msg, state)
+    await base.creative_upload(msg, state)
 
 
 # Обработчик выбора рекламной кампании CREATIVE_SELECT_CAMPAIGN
@@ -174,7 +174,7 @@ async def choose_campaign(cb: CallbackQuery, state: FSMContext):
                 card_info=ut.get_payment_card_info(pay_data)
             )
 
-        await register_creative(data=data, user_id=cb.from_user.id, del_msg_id=sent.message_id)
+        await base.register_creative(data=data, user_id=cb.from_user.id, del_msg_id=sent.message_id, state=state)
 
     else:
         await sent.delete()
@@ -194,7 +194,7 @@ async def choose_campaign(cb: CallbackQuery, state: FSMContext):
     else:
         sent = await cb.message.answer('⏳')
         data = await state.get_data()
-        await register_creative(data=data, user_id=cb.from_user.id, del_msg_id=sent.message_id)
+        await base.register_creative(data=data, user_id=cb.from_user.id, del_msg_id=sent.message_id, state=state)
 
     # sent = await cb.message.answer('⏳')
     # card_info = await db.get_card(card_id=card_id)
@@ -224,8 +224,8 @@ async def add_link(cb: CallbackQuery, state: FSMContext):
     await state.set_state(UserState.ADD_CREATIVE_LINK)
     await state.update_data(data={'creative_id': int(creative_id)})
     await cb.message.answer(
-        "Опубликуйте ваш креатив и пришлите ссылку на него. Если вы публикуете один креатив на разных площадках - "
-        "пришлите ссылку на каждую площадку.")
+        text="Опубликуйте ваш креатив и пришлите ссылку на него. Если вы публикуете один креатив на разных "
+             "площадках - пришлите ссылку на каждую площадку.")
 
 
 # Обработчик загрузки ссылки на креатив
@@ -304,4 +304,4 @@ async def link_done(cb: CallbackQuery, state: FSMContext):
 
 @dp.message()
 async def handle_creative_upload(msg: Message, state: FSMContext):
-    await creative_upload(msg, state)
+    await base.creative_upload(msg, state)

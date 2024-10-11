@@ -7,7 +7,7 @@ import httpx
 import db
 from config import Config
 from init import log_error
-from enums import JStatus
+from enums import MediaType
 
 
 # Функция для отправки данных в ОРД API
@@ -156,20 +156,28 @@ async def send_platform_to_ord(ord_id: str, platform_name: str, platform_url: st
 async def register_media_file(file_path: str, ord_id: str, description: str) -> int:
     url = f'{Config.ord_url}/v1/media/{ord_id}'
     headers = {
-        'Authorization': f'Bearer {Config.bearer}'
+        'Authorization': f'Bearer {Config.bearer}',
+        # "Content-Type": "multipart/form-data"
     }
     files = {
         'media_file': open(file_path, 'rb'),
     }
     data = {
-        'description': 'Мы не храним данные о картах и пользователя все данные хранит сервис Юкасса'
+        'description': 'Мы не храним данные'
     }
     async with httpx.AsyncClient() as client:
-        response = await client.put(url, headers=headers, json=data, files=files)
+        response = await client.put(url, headers=headers, data=data, files=files)
 
     if response.status_code > 201:
         log_error(f'send_media_to_ord\nrequest:\nord_id: {ord_id}\n{data} \nresponse:\n{response.text}', wt=False)
     return response.status_code
+
+'''
+{'description': 'Мы не храним данные о картах и пользователя все данные хранит сервис Юкасса'} 
+ 'description'
+response:
+{"error":"Image file requires non-empty field 'description'"}
+'''
 
 
 async def send_creative_to_ord(
@@ -196,13 +204,14 @@ async def send_creative_to_ord(
         "brand": brand,
         "category": description,
         "description": description,
-        "pay_type": "cpc",
-        "form": "text_graphic_block",
+        # "pay_type": "cpc",
+        "pay_type": "other",
+        "form": MediaType.BANNER.value,
         "texts": creative_text,
         "media_external_ids": media_ids,
-        "flags": [
-            "native"
-        ]
+        # "flags": [
+        #     "native"
+        # ]
     }
 
     async with httpx.AsyncClient() as client:
@@ -217,3 +226,75 @@ async def send_creative_to_ord(
             wt=False
         )
         response
+
+
+# Функция для отправки статистики в ОРД API
+async def send_statistic_to_ord(
+        creative_ord_id: str,
+        platform_ord_id: str,
+        views: str,
+        creative_date: datetime,
+
+) -> str:
+    now = datetime.now()
+
+    url = f"{Config.ord_url}/v1/statistics"
+    headers = {
+        "Authorization": f"Bearer {Config.bearer}",
+        "Content-Type": "application/json"
+    }
+
+    data = {
+        'items': [
+                {
+                    "creative_external_id": creative_ord_id,
+                    "pad_external_id": platform_ord_id,
+                    "shows_count": int(views),
+                    "date_start_actual": creative_date.strftime(Config.ord_date_form),
+                    "date_end_actual": now.strftime(Config.ord_date_form)
+                }
+        ]
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, headers=headers, json=data)
+
+    # if response.status_code > 201:
+    log_error(f'send_statistic_to_ord\nrequest:\n{data} \nresponse {response.status_code}:\n{response.text}', wt=False)
+
+    response_data = response.json()
+    external_ids = response_data.get('external_ids')
+    return external_ids[0] if external_ids else None
+
+'''
+request:
+{'items': [{'creative_external_id': '524275902-cr-7513269220', 'pad_external_id': '7181274585-p-6809174294', 'shows_count': 0, 'date_start_actual': '2024-10-11', 'date_end_actual': '2024-10-11'}]} 
+response 200:
+{"external_ids":["524275902-cr-7513269220__7181274585-p-6809174294__2024-10-01"]}
+
+
+---------------------------------
+request:
+{'items': [{'creative_external_id': '524275902-cr-2463806352', 'pad_external_id': '7181274585-p-6809174294', 'shows_count': 0, 'date_start_actual': '2024-10-11', 'date_end_actual': '2024-10-11'}]} 
+response 200:
+{"external_ids":["524275902-cr-2463806352__7181274585-p-6809174294__2024-10-01"]}
+
+---------------------------------
+request:
+{'items': [{'creative_external_id': '524275902-cr-2463806352', 'pad_external_id': '7181274585-p-6809174294', 'shows_count': 0, 'date_start_actual': '2024-10-11', 'date_end_actual': '2024-10-11'}]} 
+response 200:
+{"external_ids":["524275902-cr-2463806352__7181274585-p-6809174294__2024-10-01"]}
+
+---------------------------------
+request:
+{'items': [{'creative_external_id': '524275902-cr-2463806352', 'pad_external_id': '7181274585-p-6809174294', 'shows_count': 0, 'date_start_actual': '2024-10-11', 'date_end_actual': '2024-10-11'}]} 
+response 200:
+{"external_ids":["524275902-cr-2463806352__7181274585-p-6809174294__2024-10-01"]}
+
+---------------------------------
+request:
+{'items': [{'creative_external_id': '524275902-cr-7475978899', 'pad_external_id': '7181274585-p-6809174294', 'shows_count': 0, 'date_start_actual': '2024-10-11', 'date_end_actual': '2024-10-11'}]} 
+response 200:
+{"external_ids":["524275902-cr-7475978899__7181274585-p-6809174294__2024-10-01"]}
+'''
+
