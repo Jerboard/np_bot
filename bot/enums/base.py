@@ -11,6 +11,7 @@ class Step(str, Enum):
     EMAIL = 'email'
     NAME = 'name'
     FIO = 'fio'
+    FIN = 'fin'
 
 
 class Role(str, Enum):

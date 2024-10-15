@@ -23,3 +23,5 @@ class UserState(str, Enum):
     ADD_CONTRACT_AMOUNT = 'add_contract_amount'
 
     SEND_STATISTIC = 'send_statistic'
+
+    ACTS = 'acts'

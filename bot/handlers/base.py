@@ -242,10 +242,8 @@ async def creative_upload(msg: Message, state: FSMContext):
 
         creative = {
             'content_type': msg.content_type,
-            'file_id': ut.get_file_id(msg),
-            'video_name': msg.video.file_name if msg.video else None
+            'file_id': ut.get_file_id(msg)
         }
-
 
         # сохраняем текст, если есть
         creative_text = msg.text or msg.caption
@@ -400,15 +398,14 @@ async def start_acts(
     text = (f'Выберите договор, чтобы подать информацию об акте выполненных работ.\n\n'
             f'{serial}\n'
             f'{contract.name}\n'
-            f'{contract.contract_date}\n'
+            f'{contract.contract_date.strftime(Config.date_form)}\n'
             f'{amount}\n')
 
     keyboard = kb.get_select_page_kb(
         end_page=(page + 1) == len(active_contracts),
         select_id=contract.contract_id,
         page=page,
-        cb=CB.ACTS_SELECT_PAGE.value,
-        with_select_btn=False
+        cb=CB.ACTS_SELECT_PAGE.value
     )
 
     if message_id:
@@ -424,3 +421,21 @@ async def start_acts(
     else:
         sent = await bot.send_message(chat_id=user_id, text=text, reply_markup=keyboard)
         await state.update_data(data={'message_id': sent.message_id})
+
+
+# завершение акта
+async def end_act(user_id: int, data: dict):
+    contract = await db.get_contract_full_data(data['contract_id'])
+
+    serial = contract.serial if contract.serial else contract.contract_id
+    amount = f'{contract.amount:.2f} руб' if contract.amount else data.get('amount', 0)
+    act_date = data.get('end_date_str') or datetime.now().date().strftime(Config.date_form)
+    text = (f'Проверьте правильно ли указана информация:\n\n'
+            f'Договор №{serial}\n'
+            f'Контрагент: {contract.name}\n'
+            f'Дата договора {contract.contract_date.strftime(Config.date_form)}\n'
+            f'Сумма по договору: {contract.amount or "нет"}\n'
+            f'Дата акта: {act_date}\n'
+            f'Сумма акта: {amount}\n')
+
+    await bot.send_message(chat_id=user_id, text=text, reply_markup=kb.get_end_act_kb(data['contract_id']))

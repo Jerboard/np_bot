@@ -15,6 +15,7 @@ class CB(str, Enum):
     CONTRACT_END = 'contract_end'
     CONTRACT_BACK = 'contract_back'
     CONTRACT_PAGE = 'contract_page'
+    CONTRACT_NEXT_STEP_CHECK = 'add_contract_next_step_check'
     PLATFORM_START = 'platform_start'
     PLATFORM_SELECT = 'platform_select'
     PLATFORM_CORRECT = 'platform_correct'
@@ -36,16 +37,10 @@ class CB(str, Enum):
     PAY_YK_CHECK = 'pay_yk_check'
     STATISTIC_SELECT_PAGE = 'statistic_select_page'
     ACTS_SELECT_PAGE = 'acts_select_page'
+    ACT_NEXT_STEP_CHECK = 'act_next_step_check'
+    ACT_SEND = 'act_send'
 
-    IP = 'ip'
-    JURIDICAL = 'juridical'
-    PHYSICAL = 'physical'
-    ADVERTISER = 'advertiser'
-    PUBLISHER = 'publisher'
     NO_ADVERTISER = 'no_advertiser'
-    IP_ADVERTISER = 'ip_advertiser'
-    UR_ADVERTISER = 'ur_advertiser'
-    FIZ_ADVERTISER = 'fiz_advertiser'
     CLOSE = 'close'
 
 

@@ -48,8 +48,14 @@ async def add_campaign(user_id: int, contract_id: int, brand: str, service: str,
 
 
 # возвращает все рекламные компании пользователя
-async def get_user_campaigns(user_id: int) -> tuple[CampaignRow]:
-    query = CampaignTable.select().where(CampaignTable.c.user_id == user_id)
+async def get_user_campaigns(user_id: int = None, contract_id: int = None) -> tuple[CampaignRow]:
+    query = CampaignTable.select()
+
+    if user_id:
+        query = query.where(CampaignTable.c.user_id == user_id)
+
+    if contract_id:
+        query = query.where(CampaignTable.c.contract_id == contract_id)
 
     async with begin_connection() as conn:
         result = await conn.execute(query)

@@ -132,12 +132,8 @@ async def save_media_ord(creatives: list[dict], creative_ord_id: str, user_id: i
             file_info = await bot.get_file(file_id)
             tg_file = await bot.download_file(file_info.file_path)
 
-            if creative['content_type'] == ContentType.VIDEO:
-                file_path = os.path.join(Config.storage_path, creative['video_name'])
-            else:
-                # print(f'file_info.file_path: {file_info.file_path}')
-                file_name = os.path.basename(file_info.file_path)
-                file_path = os.path.join(Config.storage_path, f'{file_name}')
+            file_name = os.path.basename(file_info.file_path)
+            file_path = os.path.join(Config.storage_path, f'{file_name}')
 
             with open(file_path, 'wb') as new_file:
                 new_file.write(tg_file.read())

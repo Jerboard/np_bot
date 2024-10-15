@@ -228,8 +228,8 @@ def get_contract_end_kb(dist_id: int) -> InlineKeyboardMarkup:
 # запрашивает есть ли часть договора
 def get_check_next_step_contract_kb(step: str) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text="Да", callback_data=f'add_contract_next_step_check:{step}:1'),
-    kb.button(text="Нет", callback_data=f'add_contract_next_step_check:{step}:0')
+    kb.button(text="Да", callback_data=f'{CB.CONTRACT_NEXT_STEP_CHECK.value}:{step}:1'),
+    kb.button(text="Нет", callback_data=f'{CB.CONTRACT_NEXT_STEP_CHECK.value}:{step}:0')
     return kb.adjust(1).as_markup()
 
 
@@ -264,4 +264,21 @@ def get_select_creative_platform_kb(platforms: tuple[db.PlatformRow]) -> InlineK
 def get_close_kb() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     kb.button(text="❌ Отмена", callback_data=CB.CLOSE.value)
+    return kb.adjust(1).as_markup()
+
+
+# следующий шаг при создании акта
+def get_check_next_step_act_kb() -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    kb.button(text="Да", callback_data=f'{CB.ACT_NEXT_STEP_CHECK.value}:{Action.YES.value}'),
+    kb.button(text="Нет", callback_data=f'{CB.ACT_NEXT_STEP_CHECK.value}:{Action.NO.value}')
+    return kb.adjust(2).as_markup()
+
+
+# завершает создание акта
+def get_end_act_kb(contract_id: int) -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    kb.button(text="Да, отправить в ОРД", callback_data=f'{CB.ACT_SEND.value}'),
+    kb.button(text=f'Нет, изменить', callback_data=f'{CB.ACTS_SELECT_PAGE.value}:{contract_id}:{Action.YES.value}')
+
     return kb.adjust(1).as_markup()

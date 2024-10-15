@@ -41,9 +41,9 @@ async def start(msg: Message, state: FSMContext):
 
 
 # Обработчик команды /help
-@dp.message(CommandFilter(Command.ACTS))
-async def start(msg: Message, state: FSMContext):
-    pass
+# @dp.message(CommandFilter(Command.ACTS))
+# async def start(msg: Message, state: FSMContext):
+#     pass
 
 
 # универсальный ответ на кнопку "нет"
