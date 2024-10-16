@@ -24,7 +24,7 @@ class Role(str, Enum):
 class Status(str, Enum):
     NEW = 'new'
     ACTIVE = 'active'
-    UNACTIVE = 'unactive'
+    INACTIVE = 'inactive'
 
 
 class JStatus(str, Enum):
@@ -80,6 +80,8 @@ class Delimiter(str, Enum):
     C = '-c-'
     M = '-m-'
     CR = '-cr-'
+    S = '-s-'
+    I = '-i-'
 
 
 class MediaType(Enum):

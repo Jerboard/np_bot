@@ -10,6 +10,7 @@ from enums import Status
 class ContractRow(t.Protocol):
     id: int
     created_at: datetime
+    updated_at: datetime
     user_id: int
     contractor_id: int
     contract_date: date
@@ -26,6 +27,7 @@ ContractTable: sa.Table = sa.Table(
 
     sa.Column('id', sa.Integer, primary_key=True, autoincrement=True),
     sa.Column('created_at', sa.DateTime(timezone=True), default=datetime.now()),
+    sa.Column('updated_at', sa.DateTime(timezone=True), default=datetime.now()),
     sa.Column('user_id', sa.BigInteger),
     sa.Column('contractor_id', sa.Integer),
     sa.Column('contract_date', sa.Date()),
@@ -79,10 +81,23 @@ async def get_contract(contract_id: int) -> ContractRow:
 # возвращает договор
 async def get_user_contracts(user_id: int) -> tuple[ContractRow]:
     query = ContractTable.select().where(
-        ContractTable.c.user_id == user_id
+        sa.and_(
+            ContractTable.c.user_id == user_id,
+            ContractTable.c.status == Status.ACTIVE.value,
+        )
     )
 
     async with begin_connection() as conn:
         result = await conn.execute(query)
     return result.all()
 
+
+# обновляет договор
+async def update_contract(contract_id: int, status: str = None) -> None:
+    query = ContractTable.update().where(ContractTable.c.id == contract_id).values(updated_at=datetime.now())
+
+    if status:
+        query = query.values(status=status)
+
+    async with begin_connection() as conn:
+        await conn.execute(query)

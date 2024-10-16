@@ -1,32 +1,40 @@
 import sqlalchemy as sa
-from datetime import date
+from datetime import date, datetime
 
 import typing as t
 
 from .base_db import METADATA, begin_connection
 from .distributor import DistributorTable
 from .contracts import ContractTable
-from .ad_campaigns import CampaignTable
 from .creatives import CreativeTable
+from .statistic import StatisticTable
 from enums import Status
 
 
 class ContractDistRow(t.Protocol):
     contract_id: int
-    user_id: int
+    contract_user_id: int
+    contractor_id: int
     contract_date: date
     end_date: date
     serial: str
     amount: float
+    contract_ord_id: str
     name: str
 
 
-class CampaignCreativeRow(t.Protocol):
+class CreativeFullRow(t.Protocol):
     creative_id: int
-    creative_ord_id: str
+    created_at: datetime
+    user_id: int
+    campaign_id: int
     token: str
-    created_at: str
-
+    # texts: list[str]
+    creative_ord_id: str
+    statistic_id: int
+    url: str
+    views: int
+    platform_id: int
 
 
 # возвращает контракты с контрагентами
@@ -35,9 +43,12 @@ async def get_all_user_contracts(user_id: int = None) -> tuple[ContractDistRow]:
         sa.select (
             ContractTable.c.id.label('contract_id'),
             ContractTable.c.contract_date,
+            ContractTable.c.user_id.label('contract_user_id'),
+            ContractTable.c.contractor_id,
             ContractTable.c.end_date,
             ContractTable.c.serial,
             ContractTable.c.amount,
+            ContractTable.c.ord_id.label('contract_ord_id'),
             DistributorTable.c.name,
         )
         .select_from (ContractTable.join (
@@ -78,22 +89,35 @@ async def get_contract_full_data(contract_id: int = None) -> ContractDistRow:
 
 
 # возвращает кампании с креативом
-async def get_campaigns_with_creative(user_id: int = None) -> tuple[ContractDistRow]:
+async def get_creative_full_data(campaign_id: int = None, user_id: int = None) -> tuple[CreativeFullRow]:
     query = (
         sa.select (
-            ContractTable.c.id.label('contract_id'),
-            ContractTable.c.contract_date,
-            ContractTable.c.end_date,
-            ContractTable.c.serial,
-            ContractTable.c.amount,
-            DistributorTable.c.name,
+            CreativeTable.c.id.label('creative_id'),
+            CreativeTable.c.created_at,
+            CreativeTable.c.user_id,
+            CreativeTable.c.campaign_id,
+            CreativeTable.c.token,
+            CreativeTable.c.ord_id.label('creative_ord_id'),
+            StatisticTable.c.id.label('statistic_id'),
+            StatisticTable.c.url,
+            StatisticTable.c.views,
+            StatisticTable.c.platform_id,
+
         )
-        .select_from (ContractTable.join (
-            DistributorTable, ContractTable.c.contractor_id == DistributorTable.c.id, isouter=True), )
+        .select_from (
+            CreativeTable.join (
+                StatisticTable, CreativeTable.c.id == StatisticTable.c.creative_id
+            )
+        )
     ).where(
-        ContractTable.c.user_id == user_id,
         ContractTable.c.status == Status.ACTIVE
     )
+
+    if campaign_id:
+        query = query.where(CreativeTable.c.campaign_id == campaign_id)
+
+    if user_id:
+        query = query.where(CreativeTable.c.user_id == user_id)
 
     async with begin_connection () as conn:
         result = await conn.execute (query)

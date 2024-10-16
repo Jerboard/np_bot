@@ -62,8 +62,10 @@ async def add_statistic(
 # Обновляет карту
 async def update_statistic(
         statistic_id: int,
+
         views: int = None,
         ord_id: str = None,
+        status: str = None,
 ) -> None:
     now = datetime.now()
     query = StatisticTable.update().where(StatisticTable.c.id == statistic_id).values(updated_at=now)
@@ -73,6 +75,9 @@ async def update_statistic(
 
     if ord_id:
         query = query.values(ord_id=ord_id)
+
+    if status:
+        query = query.values(status=status)
 
     async with begin_connection() as conn:
         await conn.execute(query)

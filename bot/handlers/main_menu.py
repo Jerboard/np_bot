@@ -44,6 +44,8 @@ async def preloader_advertiser_entity_command(msg: Message, state: FSMContext):
 # Обработчик для команды /start_campaign
 @dp.message(CommandFilter(Command.CAMPAIGN.value))
 async def start_campaign(msg: Message, state: FSMContext):
+    await state.clear()
+
     user = await db.get_user_info(msg.from_user.id)
     if user and user.in_ord:
         await base.start_campaign_base(msg, state)
@@ -54,6 +56,8 @@ async def start_campaign(msg: Message, state: FSMContext):
 # выбора платформы старт
 @dp.message(CommandFilter(Command.PLATFORM.value))
 async def preloader_choose_platform_base(msg: Message, state: FSMContext):
+    await state.clear()
+
     user = await db.get_user_info(msg.from_user.id)
     if user and user.in_ord:
         await base.preloader_choose_platform(msg)
@@ -65,6 +69,8 @@ async def preloader_choose_platform_base(msg: Message, state: FSMContext):
 # перенёс функцию в base поменял название, чтоб не совпадали
 @dp.message(CommandFilter(Command.CONTRACT.value))
 async def start_contract_hnd(msg: Message, state: FSMContext):
+    await state.clear()
+
     user = await db.get_user_info(msg.from_user.id)
     if user and user.in_ord:
         await base.start_contract(msg)
@@ -75,6 +81,7 @@ async def start_contract_hnd(msg: Message, state: FSMContext):
 # Обработчик для команды /add_creative
 @dp.message(CommandFilter(Command.TOKEN.value))
 async def add_creative(msg: Message, state: FSMContext):
+    await state.clear()
     await state.set_state(UserState.ADD_CREATIVE)
 
     user = await db.get_user_info(msg.from_user.id)
@@ -98,6 +105,8 @@ async def add_creative(msg: Message, state: FSMContext):
 # Обработка команды /start_statistics
 @dp.message(CommandFilter(Command.STATS.value))
 async def start_stats(msg: Message, state: FSMContext):
+    await state.clear()
+
     active_creatives = await db.get_statistics(msg.from_user.id)
 
     # Получаем первый доступный campaign_id для пользователя
@@ -139,7 +148,9 @@ async def start_stats(msg: Message, state: FSMContext):
 
 # Обработчик команды /help
 @dp.message(CommandFilter(Command.HELP))
-async def start(msg: Message, state: FSMContext):
+async def command_help(msg: Message, state: FSMContext):
+    await state.clear()
+
     await msg.answer(
         'Напишите свой вопрос или пожелание по улучшению сервиса @id_np61',
         reply_markup=kb.get_help_button()

@@ -9,28 +9,7 @@ from config import Config
 from init import dp, bot
 import utils as ut
 from . import base
-from enums import CB, Command, UserState, Action, Step
-
-
-# # Обработка команды /acts
-# @dp.message(CommandFilter(Command.ACTS.value))
-# async def start_stats(msg: Message, state: FSMContext):
-#     await state.clear()
-#     active_contracts = await db.get_all_user_contracts(msg.from_user.id)
-#
-#     # Получаем первый доступный campaign_id для пользователя
-#     if active_contracts:
-#         await state.set_state(UserState.SEND_STATISTIC)
-#         await state.update_data(data={'page': 0, 'active_contracts': active_contracts})
-#
-#         await msg.answer("<b>❕ Выберите контракт для подачи акта</b>")
-#         await base.start_acts(
-#             active_contracts=active_contracts,
-#             user_id=msg.from_user.id,
-#             state=state
-#         )
-#     else:
-#         await msg.answer("❗️ У вас нет активных контрактов.")
+from enums import CB, Delimiter, UserState, Action, Step, Status
 
 
 # Выбор страницы
@@ -39,8 +18,8 @@ async def acts_select_page(cb: CallbackQuery, state: FSMContext):
     _, page_str, action = cb.data.split(':')
     page = int(page_str)
 
+    data = await state.get_data()
     if action == Action.CONT:
-        data = await state.get_data()
         active_contracts = data.get('active_contracts')
         if not active_contracts:
             active_contracts = await db.get_all_user_contracts(cb.from_user.id)
@@ -54,21 +33,24 @@ async def acts_select_page(cb: CallbackQuery, state: FSMContext):
         )
     else:
         await state.set_state(UserState.ACTS)
-        await state.update_data(data={'contract_id': page, 'step': Step.END_DATE})
-        text = f'Вы завершаете работу по [Договору №1] сегодня?'
+        contract = await db.get_contract_full_data(page)
+
+        serial = contract.serial if contract.serial else contract.contract_id
+        await state.update_data(data={
+            'contract_id': page,
+            'step': Step.END_DATE,
+            'serial': serial,
+            'amount': contract.amount or 0,
+            'end_date_str': datetime.now().date().strftime(Config.ord_date_form),
+        })
+        text = f'Вы завершаете работу по договору №{serial} сегодня?'
         await cb.message.answer(text=text, reply_markup=kb.get_check_next_step_act_kb())
 
 
-# проводит по шагам подачи акта
-async def get_act_steps(user_id: int, step: str, state: FSMContext):
-    if step == Step.END_DATE:
-        # await state.update_data(data={'step': Step.END_DATE})
-        text = f'Введите дату'
-        await bot.send_message(chat_id=user_id, text=text)
-
-    elif step == Step.SUM:
-        text = f'Введите сумму'
-        await bot.send_message(chat_id=user_id, text=text)
+async def ask_amount(user_id: int, serial: str, amount: int):
+    text = (f'Сумма работ по договору №{serial} указана верно?\n'
+            f'Сумма по договору: {amount:.2f }')
+    await bot.send_message(chat_id=user_id, text=text, reply_markup=kb.get_check_next_step_act_kb())
 
 
 # выбор шага
@@ -79,14 +61,24 @@ async def act_next_step_check(cb: CallbackQuery, state: FSMContext):
     data = await state.get_data()
 
     if action == Action.NO:
-        await get_act_steps(user_id=cb.from_user.id, step=data['step'], state=state)
+        if data['step'] == Step.END_DATE:
+            # await state.update_data(data={'step': Step.END_DATE})
+            # text = f'Введите дату'
+            # await bot.send_message(chat_id=user_id, text=text)
+            await cb.message.answer(f'Введите дату')
+
+        elif data['step'] == Step.SUM:
+            # text = f'Введите сумму'
+            # await bot.send_message(chat_id=user_id, text=text)
+            await cb.message.answer(f'Введите сумму')
 
     else:
         if data['step'] == Step.END_DATE:
             await state.update_data(data={'step': Step.SUM})
-            text = (f'Сумма работ по [Договору №1] указана верно?\n'
-                    f'[Сумма по договору №1]')
-            await cb.message.answer(text=text, reply_markup=kb.get_check_next_step_act_kb())
+            await ask_amount(user_id=cb.from_user.id, serial=data["serial"], amount=data["amount"] or 0)
+            # text = (f'Сумма работ по договору №{data["serial"]} указана верно?\n'
+            #         f'Сумма по договору: {data["amount"] or 0}')
+            # await cb.message.answer(text=text, reply_markup=kb.get_check_next_step_act_kb())
 
         else:
             await base.end_act(user_id=cb.from_user.id, data=data)
@@ -109,8 +101,11 @@ async def start_save_data(msg: Message, state: FSMContext):
             await msg.answer("❌ Неверный формат даты.\n\n Дата окончания договора не должна быть больше сегодняшней")
             return
 
-        await state.update_data(data={'end_date_str': date_str, 'step': Step.SUM})
-        await get_act_steps(user_id=msg.from_user.id, step=Step.SUM, state=state)
+        await state.update_data(data={'end_date_str': date_str, 'end_date_input': msg.text, 'step': Step.SUM})
+        await ask_amount(user_id=msg.from_user.id, serial=data["serial"], amount=data["amount"] or 0)
+        # text = (f'Сумма работ по договору №{data["serial"]} указана верно?\n'
+        #         f'Сумма по договору: {data["amount"] or 0}')
+        # await msg.answer(text=text, reply_markup=kb.get_check_next_step_act_kb())
 
     # elif data['step'] == Step.SUM:
     else:
@@ -118,15 +113,112 @@ async def start_save_data(msg: Message, state: FSMContext):
             await msg.answer("❌ Неверный формат суммы.\n\n Введите сумму цифрами")
             return
 
-        await state.update_data(data={'amount': msg.text})
+        await state.update_data(data={'amount': float(msg.text)})
         data = await state.get_data()
         await base.end_act(user_id=msg.from_user.id, data=data)
+
+
+'''
+page: 0
+active_contracts: [(1, datetime.date(2024, 9, 11), datetime.date(2024, 11, 24), 'fg596', 100500.0, 'Закатный Василий Кузьмич'), (2, datetime.date(2024, 9, 10), None, '945532665', 150000.0, 'Закатный Василий Кузьмич')]
+message_id: 6545
+contract_id: 2
+step: Step.SUM
+serial: 945532665
+amount: 2000000.0
+end_date_str: 2024-10-12
+'''
 
 
 # отправка данных в орд
 @dp.callback_query(lambda cb: cb.data.startswith(CB.ACT_SEND.value))
 async def acts_send(cb: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    # contract = await db.get_contract_full_data(data['contract_id'])
+    await state.clear()
+
+    ut.print_dict(data, 'act_data')
+
+    ord_id = ut.get_ord_id(cb.from_user.id, Delimiter.I.value)
+
+    contract = await db.get_contract_full_data(data['contract_id'])
+
+    user_info = await db.get_user_info(user_id=cb.from_user.id)
+    contractor = await db.get_user_info(user_id=contract.contractor_id)
 
     campaigns = await db.get_user_campaigns(contract_id=data['contract_id'])
+    creatives = tuple()
+    for campaign in campaigns:
+        campaign_creatives = await db.get_creative_full_data(campaign_id=campaign.id)
+        creatives = creatives + campaign_creatives
+
+    cash_platforms = {}
+    creative_data = []
+    for creative in creatives:
+        creative: db.CreativeFullRow
+
+        platform: db.PlatformRow = cash_platforms.get(creative.platform_id)
+        if not platform:
+            platform: db.PlatformRow = await db.get_platform(platform_id=creative.platform_id)
+            cash_platforms[creative.platform_id] = platform
+
+        creative_data.append({
+              "creative_external_id": creative.creative_ord_id,
+              "platforms": [
+                {
+                  "pad_external_id": platform.ord_id,
+                  "shows_count": platform.average_views,
+                  # "invoice_shows_count": 500,
+                  # "amount": "5000",
+                  # "amount_per_event": "10",
+                  "flags": [
+                    "vat_included"
+                  ],
+                  "date_start_actual": creative.created_at.date().strftime(Config.ord_date_form),
+                  "date_end_actual": data['end_date_str'],
+                  "pay_type": "other"
+                }
+              ]
+            }
+        )
+
+    act_data = {
+      "contract_external_id": contract.contract_ord_id,
+      "date": data['end_date_str'],
+      "serial": data['serial'],
+      "date_start": contract.contract_date.strftime(Config.ord_date_form),
+      "date_end": data['end_date_str'],
+      "amount": data['amount'],
+      "flags": [
+        "vat_included"
+      ],
+      "client_role": user_info.role,
+      "contractor_role": contractor.role,
+      "items": [
+        {
+          "contract_external_id": contract.contract_ord_id,
+          "amount": data['amount'],
+          "flags": [
+            "vat_included"
+          ],
+          "creatives": creative_data
+        }
+      ]
+    }
+
+    is_suc = ut.send_acts_to_ord(ord_id=ord_id, act_data=act_data)
+
+    if not is_suc:
+        await cb.message.answer("❌ Акт не был отправлен\n\n"
+                                "Проверьте данные. При повторении ошибки обратитесь в поддержку")
+        return
+
+    await cb.message.answer("✅ Данные об акте успешно отправлены в ОРД")
+
+    # переводим в статус неактивно
+    await db.update_contract(contract_id=data['contract_id'], status=Status.INACTIVE.value)
+    await db.update_campaign(contract_id=contract.contract_id, status=Status.INACTIVE.value)
+    for campaign in campaigns:
+        await db.update_creative(campaign_id=campaign.id, status=Status.INACTIVE.value)
+
+
+

@@ -32,42 +32,12 @@ async def send_user_to_ord(
         }
     }
 
-    # if rs_url:
-    #     data["rs_url"] = rs_url
-
     async with httpx.AsyncClient() as client:
         response = await client.put(url, headers=headers, json=data)
 
     if response.status_code > 201:
         log_error(f'send_user_to_ord\nrequest:\nord_id: {ord_id}\n{data} \nresponse:\n{response.text}', wt=False)
     return response.status_code
-
-
-# Функция для отправки посреднического договора при регистрации ОРД API
-# async def send_mediation_to_ord(ord_id: str, client_ord_id: str):
-#     today = datetime.now().date()
-#
-#     url = f"{Config.ord_url}/v1/contract/{ord_id}"
-#     headers = {
-#         "Authorization": f"Bearer {Config.bearer}",
-#         "Content-Type": "application/json"
-#     }
-#     data = {
-#           "type": "mediation",
-#           "client_external_id": client_ord_id,
-#           "contractor_external_id": Config.partner_data['ord_id'],
-#           "date": today.strftime(Config.ord_date_form),
-#           "action_type": "commercial",
-#           "subject_type": "mediation",
-#           "flags": [
-#             "vat_included",
-#             "agent_acting_for_publisher"
-#           ],
-#     }
-#     async with httpx.AsyncClient() as client:
-#         response = await client.put(url, headers=headers, json=data)
-#
-#     return response
 
 '''
 
@@ -259,42 +229,32 @@ async def send_statistic_to_ord(
     async with httpx.AsyncClient() as client:
         response = await client.post(url, headers=headers, json=data)
 
-    # if response.status_code > 201:
-    log_error(f'send_statistic_to_ord\nrequest:\n{data} \nresponse {response.status_code}:\n{response.text}', wt=False)
-
+    if response.status_code > 201:
+        log_error(
+            f'send_statistic_to_ord\nrequest:\n{data} \nresponse {response.status_code}:\n{response.text}',
+            wt=False
+        )
     response_data = response.json()
     external_ids = response_data.get('external_ids')
     return external_ids[0] if external_ids else None
 
-'''
-request:
-{'items': [{'creative_external_id': '524275902-cr-7513269220', 'pad_external_id': '7181274585-p-6809174294', 'shows_count': 0, 'date_start_actual': '2024-10-11', 'date_end_actual': '2024-10-11'}]} 
-response 200:
-{"external_ids":["524275902-cr-7513269220__7181274585-p-6809174294__2024-10-01"]}
 
+# Функция для отправки актов в ОРД API
+async def send_acts_to_ord(
+    ord_id: str,
+    act_data: dict,
+) -> bool:
+    url = f"{Config.ord_url}/v1/invoice/{ord_id}"
 
----------------------------------
-request:
-{'items': [{'creative_external_id': '524275902-cr-2463806352', 'pad_external_id': '7181274585-p-6809174294', 'shows_count': 0, 'date_start_actual': '2024-10-11', 'date_end_actual': '2024-10-11'}]} 
-response 200:
-{"external_ids":["524275902-cr-2463806352__7181274585-p-6809174294__2024-10-01"]}
+    headers = {
+        "Authorization": f"Bearer {Config.bearer}",
+        "Content-Type": "application/json"
+    }
 
----------------------------------
-request:
-{'items': [{'creative_external_id': '524275902-cr-2463806352', 'pad_external_id': '7181274585-p-6809174294', 'shows_count': 0, 'date_start_actual': '2024-10-11', 'date_end_actual': '2024-10-11'}]} 
-response 200:
-{"external_ids":["524275902-cr-2463806352__7181274585-p-6809174294__2024-10-01"]}
+    async with httpx.AsyncClient() as client:
+        response = await client.put(url, headers=headers, json=act_data)
 
----------------------------------
-request:
-{'items': [{'creative_external_id': '524275902-cr-2463806352', 'pad_external_id': '7181274585-p-6809174294', 'shows_count': 0, 'date_start_actual': '2024-10-11', 'date_end_actual': '2024-10-11'}]} 
-response 200:
-{"external_ids":["524275902-cr-2463806352__7181274585-p-6809174294__2024-10-01"]}
+    # if response.status_code > 201:
+    log_error(f'send_act_to_ord\nrequest:\n{act_data} \nresponse {response.status_code}:\n{response.text}', wt=False)
 
----------------------------------
-request:
-{'items': [{'creative_external_id': '524275902-cr-7475978899', 'pad_external_id': '7181274585-p-6809174294', 'shows_count': 0, 'date_start_actual': '2024-10-11', 'date_end_actual': '2024-10-11'}]} 
-response 200:
-{"external_ids":["524275902-cr-7475978899__7181274585-p-6809174294__2024-10-01"]}
-'''
-
+    return response.status_code <= 201

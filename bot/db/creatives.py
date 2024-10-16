@@ -10,6 +10,7 @@ from enums import Status
 class CreativeRow(t.Protocol):
     id: int
     created_at: datetime
+    updated_at: datetime
     user_id: int
     campaign_id: int
     token: str
@@ -24,14 +25,13 @@ CreativeTable: sa.Table = sa.Table(
 
     sa.Column('id', sa.Integer, primary_key=True, autoincrement=True),
     sa.Column('created_at', sa.DateTime(timezone=True), default=datetime.now()),
+    sa.Column('updated_at', sa.DateTime(timezone=True), default=datetime.now()),
     sa.Column('user_id', sa.BigInteger),
     sa.Column('campaign_id', sa.Integer),
-    # sa.Column('text', sa.Text),
     sa.Column('texts', psql.ARRAY(sa.Text)),
     sa.Column('ord_id', sa.String(255)),
     sa.Column('token', sa.String(255)),
     sa.Column('status', sa.String(255), default=Status.ACTIVE.value),
-    # sa.Column('links', psql.ARRAY(sa.String(255))),
 )
 
 
@@ -69,11 +69,18 @@ async def get_creative(creative_id: int) -> CreativeRow:
 
 # обновляет креатив
 async def update_creative(
-        creative_id: int,
+        creative_id: int = None,
+        campaign_id: int = None,
         token: str = None,
         status: str = None
 ) -> None:
-    query = CreativeTable.update().where(CreativeTable.c.id == creative_id)
+    query = CreativeTable.update(updated_at=datetime.now())
+
+    if creative_id:
+        query = query.values(token=token).where(CreativeTable.c.id == creative_id)
+
+    elif campaign_id:
+        query = query.values(token=token).where(CreativeTable.c.campaign_id == creative_id)
 
     if token:
         query = query.values(token=token)

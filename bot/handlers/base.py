@@ -349,7 +349,7 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int, state: FS
 # выбор креатива для подачи статистики
 async def start_statistic(
         user_id: int,
-        active_creatives: tuple[db.StatisticRow],
+        active_creatives: tuple[db.CreativeFullRow],
         sending_list: list[int],
         state: FSMContext,
         page: int = 0,
@@ -363,7 +363,7 @@ async def start_statistic(
 
     keyboard = kb.get_select_page_kb(
         end_page=(page + 1) == len(active_creatives),
-        select_id=active_creatives[page].id,
+        select_id=active_creatives[page].statistic_id,
         page=page,
         cb=CB.STATISTIC_SELECT_PAGE.value,
         with_select_btn=False
@@ -429,7 +429,7 @@ async def end_act(user_id: int, data: dict):
 
     serial = contract.serial if contract.serial else contract.contract_id
     amount = f'{contract.amount:.2f} руб' if contract.amount else data.get('amount', 0)
-    act_date = data.get('end_date_str') or datetime.now().date().strftime(Config.date_form)
+    act_date = data.get('end_date_input') or datetime.now().date().strftime(Config.date_form)
     text = (f'Проверьте правильно ли указана информация:\n\n'
             f'Договор №{serial}\n'
             f'Контрагент: {contract.name}\n'
