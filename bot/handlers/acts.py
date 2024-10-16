@@ -12,25 +12,25 @@ from . import base
 from enums import CB, Command, UserState, Action, Step
 
 
-# Обработка команды /acts
-@dp.message(CommandFilter(Command.ACTS.value))
-async def start_stats(msg: Message, state: FSMContext):
-    await state.clear()
-    active_contracts = await db.get_all_user_contracts(msg.from_user.id)
-
-    # Получаем первый доступный campaign_id для пользователя
-    if active_contracts:
-        await state.set_state(UserState.SEND_STATISTIC)
-        await state.update_data(data={'page': 0, 'active_contracts': active_contracts})
-
-        await msg.answer("<b>❕ Выберите контракт для подачи акта</b>")
-        await base.start_acts(
-            active_contracts=active_contracts,
-            user_id=msg.from_user.id,
-            state=state
-        )
-    else:
-        await msg.answer("❗️ У вас нет активных контрактов.")
+# # Обработка команды /acts
+# @dp.message(CommandFilter(Command.ACTS.value))
+# async def start_stats(msg: Message, state: FSMContext):
+#     await state.clear()
+#     active_contracts = await db.get_all_user_contracts(msg.from_user.id)
+#
+#     # Получаем первый доступный campaign_id для пользователя
+#     if active_contracts:
+#         await state.set_state(UserState.SEND_STATISTIC)
+#         await state.update_data(data={'page': 0, 'active_contracts': active_contracts})
+#
+#         await msg.answer("<b>❕ Выберите контракт для подачи акта</b>")
+#         await base.start_acts(
+#             active_contracts=active_contracts,
+#             user_id=msg.from_user.id,
+#             state=state
+#         )
+#     else:
+#         await msg.answer("❗️ У вас нет активных контрактов.")
 
 
 # Выбор страницы

@@ -13,14 +13,14 @@ from . import base
 from enums import CB, Command, UserState, Action, Role, Step
 
 
-# Обработчик для команды /start_campaign
-@dp.message(CommandFilter(Command.CAMPAIGN.value))
-async def start_campaign(msg: Message, state: FSMContext):
-    user = await db.get_user_info(msg.from_user.id)
-    if user and user.in_ord:
-        await base.start_campaign_base(msg, state)
-    else:
-        await base.start_bot(msg, state, user=user)
+# # Обработчик для команды /start_campaign
+# @dp.message(CommandFilter(Command.CAMPAIGN.value))
+# async def start_campaign(msg: Message, state: FSMContext):
+#     user = await db.get_user_info(msg.from_user.id)
+#     if user and user.in_ord:
+#         await base.start_campaign_base(msg, state)
+#     else:
+#         await base.start_bot(msg, state, user=user)
 
 
 # Смена страницы контрактов

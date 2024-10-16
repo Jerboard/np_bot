@@ -10,14 +10,14 @@ from .base import preloader_advertiser_entity, start_bot, start_contract
 from enums import CB, Command, UserState, JStatus, Role, Delimiter
 
 
-# Добавление контрагента начало
-@dp.message(CommandFilter(Command.COUNTERAGENT.value))
-async def preloader_advertiser_entity_command(msg: Message, state: FSMContext):
-    user = await db.get_user_info(msg.from_user.id)
-    if user and user.in_ord:
-        await preloader_advertiser_entity(msg)
-    else:
-        await start_bot(msg, state, user=user)
+# # Добавление контрагента начало
+# @dp.message(CommandFilter(Command.COUNTERAGENT.value))
+# async def preloader_advertiser_entity_command(msg: Message, state: FSMContext):
+#     user = await db.get_user_info(msg.from_user.id)
+#     if user and user.in_ord:
+#         await preloader_advertiser_entity(msg)
+#     else:
+#         await start_bot(msg, state, user=user)
 
 
 @dp.callback_query(lambda cb: cb.data == CB.NO_ADVERTISER.value)

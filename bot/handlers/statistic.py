@@ -10,25 +10,25 @@ from . import base
 from enums import CB, Command, UserState, Action, Role
 
 
-# Обработка команды /start_statistics
-@dp.message(CommandFilter(Command.STATS.value))
-async def start_stats(msg: Message, state: FSMContext):
-    active_creatives = await db.get_statistics(msg.from_user.id)
-
-    # Получаем первый доступный campaign_id для пользователя
-    if active_creatives:
-        await state.set_state(UserState.SEND_STATISTIC)
-        await state.update_data(data={'page': 0, 'active_creatives': active_creatives, 'sending_list': []})
-
-        await msg.answer("<b>❕ Выберите креатив для подачи статистики</b>")
-        await base.start_statistic(
-            active_creatives=active_creatives,
-            user_id=msg.from_user.id,
-            sending_list=[],
-            state=state
-        )
-    else:
-        await msg.answer("❗️ У вас нет активных креативов.")
+# # Обработка команды /start_statistics
+# @dp.message(CommandFilter(Command.STATS.value))
+# async def start_stats(msg: Message, state: FSMContext):
+#     active_creatives = await db.get_statistics(msg.from_user.id)
+#
+#     # Получаем первый доступный campaign_id для пользователя
+#     if active_creatives:
+#         await state.set_state(UserState.SEND_STATISTIC)
+#         await state.update_data(data={'page': 0, 'active_creatives': active_creatives, 'sending_list': []})
+#
+#         await msg.answer("<b>❕ Выберите креатив для подачи статистики</b>")
+#         await base.start_statistic(
+#             active_creatives=active_creatives,
+#             user_id=msg.from_user.id,
+#             sending_list=[],
+#             state=state
+#         )
+#     else:
+#         await msg.answer("❗️ У вас нет активных креативов.")
 
 
 # Выбор страницы

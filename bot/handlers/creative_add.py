@@ -15,41 +15,41 @@ from . import base
 from enums import CB, Command, UserState, Action, Role, Delimiter
 
 
-# Обработчик для команды /add_creative
-@dp.message(CommandFilter(Command.TOKEN.value), StateFilter('*'))
-async def add_creative(msg: Message, state: FSMContext):
-    await state.set_state(UserState.ADD_CREATIVE)
-
-    # creative_ord_id = ut.get_ord_id(msg.from_user.id, delimiter=Delimiter.CR.value)
-    #
-    # response = await ut.send_creative_to_ord(
-    #     creative_id=creative_ord_id,
-    #     brand='Тестовый бренд',
-    #     creative_name=f'Тестовый бренд',
-    #     creative_text=['Тут описания чё чего почём'],
-    #     description='Да прост всякая фигня',
-    #     media_ids=['524275902-m-4566922434', '524275902-m-6830202514', '524275902-m-4360940154'],
-    #     contract_ord_id='524275902-c-1146478275'
-    # )
-    # log_error(f'response: {response}', wt=False)
-    # erid = response.get('erid') if response else None
-
-    user = await db.get_user_info(msg.from_user.id)
-    if not user or not user.in_ord:
-        await base.start_bot(msg, state)
-
-    campaigns = await db.get_user_campaigns(msg.from_user.id)
-    if not campaigns:
-        await msg.answer(
-            "У вас нет активных рекламных кампаний. Пожалуйста, создайте кампанию перед добавлением креатива."
-        )
-        await base.start_campaign_base(msg, state)
-
-    else:
-        text = (f'Загрузите файл своего рекламного креатива или введите текст.\n'
-                f'Вы можете загрузить несколько файлов для одного креатива. '
-                f'Например, несколько идущих подряд видео в сторис.')
-        await msg.answer(text)
+# # Обработчик для команды /add_creative
+# @dp.message(CommandFilter(Command.TOKEN.value), StateFilter('*'))
+# async def add_creative(msg: Message, state: FSMContext):
+#     await state.set_state(UserState.ADD_CREATIVE)
+#
+#     # creative_ord_id = ut.get_ord_id(msg.from_user.id, delimiter=Delimiter.CR.value)
+#     #
+#     # response = await ut.send_creative_to_ord(
+#     #     creative_id=creative_ord_id,
+#     #     brand='Тестовый бренд',
+#     #     creative_name=f'Тестовый бренд',
+#     #     creative_text=['Тут описания чё чего почём'],
+#     #     description='Да прост всякая фигня',
+#     #     media_ids=['524275902-m-4566922434', '524275902-m-6830202514', '524275902-m-4360940154'],
+#     #     contract_ord_id='524275902-c-1146478275'
+#     # )
+#     # log_error(f'response: {response}', wt=False)
+#     # erid = response.get('erid') if response else None
+#
+#     user = await db.get_user_info(msg.from_user.id)
+#     if not user or not user.in_ord:
+#         await base.start_bot(msg, state)
+#
+#     campaigns = await db.get_user_campaigns(msg.from_user.id)
+#     if not campaigns:
+#         await msg.answer(
+#             "У вас нет активных рекламных кампаний. Пожалуйста, создайте кампанию перед добавлением креатива."
+#         )
+#         await base.start_campaign_base(msg, state)
+#
+#     else:
+#         text = (f'Загрузите файл своего рекламного креатива или введите текст.\n'
+#                 f'Вы можете загрузить несколько файлов для одного креатива. '
+#                 f'Например, несколько идущих подряд видео в сторис.')
+#         await msg.answer(text)
 
 
 # чтоб выше принитяия простых сообщений
