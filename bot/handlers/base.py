@@ -219,14 +219,14 @@ async def add_creative_start(msg: Message, state: FSMContext, campaign_id: int):
 
 async def creative_upload(msg: Message, state: FSMContext):
     # Попробовать с медиагруппой
-    if msg.content_type in ['text', 'photo', 'video', 'audio']:
+    if msg.content_type in ['text', 'photo', 'video', 'audio', 'voice']:
         if msg.video and msg.video.file_size >= 50000000:
             await msg.answer(f'❌ Слишком большое видео. Размер видео не должен быть больше 50 МВ ')
             return
 
         current_state = await state.get_state()
         if not current_state:
-            campaigns = await db.get_user_campaigns(msg.from_user.id)
+            campaigns = await db.get_user_campaigns(user_id=msg.from_user.id)
             if not campaigns:
                 await msg.answer(
                     "❌ У вас нет активных рекламных кампаний. Пожалуйста, создайте кампанию перед добавлением креатива."
@@ -277,7 +277,8 @@ async def creative_upload(msg: Message, state: FSMContext):
 
 
 async def register_creative(data: dict, user_id: int, del_msg_id: int, state: FSMContext):
-    creatives = data.get('creatives', [])
+    creatives: list[dict] = data.get('creatives', [])
+    creative_texts: list[str] = data.get('text', [])
 
     # ut.print_dict(data, '>>creative data')
 
@@ -288,6 +289,10 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int, state: FS
     user = await db.get_user_info(user_id)
 
     # определяем тип рекламы
+    creative_form = ut.ident_creative_form(creatives)
+    # print(f'creative_form: {creative_form} {creative_form[:4]} {not creative_texts} {creative_texts}')
+    if creative_form[:4] == 'text' and not creative_texts:
+        creative_texts.append(campaign.service)
 
     if user.role == Role.ADVERTISER:
         contractor_name = user.name
@@ -308,12 +313,13 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int, state: FS
         creative_id=creative_ord_id,
         brand=campaign.brand,
         creative_name=f'{contractor_name}',
-        creative_text=data.get('text', []),
+        creative_text=creative_texts,
         description=campaign.service,
         media_ids=media_ord_ids,
-        contract_ord_id=contract.ord_id
+        contract_ord_id=contract.ord_id,
+        creative_form=creative_form
     )
-    log_error(f'response: {response}', wt=False)
+    # log_error(f'response: {response}', wt=False)
     erid = response.get('erid') if response else None
     if not erid:
         await bot.send_message(chat_id=user_id, text="Сообщение при ошибки регистрации в орд", reply_markup=kb.get_help_button())

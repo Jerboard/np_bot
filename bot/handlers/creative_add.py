@@ -15,66 +15,6 @@ from . import base
 from enums import CB, Command, UserState, Action, Role, Delimiter
 
 
-# # Обработчик для команды /add_creative
-# @dp.message(CommandFilter(Command.TOKEN.value), StateFilter('*'))
-# async def add_creative(msg: Message, state: FSMContext):
-#     await state.set_state(UserState.ADD_CREATIVE)
-#
-#     # creative_ord_id = ut.get_ord_id(msg.from_user.id, delimiter=Delimiter.CR.value)
-#     #
-#     # response = await ut.send_creative_to_ord(
-#     #     creative_id=creative_ord_id,
-#     #     brand='Тестовый бренд',
-#     #     creative_name=f'Тестовый бренд',
-#     #     creative_text=['Тут описания чё чего почём'],
-#     #     description='Да прост всякая фигня',
-#     #     media_ids=['524275902-m-4566922434', '524275902-m-6830202514', '524275902-m-4360940154'],
-#     #     contract_ord_id='524275902-c-1146478275'
-#     # )
-#     # log_error(f'response: {response}', wt=False)
-#     # erid = response.get('erid') if response else None
-#
-#     user = await db.get_user_info(msg.from_user.id)
-#     if not user or not user.in_ord:
-#         await base.start_bot(msg, state)
-#
-#     campaigns = await db.get_user_campaigns(msg.from_user.id)
-#     if not campaigns:
-#         await msg.answer(
-#             "У вас нет активных рекламных кампаний. Пожалуйста, создайте кампанию перед добавлением креатива."
-#         )
-#         await base.start_campaign_base(msg, state)
-#
-#     else:
-#         text = (f'Загрузите файл своего рекламного креатива или введите текст.\n'
-#                 f'Вы можете загрузить несколько файлов для одного креатива. '
-#                 f'Например, несколько идущих подряд видео в сторис.')
-#         await msg.answer(text)
-
-
-# чтоб выше принитяия простых сообщений
-# # Обработчик загрузки креатива
-# @dp.message(StateFilter(UserState.ADD_CREATIVE_LINK))
-# async def handle_creative_upload(msg: Message, state: FSMContext):
-#     if msg.entities and msg.entities[0].type == MessageEntityType.URL:
-#         data = await state.get_data()
-#
-#         await db.add_statistic(
-#             user_id=msg.from_user.id,
-#             creative_id=data['creative_id'],
-#             url=msg.text
-#         )
-#
-#         # await db.update_creative(creative_id=data['creative_id'], link=msg.text)
-#         await msg.answer(
-#             text='Вы успешно добавили ссылку на ваш рекламный креатив\n\n'
-#                  'Добавьте ещё ссылки или нажмите "Готово"',
-#             reply_markup=kb.get_end_creative_kb(data['creative_id'], with_add=False))
-#
-#     else:
-#         await msg.answer('❌ Некорректный формат ссылки')
-
-
 # media_ord_id: 524275902-m-8688379168, 524275902-m-8258534790, 524275902-m-4984138183
 # Обработчик загрузки креатива
 @dp.message(StateFilter(UserState.ADD_CREATIVE))
@@ -84,7 +24,7 @@ async def handle_creative_upload_st(msg: Message, state: FSMContext):
 
 # Обработчик выбора рекламной кампании CREATIVE_SELECT_CAMPAIGN
 @dp.callback_query(lambda cb: cb.data.startswith(CB.CREATIVE_SELECT_CAMPAIGN.value))
-async def choose_campaign(cb: CallbackQuery, state: FSMContext):
+async def creative_select_campaign(cb: CallbackQuery, state: FSMContext):
     _, page_str, action = cb.data.split(':')
     page = int(page_str)
 
@@ -112,7 +52,7 @@ async def choose_campaign(cb: CallbackQuery, state: FSMContext):
 
     else:
         await state.update_data(data={'campaign_id': page})
-        data = await state.get_data()
+        # data = await state.get_data()
 
         # ищем карточки для быстрой оплаты
         # sent = await cb.message.answer('⏳')

@@ -62,7 +62,6 @@ async def add_statistic(
 # Обновляет карту
 async def update_statistic(
         statistic_id: int,
-
         views: int = None,
         ord_id: str = None,
         status: str = None,

@@ -154,11 +154,10 @@ async def send_creative_to_ord(
         creative_id,
         brand: str,
         creative_name: str,
-        # creative_text: str,
+        creative_form: str,
         creative_text: list,
         description: str,
         media_ids: list,
-        # media_ids: str,
         contract_ord_id: str,
 ):
 
@@ -174,14 +173,10 @@ async def send_creative_to_ord(
         "brand": brand,
         "category": description,
         "description": description,
-        # "pay_type": "cpc",
         "pay_type": "other",
-        "form": MediaType.BANNER.value,
+        "form": creative_form,
         "texts": creative_text,
         "media_external_ids": media_ids,
-        # "flags": [
-        #     "native"
-        # ]
     }
 
     async with httpx.AsyncClient() as client:

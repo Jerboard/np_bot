@@ -69,10 +69,13 @@ async def get_contract_full_data(contract_id: int = None) -> ContractDistRow:
     query = (
         sa.select (
             ContractTable.c.id.label('contract_id'),
+            ContractTable.c.user_id.label('contract_user_id'),
+            ContractTable.c.contractor_id,
             ContractTable.c.contract_date,
             ContractTable.c.end_date,
             ContractTable.c.serial,
             ContractTable.c.amount,
+            ContractTable.c.ord_id.label('contract_ord_id'),
             DistributorTable.c.name,
         )
         .select_from (ContractTable.join (
@@ -89,7 +92,7 @@ async def get_contract_full_data(contract_id: int = None) -> ContractDistRow:
 
 
 # возвращает кампании с креативом
-async def get_creative_full_data(campaign_id: int = None, user_id: int = None) -> tuple[CreativeFullRow]:
+async def get_creative_full_data(campaign_id: int = None, user_id: int = None) -> list[CreativeFullRow]:
     query = (
         sa.select (
             CreativeTable.c.id.label('creative_id'),
@@ -122,4 +125,4 @@ async def get_creative_full_data(campaign_id: int = None, user_id: int = None) -
     async with begin_connection () as conn:
         result = await conn.execute (query)
 
-    return result.all ()
+    return result.all()

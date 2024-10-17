@@ -13,6 +13,7 @@ class DistributorRow(t.Protocol):
     name: str
     inn: str
     j_type: str
+    role: str
     ord_id: str
 
 
@@ -26,15 +27,13 @@ DistributorTable: sa.Table = sa.Table(
     sa.Column('name', sa.String(255)),
     sa.Column('inn', sa.String(255)),
     sa.Column('j_type', sa.String(255)),
+    sa.Column('role', sa.String(255)),
     sa.Column('ord_id', sa.String(255), unique=True),
 )
 
 
 # добавляет контрагента
-async def add_contractor(user_id: int, name: str, inn: str, j_type: str, ord_id: str) -> int:
-    # print('------')
-    # print(f'{user_id}, {name}, {inn}, {j_type}, {ord_id}, ')
-    # '524275902, ООО ЮКЦ Партнер, 7727563778, juridical, 524275902-u-283548423,'
+async def add_contractor(user_id: int, name: str, inn: str, j_type: str, ord_id: str, role: str) -> int:
     now = datetime.now()
     query = (
         psql.insert(DistributorTable)
@@ -44,11 +43,12 @@ async def add_contractor(user_id: int, name: str, inn: str, j_type: str, ord_id:
             name=name,
             inn=inn,
             j_type=j_type,
+            role=role,
             ord_id=ord_id
         )
         .on_conflict_do_update(
             index_elements=[DistributorTable.c.ord_id],
-            set_={"created_at": now, 'user_id': user_id, 'name': name, "inn": inn, 'j_type': j_type}
+            set_={"created_at": now, 'user_id': user_id, 'name': name, "inn": inn, 'j_type': j_type, 'role': role}
         )
     )
     async with begin_connection() as conn:

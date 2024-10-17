@@ -17,7 +17,7 @@ class ContractRow(t.Protocol):
     end_date: date
     serial: str
     amount: float
-    # vat_included: int
+    status: str
     ord_id: str
 
 

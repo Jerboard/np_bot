@@ -46,6 +46,7 @@ async def add_creative(
     now = datetime.now()
     query = CreativeTable.insert().values(
             created_at=now,
+            updated_at=now,
             user_id=user_id,
             campaign_id=campaign_id,
             texts=texts,
@@ -67,6 +68,15 @@ async def get_creative(creative_id: int) -> CreativeRow:
     return result.first()
 
 
+# возвращает креатив
+async def get_creatives(campaign_id: int) -> list[CreativeRow]:
+    query = CreativeTable.select().where(CreativeTable.c.campaign_id == campaign_id)
+
+    async with begin_connection() as conn:
+        result = await conn.execute(query)
+    return result.all()
+
+
 # обновляет креатив
 async def update_creative(
         creative_id: int = None,
@@ -74,7 +84,7 @@ async def update_creative(
         token: str = None,
         status: str = None
 ) -> None:
-    query = CreativeTable.update(updated_at=datetime.now())
+    query = CreativeTable.update().values(updated_at=datetime.now())
 
     if creative_id:
         query = query.values(token=token).where(CreativeTable.c.id == creative_id)

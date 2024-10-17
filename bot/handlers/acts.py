@@ -49,7 +49,7 @@ async def acts_select_page(cb: CallbackQuery, state: FSMContext):
 
 async def ask_amount(user_id: int, serial: str, amount: int):
     text = (f'Сумма работ по договору №{serial} указана верно?\n'
-            f'Сумма по договору: {amount:.2f }')
+            f'Сумма по договору: {amount:.2f} руб')
     await bot.send_message(chat_id=user_id, text=text, reply_markup=kb.get_check_next_step_act_kb())
 
 
@@ -136,58 +136,64 @@ async def acts_send(cb: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     await state.clear()
 
-    ut.print_dict(data, 'act_data')
+    # ut.print_dict(data, 'act_data')
 
     ord_id = ut.get_ord_id(cb.from_user.id, Delimiter.I.value)
 
     contract = await db.get_contract_full_data(data['contract_id'])
 
     user_info = await db.get_user_info(user_id=cb.from_user.id)
-    contractor = await db.get_user_info(user_id=contract.contractor_id)
+    contractor = await db.get_contractor(contractor_id=contract.contractor_id)
 
     campaigns = await db.get_user_campaigns(contract_id=data['contract_id'])
-    creatives = tuple()
+    creatives = []
     for campaign in campaigns:
-        campaign_creatives = await db.get_creative_full_data(campaign_id=campaign.id)
+        # campaign_creatives = await db.get_creative_full_data(campaign_id=campaign.id)
+        campaign_creatives = await db.get_creatives(campaign_id=campaign.id)
+        # print(f'campaign_creatives: {len(campaign_creatives)} campaign.id: {campaign.id}')
         creatives = creatives + campaign_creatives
 
     cash_platforms = {}
     creative_data = []
     for creative in creatives:
-        creative: db.CreativeFullRow
+        creative: db.CreativeRow
 
-        platform: db.PlatformRow = cash_platforms.get(creative.platform_id)
-        if not platform:
-            platform: db.PlatformRow = await db.get_platform(platform_id=creative.platform_id)
-            cash_platforms[creative.platform_id] = platform
+        creative_platforms = []
+        statistics = await db.get_statistics(creative_id=creative.id)
+        for statistic in statistics:
+            platform: db.PlatformRow = cash_platforms.get(statistic.platform_id)
+            if not platform:
+                platform: db.PlatformRow = await db.get_platform(platform_id=statistic.platform_id)
+                cash_platforms[statistic.platform_id] = platform
+
+            creative_platforms.append(
+                {
+                    "pad_external_id": platform.ord_id,
+                    "shows_count": statistic.views,
+                    "invoice_shows_count": 0,
+                    "amount": "0",
+                    "amount_per_event": "0",
+                    "date_start_planned": creative.created_at.date().strftime(Config.ord_date_form),
+                    "date_start_actual": creative.created_at.date().strftime(Config.ord_date_form),
+                    "date_end_planned": data['end_date_str'],
+                    "date_end_actual": data['end_date_str'],
+                    "pay_type": "other"
+                }
+            )
 
         creative_data.append({
-              "creative_external_id": creative.creative_ord_id,
-              "platforms": [
-                {
-                  "pad_external_id": platform.ord_id,
-                  "shows_count": platform.average_views,
-                  # "invoice_shows_count": 500,
-                  # "amount": "5000",
-                  # "amount_per_event": "10",
-                  "flags": [
-                    "vat_included"
-                  ],
-                  "date_start_actual": creative.created_at.date().strftime(Config.ord_date_form),
-                  "date_end_actual": data['end_date_str'],
-                  "pay_type": "other"
-                }
-              ]
+              "creative_external_id": creative.ord_id,
+              "platforms": creative_platforms,
             }
         )
 
     act_data = {
       "contract_external_id": contract.contract_ord_id,
       "date": data['end_date_str'],
-      "serial": data['serial'],
+      "serial": str(data['serial']),
       "date_start": contract.contract_date.strftime(Config.ord_date_form),
       "date_end": data['end_date_str'],
-      "amount": data['amount'],
+      "amount": f'{data["amount"]:.2f}',
       "flags": [
         "vat_included"
       ],
@@ -196,7 +202,7 @@ async def acts_send(cb: CallbackQuery, state: FSMContext):
       "items": [
         {
           "contract_external_id": contract.contract_ord_id,
-          "amount": data['amount'],
+          "amount": f'{data["amount"]:.2f}',
           "flags": [
             "vat_included"
           ],
@@ -205,7 +211,8 @@ async def acts_send(cb: CallbackQuery, state: FSMContext):
       ]
     }
 
-    is_suc = ut.send_acts_to_ord(ord_id=ord_id, act_data=act_data)
+    is_suc = await ut.send_acts_to_ord(ord_id=ord_id, act_data=act_data)
+    print(f'is_suc: {is_suc}')
 
     if not is_suc:
         await cb.message.answer("❌ Акт не был отправлен\n\n"
@@ -215,10 +222,10 @@ async def acts_send(cb: CallbackQuery, state: FSMContext):
     await cb.message.answer("✅ Данные об акте успешно отправлены в ОРД")
 
     # переводим в статус неактивно
-    await db.update_contract(contract_id=data['contract_id'], status=Status.INACTIVE.value)
-    await db.update_campaign(contract_id=contract.contract_id, status=Status.INACTIVE.value)
-    for campaign in campaigns:
-        await db.update_creative(campaign_id=campaign.id, status=Status.INACTIVE.value)
+    # await db.update_contract(contract_id=data['contract_id'], status=Status.INACTIVE.value)
+    # await db.update_campaign(contract_id=contract.contract_id, status=Status.INACTIVE.value)
+    # for campaign in campaigns:
+    #     await db.update_creative(campaign_id=campaign.id, status=Status.INACTIVE.value)
 
 
 

@@ -90,8 +90,8 @@ class MediaType(Enum):
     TEXT_GRAPHIC_BLOCK = "text_graphic_block"  # текстово-графический блок
     AUDIO = "audio"  # аудиозапись
     VIDEO = "video"  # видеоролик
-    LIVE_AUDIO = "live_audio"  # аудиотрансляция в прямом эфире
-    LIVE_VIDEO = "live_video"  # видеотрансляция в прямом эфире
+    # LIVE_AUDIO = "live_audio"  # аудиотрансляция в прямом эфире
+    # LIVE_VIDEO = "live_video"  # видеотрансляция в прямом эфире
     TEXT_VIDEO_BLOCK = "text_video_block"  # текстовый блок с видео
     TEXT_GRAPHIC_VIDEO_BLOCK = "text_graphic_video_block"  # текстово-графический блок с видео
     TEXT_AUDIO_BLOCK = "text_audio_block"  # текстовый блок с аудио

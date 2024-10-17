@@ -159,10 +159,10 @@ async def save_media_ord(creatives: list[dict], creative_ord_id: str, user_id: i
     return media_ord_ids
 
 
-def proc_media_type(creatives: list[dict]) -> str:
+def ident_creative_form(creatives: list[dict]) -> str:
     media_types = set([creative['content_type'] for creative in creatives])
-    media_type = MediaType.BANNER.value
-    if len(media_types) == 4:
+
+    if len(media_types) >= 4:
         media_type = MediaType.TEXT_GRAPHIC_AUDIO_VIDEO_BLOCK.value
 
     elif len(media_types) == 1 and ContentType.TEXT.value in media_types:
@@ -174,7 +174,43 @@ def proc_media_type(creatives: list[dict]) -> str:
     elif len(media_types) == 1 and ContentType.VIDEO.value in media_types:
         media_type = MediaType.VIDEO.value
 
-    elif len(media_types) == 1 and ContentType.TEXT.value in media_types:
+    elif len(media_types) == 1 and (ContentType.AUDIO.value in media_types or ContentType.VOICE.value in media_types):
         media_type = MediaType.AUDIO.value
 
+    elif ContentType.PHOTO.value in media_types and ContentType.VIDEO.value in media_types:
+        media_type = MediaType.TEXT_GRAPHIC_VIDEO_BLOCK.value
 
+    elif (ContentType.PHOTO.value in media_types and
+          (ContentType.AUDIO.value in media_types or ContentType.VOICE.value in media_types)):
+        media_type = MediaType.TEXT_GRAPHIC_AUDIO_BLOCK.value
+
+    elif ContentType.AUDIO.value in media_types and ContentType.VIDEO.value in media_types:
+        media_type = MediaType.TEXT_AUDIO_VIDEO_BLOCK.value
+
+    elif ContentType.VIDEO.value in media_types:
+        media_type = MediaType.TEXT_VIDEO_BLOCK.value
+
+    elif ContentType.AUDIO.value in media_types:
+        media_type = MediaType.TEXT_AUDIO_BLOCK.value
+
+    elif ContentType.PHOTO.value in media_types:
+        media_type = MediaType.TEXT_GRAPHIC_BLOCK.value
+
+    else:
+        media_type = MediaType.TEXT_GRAPHIC_AUDIO_VIDEO_BLOCK.value
+
+    return media_type
+
+
+
+
+
+'''
+class MediaType(Enum):
+TEXT_GRAPHIC_BLOCK
+    TEXT_AUDIO_BLOCK = "text_audio_block"  # текстовый блок с аудио
+
+    
+    
+    TEXT_GRAPHIC_AUDIO_VIDEO_BLOCK = "text_graphic_audio_video_block"  # текстово-графический блок с аудио и видео
+'''

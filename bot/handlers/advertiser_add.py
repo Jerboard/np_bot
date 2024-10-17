@@ -117,7 +117,8 @@ async def inn_collector_advertiser(msg: Message, state: FSMContext):
             name=data['name'],
             inn=msg.text,
             j_type=data['j_type'],
-            ord_id=ord_id
+            ord_id=ord_id,
+            role=contractor_role
         )
         await msg.answer(
             text="✅ Контрагент успешно добавлен!\nВы всегда можете добавить новых контрагентов позже.",
