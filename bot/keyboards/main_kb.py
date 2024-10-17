@@ -20,12 +20,28 @@ def get_agree_button() -> InlineKeyboardMarkup:
 
 
 # стартовая клавиатура
-def get_start_kb() -> InlineKeyboardMarkup:
+def get_start_kb(with_card: bool = False) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     kb.button(text='Подтвердить', callback_data=CB.CONFIRM_USER.value)
     kb.button(text='Сменить роль', callback_data=CB.CHANGE_ROLE.value)
+    if with_card:
+        kb.button(text='💳 Сохранённые карты', callback_data=CB.SAVE_CARD_VIEW.value)
     kb.adjust(1).as_markup()
     return kb.adjust(1).as_markup()
+
+
+# стартовая клавиатура
+def get_view_card_kb(cards: list[db.SaveCardRow]) -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    for card in cards:
+        kb.button(text=f'🗑 {card.card_info}', callback_data=f'{CB.SAVE_CARD_DEL.value}:{card.id}')
+
+    kb.button(text=f'🔙 Назад', callback_data=f'{CB.SAVE_CARD_DEL.value}:{Action.BACK.value}')
+    kb.adjust(1).as_markup()
+    return kb.adjust(1).as_markup()
+
+
+
 
 
 # кб для  register
@@ -100,7 +116,7 @@ def get_platform_url_collector_kb() -> InlineKeyboardMarkup:
 
 
 # кб для process_average_views
-def get_process_average_views_kb(contractors: tuple[db.DistributorRow]) -> InlineKeyboardMarkup:
+def get_process_average_views_kb(contractors: list[db.DistributorRow]) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     for contractor in contractors:
         kb.button(text=contractor.name, callback_data=f"{CB.PLATFORM_DIST.value}:{contractor.ord_id}")
@@ -175,7 +191,7 @@ def get_select_campaigns_kb() -> InlineKeyboardMarkup:
 
 
 # кб для add_creative
-# def get_add_creative_kb(campaigns: tuple[db.CampaignRow]) -> InlineKeyboardMarkup:
+# def get_add_creative_kb(campaigns: list[db.CampaignRow]) -> InlineKeyboardMarkup:
 #     kb = InlineKeyboardBuilder()
 #     for campaign in campaigns:
 #         # Создаем кнопку с текстом из названия бренда и описания услуги
@@ -195,7 +211,7 @@ def get_end_creative_kb(creative_id: int, with_add: bool = True) -> InlineKeyboa
 
 
 # выбор карты
-def get_select_card_kb(save_cards: tuple[db.SaveCardRow]) -> InlineKeyboardMarkup:
+def get_select_card_kb(save_cards: list[db.SaveCardRow]) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     kb.button(text="Оплатить новой картой", callback_data=f"{CB.PAY_YK_NEW.value}:{1}")
     for card in save_cards:
@@ -242,7 +258,7 @@ def get_add_distributor_finish_kb(contractor_id: int) -> InlineKeyboardMarkup:
 
 
 # выбор контрагента
-def get_select_distributor_kb(contractors: tuple[db.DistributorRow]) -> InlineKeyboardMarkup:
+def get_select_distributor_kb(contractors: list[db.DistributorRow]) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     for contractor in contractors:
         kb.button(text=contractor.name, callback_data=f"{CB.CONTRACT_DIST_SELECT.value}:{contractor.id}")
@@ -252,7 +268,7 @@ def get_select_distributor_kb(contractors: tuple[db.DistributorRow]) -> InlineKe
 
 
 # выбор контрагента
-def get_select_creative_platform_kb(platforms: tuple[db.PlatformRow]) -> InlineKeyboardMarkup:
+def get_select_creative_platform_kb(platforms: list[db.PlatformRow]) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     for platform in platforms:
         kb.button(text=platform.url, callback_data=f"{CB.CREATIVE_SELECT_PLATFORM.value}:{platform.id}")

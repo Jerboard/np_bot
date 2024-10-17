@@ -51,7 +51,7 @@ async def add_campaign(user_id: int, contract_id: int, brand: str, service: str,
 
 
 # возвращает все рекламные компании пользователя
-async def get_user_campaigns(user_id: int = None, contract_id: int = None) -> tuple[CampaignRow]:
+async def get_user_campaigns(user_id: int = None, contract_id: int = None) -> list[CampaignRow]:
     query = CampaignTable.select().where(CampaignTable.c.status == Status.ACTIVE)
 
     if user_id:

@@ -17,8 +17,8 @@ class Step(str, Enum):
 class Role(str, Enum):
     ADVERTISER = 'advertiser'
     PUBLISHER = 'publisher'
+    AGENCY = 'agency'
     # ORS = 'ors'
-    # MEDIATION = 'mediation'
 
 
 class Status(str, Enum):
@@ -33,6 +33,11 @@ class JStatus(str, Enum):
     PHYSICAL = 'physical'
 
 
+class ContractType(str, Enum):
+    BASE = 'base'
+    AGENCY = 'agency'
+
+
 class Action(str, Enum):
     ADD = 'add'
     DEL = 'del'
@@ -40,6 +45,7 @@ class Action(str, Enum):
     YES = 'yes'
     NO = 'no'
     CONT = 'continue'
+    BACK = 'back'
 
 
 class Command(str, Enum):
@@ -74,7 +80,7 @@ platform_dict = {
 
 
 class Delimiter(str, Enum):
-    BASE = '.'
+    BASE = '-'
     U = '-u-'
     P = '-p-'
     C = '-c-'

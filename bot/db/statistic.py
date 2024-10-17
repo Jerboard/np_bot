@@ -83,7 +83,7 @@ async def update_statistic(
 
 
 # Возвращает всю статистику пользователя
-async def get_statistics(user_id: int = None, creative_id: int = None, for_ord: bool = False) -> tuple[StatisticRow]:
+async def get_statistics(user_id: int = None, creative_id: int = None, for_ord: bool = False) -> list[StatisticRow]:
     query = StatisticTable.select()
 
     if user_id:

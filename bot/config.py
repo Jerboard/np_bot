@@ -36,6 +36,7 @@ class Config:
     db_url = f'postgresql+asyncpg://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
 
     pay_link = os.getenv('PAY_LINK')
+    my = 'my'
 
     # YOO_ACCOUNT_ID = int(os.getenv('YOO_ACCOUNT_ID'))
     # YOO_SECRET_KEY = os.getenv('YOO_SECRET_KEY')

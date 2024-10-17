@@ -13,7 +13,7 @@ from config import Config
 from init import dp, log_error, bot
 from .base import preloader_choose_platform, start_bot, preloader_advertiser_entity
 from utils import ord_api
-from enums import CB, JStatus, UserState, Role, Step
+from enums import CB, JStatus, UserState, Role, Step, Delimiter, ContractType
 
 
 # Согласие с обработкой данных
@@ -202,7 +202,7 @@ async def collect_role(cb: CallbackQuery, state: FSMContext):
         date_str = datetime.now().strftime(Config.ord_date_form)
         await ut.send_contract_to_ord(
             ord_id=ord_id,
-            client_external_id='my',
+            client_external_id=Config.my,
             contractor_external_id=str(cb.from_user.id),
             contract_date=date_str,
             serial=str(cb.from_user.id)
@@ -226,6 +226,16 @@ async def collect_role(cb: CallbackQuery, state: FSMContext):
                 email=data.get('email'),
                 fio=data.get('fio'),
                 in_ord=True
+            )
+
+            contract_ord_id = ut.get_ord_id(cb.from_user.id, Delimiter.C.value)
+            await db.add_contract(
+                user_id=cb.from_user.id,
+                contractor_id=0,
+                start_date=datetime.now().date(),
+                ord_id=contract_ord_id,
+                serial=str(cb.from_user.id),
+                contract_type=ContractType.AGENCY.value
             )
 
         if role == Role.ADVERTISER:

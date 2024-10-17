@@ -61,7 +61,7 @@ async def update_card(
 
 
 # Возвращает все карты пользователя
-async def get_user_card(user_id: int) -> tuple[SaveCardRow]:
+async def get_user_card(user_id: int) -> list[SaveCardRow]:
     query = SaveCardTable.select().where(SaveCardTable.c.user_id == user_id)
 
     async with begin_connection() as conn:
@@ -76,3 +76,11 @@ async def get_card(card_id: int) -> SaveCardRow:
     async with begin_connection() as conn:
         result = await conn.execute(query)
     return result.first()
+
+
+# Удаляет карту
+async def del_card(card_id: int) -> None:
+    query = SaveCardTable.delete().where(SaveCardTable.c.id == card_id)
+
+    async with begin_connection() as conn:
+        await conn.execute(query)

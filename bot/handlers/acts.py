@@ -212,7 +212,6 @@ async def acts_send(cb: CallbackQuery, state: FSMContext):
     }
 
     is_suc = await ut.send_acts_to_ord(ord_id=ord_id, act_data=act_data)
-    print(f'is_suc: {is_suc}')
 
     if not is_suc:
         await cb.message.answer("❌ Акт не был отправлен\n\n"
@@ -222,10 +221,10 @@ async def acts_send(cb: CallbackQuery, state: FSMContext):
     await cb.message.answer("✅ Данные об акте успешно отправлены в ОРД")
 
     # переводим в статус неактивно
-    # await db.update_contract(contract_id=data['contract_id'], status=Status.INACTIVE.value)
-    # await db.update_campaign(contract_id=contract.contract_id, status=Status.INACTIVE.value)
-    # for campaign in campaigns:
-    #     await db.update_creative(campaign_id=campaign.id, status=Status.INACTIVE.value)
+    await db.update_contract(contract_id=data['contract_id'], status=Status.INACTIVE.value, act_ord_id=ord_id)
+    await db.update_campaign(contract_id=contract.contract_id, status=Status.INACTIVE.value)
+    for campaign in campaigns:
+        await db.update_creative(campaign_id=campaign.id, status=Status.INACTIVE.value)
 
 
 

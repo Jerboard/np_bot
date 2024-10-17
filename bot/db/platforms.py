@@ -62,7 +62,7 @@ async def add_platform(
 
 
 # Возвращает платформы пользователя
-async def get_user_platforms(user_id: int = None) -> tuple[PlatformRow]:
+async def get_user_platforms(user_id: int = None) -> list[PlatformRow]:
     query = PlatformTable.select().where(PlatformTable.c.user_id == user_id)
 
     async with begin_connection() as conn:

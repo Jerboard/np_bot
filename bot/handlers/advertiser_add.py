@@ -144,7 +144,7 @@ async def handle_success_add_distributor(cb: CallbackQuery):
 
 # Обработчик для кнопок после успешного добавления контрагента
 @dp.callback_query(lambda cb: cb.data.startswith(CB.CONTINUE.value))
-async def handle_success_add_distributor(cb: CallbackQuery):
+async def handle_success_add_distributor(cb: CallbackQuery, state: FSMContext):
     _, contractor_id_str = cb.data.split(':')
     contractor_id = int(contractor_id_str)
 
@@ -155,6 +155,10 @@ async def handle_success_add_distributor(cb: CallbackQuery):
             reply_markup=kb.get_preloader_choose_platform_kb()
         )
     elif user.role == Role.PUBLISHER:
-        await start_contract(msg=cb.message, user_id=cb.from_user.id, selected_contractor=contractor_id)
-        # await cb.message.answer("Теперь укажите информацию о договоре.")
+        await start_contract(
+            msg=cb.message,
+            user_id=cb.from_user.id,
+            selected_contractor=contractor_id,
+            state=state
+        )
 

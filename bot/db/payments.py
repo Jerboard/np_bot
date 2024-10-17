@@ -40,15 +40,3 @@ async def add_payment(user_id: int, pay_id: str) -> None:
 
     async with begin_connection() as conn:
         await conn.execute(query)
-
-
-# возвращает все карточки пользователя
-async def get_user_save_cards(user_id: int) -> tuple[str]:
-    query = PaymentTable.select().with_only_columns(PaymentTable.c.card).where(
-        PaymentTable.c.user_id == user_id,
-        # PaymentTable.c.save_card == True,
-    )
-    async with begin_connection() as conn:
-        result = await conn.execute(query)
-
-    return result.all()

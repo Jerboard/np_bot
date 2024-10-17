@@ -91,7 +91,7 @@ async def get_contractor_count(user_id: int) -> int:
 
 
 # возвращает всех контрагентов
-async def get_all_contractors(user_id: int) -> tuple[DistributorRow]:
+async def get_all_contractors(user_id: int) -> list[DistributorRow]:
     query = DistributorTable.select().where(DistributorTable.c.user_id == user_id)
     async with begin_connection() as conn:
         result = await conn.execute(query)

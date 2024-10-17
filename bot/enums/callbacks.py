@@ -39,6 +39,8 @@ class CB(str, Enum):
     ACTS_SELECT_PAGE = 'acts_select_page'
     ACT_NEXT_STEP_CHECK = 'act_next_step_check'
     ACT_SEND = 'act_send'
+    SAVE_CARD_VIEW = 'save_card_view'
+    SAVE_CARD_DEL = 'save_card_del'
 
     NO_ADVERTISER = 'no_advertiser'
     CLOSE = 'close'

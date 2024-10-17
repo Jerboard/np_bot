@@ -13,17 +13,6 @@ from .base import start_contract, start_bot, end_contract, start_campaign_base
 from enums import CB, Command, UserState, JStatus, Role, Step, Delimiter
 
 
-# # Обработчик для команды /start_contract
-# # перенёс функцию в base поменял название, чтоб не совпадали
-# @dp.message(CommandFilter(Command.CONTRACT.value))
-# async def start_contract_hnd(msg: Message, state: FSMContext):
-#     user = await db.get_user_info(msg.from_user.id)
-#     if user and user.in_ord:
-#         await start_contract(msg)
-#     else:
-#         await start_bot(msg, state, user=user)
-
-
 # возвращает к старту контракта
 @dp.callback_query(lambda cb: cb.data.startswith(CB.CONTRACT_BACK))
 async def start_contract_hnd(cb: CallbackQuery, state: FSMContext):

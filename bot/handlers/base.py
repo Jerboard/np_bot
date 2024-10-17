@@ -11,11 +11,17 @@ import utils as ut
 from config import Config
 from init import dp, log_error, bot, scheduler
 from utils import ord_api
-from enums import CB, JStatus, UserState, MediaType, Delimiter, Role
+from enums import CB, JStatus, UserState, Step, Delimiter, Role
 
 
 # стартовый экран
-async def start_bot(msg: Message, state: FSMContext, user: db.UserRow = None, referrer: int = None):
+async def start_bot(
+        msg: Message,
+        state: FSMContext,
+        user: db.UserRow = None,
+        referrer: int = None,
+        edit_text: bool = False
+):
     await state.clear()
     if not user:
         user = await db.get_user_info(msg.from_user.id)
@@ -29,6 +35,8 @@ async def start_bot(msg: Message, state: FSMContext, user: db.UserRow = None, re
     )
 
     if user and user.in_ord:
+        saved_cards = await db.get_user_card(user_id=user.user_id)
+
         # Если пользователь найден в базе данных, выводим информацию о нем
         if user.j_type == JStatus.JURIDICAL:
             name_label = f'Название организации: {user.name}\nОтветственный: {user.fio}\n'
@@ -44,7 +52,11 @@ async def start_bot(msg: Message, state: FSMContext, user: db.UserRow = None, re
                 f"Реферальная ссылка:\n"
                 f"<code>{Config.bot_link}?start={user.ref_code}</code>\n\n"
                 f"Чтобы воспользоваться функционалом бота - нажмите на синюю кнопку меню и выберите действие.\n\n")
-        await msg.answer(text, reply_markup=kb.get_start_kb())
+
+        if edit_text:
+            await msg.edit_text(text, reply_markup=kb.get_start_kb(with_card=len(saved_cards) > 0))
+        else:
+            await msg.answer(text, reply_markup=kb.get_start_kb(with_card=len(saved_cards) > 0))
 
     else:
         # Если пользователь не найден в базе данных, предлагаем согласиться с офертой
@@ -55,14 +67,26 @@ async def preloader_advertiser_entity(message: Message):
     await message.answer("Перейти к созданию контрагента?", reply_markup=kb.get_preloader_advertiser_entity_kb())
 
 
-async def start_contract(msg: Message, user_id: int = None, selected_contractor: int = None):
+async def start_contract(
+        msg: Message,
+        user_id: int = None,
+        selected_contractor: int = None,
+        state: FSMContext = None
+):
     if selected_contractor:
         await msg.answer(f"Выбранный ранее контрагент будет использован: № {selected_contractor}")
         await msg.answer("Введите дату начала договора (дд.мм.гггг):")
-        # dp.register_next_step(msg, cf.process_contract_start_date, contractor_id)
+        if state:
+            await state.set_state(UserState.ADD_CONTRACT)
+            await state.update_data(data={
+                'step': Step.START_DATE.value,
+                'dist_id': selected_contractor
+            })
+
     else:
         if not user_id:
             user_id = msg.from_user.id
+
         contractors = await db.get_all_contractors(user_id)
         await msg.answer("Контрагент не был выбран. Пожалуйста, выберите контрагента.")
         if contractors:
@@ -71,9 +95,6 @@ async def start_contract(msg: Message, user_id: int = None, selected_contractor:
                              reply_markup=kb.get_select_distributor_kb(contractors))
 
         else:
-            # await msg.answer(
-            #     text=f"❗️У вас нет контрагентов.\n\n"
-            #          f"Чтобы добавить контрагента воспользуйтесь командой /{Command.PRELOADER_ADVERTISER_ENTITY.value}")
             await msg.answer(text=f"❗️У вас нет контрагентов.")
             await preloader_advertiser_entity(msg)
 
@@ -153,7 +174,7 @@ async def finalize_platform_data(msg: Message, state: FSMContext, user_id: int =
 
 
 async def select_contract(
-        contracts: tuple[db.ContractDistRow],
+        contracts: list[db.ContractDistRow],
         current: int,
         chat_id: int,
         message_id: int = None,
@@ -351,11 +372,57 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int, state: FS
     await bot.delete_message(chat_id=user_id, message_id=del_msg_id)
     await bot.send_message(chat_id=user_id, text=text, reply_markup=kb.get_end_creative_kb(creative_id))
 
+    # подача акта
+
+    '''
+    В акте указываем:
+- номер акта: [последовательные числа, можно как [Номер договора / 1]]
+- роль заказчика: [зависит от роли клиента - рекламодатель или рекламораспространитель]
+- роль исполнителя: [агентство]
+- дата выставления: [дата оплаты]
+- дата начала периода: [дата оплаты]
+- дата окончания периода: [дата оплаты]
+- сумма: [400 рублей]
+    '''
+
+    agency_contract = await db.get_agency_contract(user_id=user_id)
+    user_info = await db.get_user_info(user_id=user_id)
+    data_str = datetime.now().strftime(Config.ord_date_form)
+    act_data = {
+        "contract_external_id": agency_contract.ord_id,
+        "date": data_str,
+        # "serial": ut.get_ord_id(creative_ord_id),
+        "date_start": data_str,
+        "date_end": data_str,
+        "amount": f'{Config.service_price:.2f}',
+        "flags": [
+            "vat_included"
+        ],
+        "client_role": user_info.role,
+        "contractor_role": Role.AGENCY.value,
+        "items": [
+            {
+                "contract_external_id": agency_contract.ord_id,
+                "amount": f'{Config.service_price:.2f}',
+                "flags": [
+                    "vat_included"
+                ],
+                # "creatives": []
+            }
+        ]
+    }
+
+    is_suc = await ut.send_acts_to_ord(
+        ord_id=ut.get_ord_id(Config.partner_data['inn'], Delimiter.I.value),
+        act_data=act_data
+    )
+    print(f'act: {is_suc}')
+
 
 # выбор креатива для подачи статистики
 async def start_statistic(
         user_id: int,
-        active_creatives: tuple[db.CreativeFullRow],
+        active_creatives: list[db.CreativeFullRow],
         sending_list: list[int],
         state: FSMContext,
         page: int = 0,
@@ -393,7 +460,7 @@ async def start_statistic(
 # выбор контракта для отправки акта
 async def start_acts(
         user_id: int,
-        active_contracts: tuple[db.ContractDistRow],
+        active_contracts: list[db.ContractDistRow],
         state: FSMContext,
         page: int = 0,
         message_id: int = 0,

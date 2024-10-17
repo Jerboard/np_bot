@@ -11,7 +11,7 @@ from config import Config
 from init import dp, log_error, bot
 from . import base
 from utils import ord_api
-from enums import CB, Command, UserState, Role
+from enums import CB, Command, UserState, Action
 
 
 # 781602290203
@@ -24,7 +24,7 @@ async def start(msg: Message, state: FSMContext):
     # определяем реферала
     if ref_code:
         referrer = await db.get_user_info(ref_code=ref_code)
-        referrer_id = referrer.user_id
+        referrer_id = referrer.user_id if referrer else None
     else:
         referrer_id = None
 
@@ -158,9 +158,30 @@ async def command_help(msg: Message, state: FSMContext):
 
 
 # пишет что функция в разработке
-@dp.callback_query(lambda cb: cb.data == 'in_dev')
-async def in_dev(cb: CallbackQuery):
-    dp.answer_callback_query(cb.id, '🛠 Функция в разработке 🛠', show_alert=True)
+@dp.callback_query(lambda cb: cb.data.startswith(CB.SAVE_CARD_VIEW.value))
+async def in_dev(cb: CallbackQuery, state: FSMContext):
+    saved_cards = await db.get_user_card(user_id=cb.from_user.id)
+    await cb.message.edit_text(text='<b>Удалить банковскую карту</b>', reply_markup=kb.get_view_card_kb(saved_cards))
+
+
+# пишет что функция в разработке
+@dp.callback_query(lambda cb: cb.data.startswith(CB.SAVE_CARD_DEL.value))
+async def in_dev(cb: CallbackQuery, state: FSMContext):
+    _, card_id_str = cb.data.split(':')
+
+    if card_id_str != Action.BACK:
+        await db.del_card(card_id=int(card_id_str))
+        await cb.answer('✅ Карта удалена', show_alert=True)
+        saved_cards = await db.get_user_card(user_id=cb.from_user.id)
+        if saved_cards:
+            await cb.message.edit_text(
+                text='<b>Удалить банковскую карту</b>',
+                reply_markup=kb.get_view_card_kb(saved_cards)
+            )
+            return
+
+    user = await db.get_user_info(user_id=cb.from_user.id)
+    await base.start_bot(msg=cb.message, state=state, user=user, edit_text=True)
 
 
 # пишет что функция в разработке
@@ -169,6 +190,9 @@ async def close(cb: CallbackQuery, state: FSMContext):
     await cb.message.delete()
 
     await state.clear()
-    await cb.message.answer('В начало /start')
+    user = await db.get_user_info(user_id=cb.from_user.id)
+    await base.start_bot(msg=cb.message, state=state, user=user)
+
+    # await cb.message.answer('В начало /start')
     # user = await db.get_user_info(cb.from_user.id)
     # await start_bot(cb.message, state, user=user)

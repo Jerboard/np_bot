@@ -14,16 +14,6 @@ from .base import preloader_choose_platform, finalize_platform_data, start_contr
 from enums import CB, Command, UserState, platform_dict, Role, Action
 
 
-# # выбора платформы старт
-# @dp.message(CommandFilter(Command.PLATFORM.value))
-# async def preloader_choose_platform_base(msg: Message, state: FSMContext):
-#     user = await db.get_user_info(msg.from_user.id)
-#     if user and user.in_ord:
-#         await preloader_choose_platform(msg)
-#     else:
-#         await start_bot(msg, state, user=user)
-
-
 # если не хочет выбирать платформу
 @dp.callback_query(lambda cb: cb.data.startswith(CB.NO_CHOOSE_PLATFORM.value))
 async def no_choose_platform(cb: CallbackQuery):

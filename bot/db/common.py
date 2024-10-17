@@ -38,7 +38,7 @@ class CreativeFullRow(t.Protocol):
 
 
 # возвращает контракты с контрагентами
-async def get_all_user_contracts(user_id: int = None) -> tuple[ContractDistRow]:
+async def get_all_user_contracts(user_id: int = None) -> list[ContractDistRow]:
     query = (
         sa.select (
             ContractTable.c.id.label('contract_id'),
