@@ -159,6 +159,7 @@ async def send_creative_to_ord(
         description: str,
         media_ids: list,
         contract_ord_id: str,
+        target_urls: list[str],
 ):
 
     url = f"{Config.ord_url}/v1/creative/{creative_id}"
@@ -177,6 +178,7 @@ async def send_creative_to_ord(
         "form": creative_form,
         "texts": creative_text,
         "media_external_ids": media_ids,
+        "target_urls": target_urls
     }
 
     async with httpx.AsyncClient() as client:

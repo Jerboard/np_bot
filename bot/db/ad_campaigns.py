@@ -14,7 +14,7 @@ class CampaignRow(t.Protocol):
     contract_id: int
     brand: str
     service: str
-    link: list
+    links: list[str]
 
 
 CampaignTable: sa.Table = sa.Table(

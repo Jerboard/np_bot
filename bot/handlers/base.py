@@ -338,7 +338,8 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int, state: FS
         description=campaign.service,
         media_ids=media_ord_ids,
         contract_ord_id=contract.ord_id,
-        creative_form=creative_form
+        creative_form=creative_form,
+        target_urls=campaign.links,
     )
     # log_error(f'response: {response}', wt=False)
     erid = response.get('erid') if response else None
