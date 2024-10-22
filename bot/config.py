@@ -22,7 +22,7 @@ class Config:
         token = os.getenv('TOKEN')
         bearer = os.getenv('VK_API_KEY')
         ord_url = 'https://api.ord.vk.com'
-        service_price = 1
+        service_price = 500
         default_email = 'mark.check@np61.ru'
         yoo_account_id = os.getenv('YOO_ACCOUNT_ID')
         yoo_secret_key = os.getenv('YOO_SECRET_KEY')
