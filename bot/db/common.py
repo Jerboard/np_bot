@@ -55,7 +55,8 @@ async def get_all_user_contracts(user_id: int = None) -> list[ContractDistRow]:
             DistributorTable, ContractTable.c.contractor_id == DistributorTable.c.id, isouter=True), )
     ).where(
         ContractTable.c.user_id == user_id,
-        ContractTable.c.status == Status.ACTIVE
+        ContractTable.c.status == Status.ACTIVE,
+        ContractTable.c.contractor_id != 0,
     )
 
     async with begin_connection () as conn:

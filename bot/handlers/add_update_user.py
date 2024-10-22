@@ -202,8 +202,8 @@ async def collect_role(cb: CallbackQuery, state: FSMContext):
         date_str = datetime.now().strftime(Config.ord_date_form)
         await ut.send_contract_to_ord(
             ord_id=ord_id,
-            client_external_id=Config.my,
-            contractor_external_id=str(cb.from_user.id),
+            client_external_id=str(cb.from_user.id),
+            contractor_external_id=Config.my,
             contract_date=date_str,
             serial=str(cb.from_user.id)
         )
