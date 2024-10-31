@@ -18,19 +18,18 @@ from .media_utils import compress_video
 from handlers import base
 from enums import UserState, Delimiter, MediaType
 
-# from aiogram.dispatcher.filters.state import State, StatesGroup
-
-
-# class UserStateNew(StatesGroup):
-#     SEND_STATISTIC = State()
-
 
 # запуск основных планировщиков
 async def start_schedulers():
-    # scheduler.add_job(request_monthly_statistic)
-    scheduler.add_job(request_monthly_statistic, "cron", hour=11)
-    scheduler.start()
+    # запуск напоминалок о стате
+    scheduler.add_job(request_monthly_statistic, trigger='cron', day='last', hour=11)
+    scheduler.add_job(request_monthly_statistic, trigger='cron', day=1, hour=11)
+    scheduler.add_job(request_monthly_statistic, trigger='cron', day=2, hour=11)
 
+    # месячный отчёт по стате
+    scheduler.add_job(send_monthly_statistic, trigger='cron', day=3, hour=4)
+
+    scheduler.start()
 
 
 # проверяем отправил ли пользователь ссылку на пост
@@ -45,50 +44,11 @@ async def check_post_link(creative_id: int, user_id: int):
         )
 
 
-# отправляет статистику
-async def send_statistic():
-    now = datetime.now()
-
-    if now.day != 3:
-        statistics = await db.get_statistics()
-        items = []
-        for statistic in statistics:
-            items = []
-            creative = await db.get_creative(creative_id=statistic.creative_id)
-            platform = await db.get_platform(platform_id=statistic.platform_id)
-            # campaign = await db.get_campaign(campaign_id=creative.campaign_id)
-            # contract = await db.get_contract(contract_id=campaign.contract_id)
-
-            items.append(
-                {
-                    "creative_external_id": creative.ord_id,
-                    "pad_external_id": platform.ord_id,
-                    "shows_count": statistic.views,
-                    "date_start_actual": creative.created_at.strftime(Config.ord_date_form),
-                    "date_end_actual": now.strftime(Config.ord_date_form)
-                }
-            )
-
-            print(datetime.now() - now)
-
-            # await db.update_statistic(statistic_id=statistic.id, in_ord=True)
-
-            statistic_ord_id = await send_statistic_to_ord(
-                creative_ord_id=creative.ord_id,
-                platform_ord_id=platform.ord_id,
-                views=str(statistic.views),
-                creative_date=creative.created_at
-            )
-
-
 # запрашивает неотправленную стату в конце месяца
 async def request_monthly_statistic() -> None:
-    statistics = await db.get_creative_full_data_t(for_monthly_report=True)
-    # statistics = await db.get_creative_full_data_t(user_id_statistic=524275902, for_monthly_report=True)
+    statistics = await db.get_creative_full_data(for_monthly_report=True)
+    # statistics = await db.get_creative_full_data(user_id_statistic=524275902, for_monthly_report=True)
     users = set([statistic.user_id for statistic in statistics])
-
-    for st in statistics:
-        print(st.creative_id, st.statistic_id)
 
     for user_id in users:
         active_creatives = [statistic for statistic in statistics if statistic.user_id == user_id]
@@ -100,12 +60,27 @@ async def request_monthly_statistic() -> None:
             reply_markup=kb.get_send_monthly_statistic_kb(user_id)
         )
 
-        # state = UserStateNew.SEND_STATISTIC()
-        # await state.set_state(UserState.SEND_STATISTIC)
-        # await state.update_data(data={'page': 0, 'active_creatives': active_creatives, 'sending_list': []})
-        # await base.start_statistic(
-        #     active_creatives=active_creatives,
-        #     user_id=user_id,
-        #     sending_list=[],
-        #     state=state
-        # )
+
+# отправляет статистику по нулевым креативам
+async def send_monthly_statistic() -> None:
+    statistics = await db.get_creative_full_data(for_monthly_report=True)
+
+    for statistic in statistics:
+        try:
+            platform = await db.get_platform(platform_id=statistic.platform_id)
+
+            statistic_ord_id = await send_statistic_to_ord(
+                creative_ord_id=statistic.creative_ord_id,
+                platform_ord_id=platform.ord_id,
+                views=platform.average_views,
+                creative_date=statistic.created_at
+            )
+
+            if statistic_ord_id:
+                await db.update_statistic(
+                    statistic_id=statistic.creative_id,
+                    views=platform.average_views,
+                    ord_id=statistic_ord_id
+                )
+        except Exception as ex:
+            log_error(ex)

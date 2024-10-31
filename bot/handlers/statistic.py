@@ -13,12 +13,7 @@ from enums import CB, Command, UserState, Action, Role
 # Отправка месячной статистики
 @dp.callback_query(lambda cb: cb.data.startswith(CB.STATISTIC_MONTHLY.value))
 async def statistic_select_page(cb: CallbackQuery, state: FSMContext):
-    # _, user_id_str = cb.data.split(':')
-    # user_id = int(user_id_str)
-
-    # active_creatives = await db.get_creative_full_data(user_id=cb.from_user.id, for_monthly_report=True)
-    active_creatives = await db.get_creative_full_data_t(user_id_statistic=cb.from_user.id, for_monthly_report=True)
-
+    active_creatives = await db.get_creative_full_data(user_id_statistic=cb.from_user.id, for_monthly_report=True)
 
     await state.set_state(UserState.SEND_STATISTIC)
     await state.update_data(data={'page': 0, 'active_creatives': active_creatives, 'sending_list': []})
@@ -55,7 +50,7 @@ async def statistic_select_page(cb: CallbackQuery, state: FSMContext):
 
 # Сохраняет статистику по креативу
 @dp.message(StateFilter(UserState.SEND_STATISTIC))
-async def save_target_link(msg: Message, state: FSMContext):
+async def send_statistic(msg: Message, state: FSMContext):
     await msg.delete()
 
     if not msg.text.isdigit():
@@ -74,7 +69,7 @@ async def save_target_link(msg: Message, state: FSMContext):
     statistic_ord_id = await ut.send_statistic_to_ord(
         creative_ord_id=statistic.creative_ord_id,
         platform_ord_id=platform.ord_id,
-        views=msg.text,
+        views=int(msg.text),
         creative_date=statistic.created_at
     )
 

@@ -199,7 +199,7 @@ async def send_creative_to_ord(
 async def send_statistic_to_ord(
         creative_ord_id: str,
         platform_ord_id: str,
-        views: str,
+        views: int,
         creative_date: datetime,
 
 ) -> str:

@@ -17,11 +17,12 @@ async def main() -> None:
 
     await init_models()
     await set_main_menu()
-    # scheduler.start()
-    await ut.request_monthly_statistic()
+    if not Config.debug:
+        await ut.start_schedulers()
+    # await ut.request_monthly_statistic()
     await bot.delete_webhook (drop_pending_updates=True)
     await dp.start_polling(bot)
-    scheduler.shutdown()
+    # scheduler.shutdown()
 
 
 if __name__ == "__main__":

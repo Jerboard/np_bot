@@ -1,5 +1,5 @@
 import sqlalchemy as sa
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 import typing as t
 
@@ -120,7 +120,7 @@ async def get_creative_full_data(
             )
         )
     ).where(
-        ContractTable.c.status == Status.ACTIVE
+        CreativeTable.c.status == Status.ACTIVE
     )
 
     if campaign_id:
@@ -133,64 +133,16 @@ async def get_creative_full_data(
         query = query.where(StatisticTable.c.user_id == user_id_statistic)
 
     if for_monthly_report:
-        current_year = datetime.now().year
-        current_month = datetime.now().month
+        now = datetime.now()
+        if now.day <= 3:
+            now = datetime.now() - timedelta(days=4)
 
         query = query.where(
             sa.and_(
-                StatisticTable.c.views == 0,
-                sa.extract('year', StatisticTable.c.created_at) == current_year,
-                sa.extract('month', StatisticTable.c.created_at) == current_month
+                StatisticTable.c.ord_id.is_(None),
+                sa.extract('year', StatisticTable.c.created_at) == now.year,
+                sa.extract('month', StatisticTable.c.created_at) == now.month
             ))
-
-    async with begin_connection () as conn:
-        result = await conn.execute (query)
-
-    return result.all()
-
-
-# возвращает кампании с креативом
-async def get_creative_full_data_t(
-        campaign_id: int = None,
-        user_id: int = None,
-        user_id_statistic: int = None,
-        for_monthly_report: bool = False
-) -> list[CreativeFullRow]:
-    current_year = datetime.now().year
-    current_month = datetime.now().month
-
-    query = ((
-        sa.select (
-            CreativeTable.c.id.label('creative_id'),
-            CreativeTable.c.created_at,
-            CreativeTable.c.user_id,
-            CreativeTable.c.campaign_id,
-            CreativeTable.c.token,
-            CreativeTable.c.ord_id.label('creative_ord_id'),
-            StatisticTable.c.id.label('statistic_id'),
-            StatisticTable.c.url,
-            StatisticTable.c.views,
-            StatisticTable.c.platform_id,
-
-        )
-        .select_from (
-            StatisticTable.join (
-                CreativeTable, StatisticTable.c.creative_id == CreativeTable.c.id,
-                # isouter=True
-            )
-        )
-    ))
-    # .where(
-    #     ContractTable.c.status == Status.ACTIVE
-    # ))
-
-    query = query.where(
-        sa.and_(
-            StatisticTable.c.views == 0,
-            sa.extract('year', StatisticTable.c.created_at) == current_year,
-            sa.extract('month', StatisticTable.c.created_at) == current_month,
-            StatisticTable.c.user_id == user_id_statistic
-        ))
 
     async with begin_connection () as conn:
         result = await conn.execute (query)
