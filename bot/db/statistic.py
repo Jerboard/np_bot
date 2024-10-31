@@ -83,7 +83,7 @@ async def update_statistic(
 
 
 # Возвращает всю статистику пользователя
-async def get_statistics(user_id: int = None, creative_id: int = None, for_ord: bool = False) -> list[StatisticRow]:
+async def get_statistics(user_id: int = None, creative_id: int = None, for_monthly_report: bool = False) -> list[StatisticRow]:
     query = StatisticTable.select()
 
     if user_id:
@@ -92,13 +92,13 @@ async def get_statistics(user_id: int = None, creative_id: int = None, for_ord: 
     if creative_id:
         query = query.where(StatisticTable.c.creative_id == creative_id)
 
-    if for_ord:
+    if for_monthly_report:
         current_year = datetime.now().year
         current_month = datetime.now().month
 
         query = query.where(
             sa.and_(
-                StatisticTable.c.in_ord == False,
+                StatisticTable.c.views == 0,
                 sa.extract('year', StatisticTable.c.created_at) == current_year,
                 sa.extract('month', StatisticTable.c.created_at) == current_month
             ))

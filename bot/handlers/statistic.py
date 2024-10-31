@@ -10,6 +10,26 @@ from . import base
 from enums import CB, Command, UserState, Action, Role
 
 
+# Отправка месячной статистики
+@dp.callback_query(lambda cb: cb.data.startswith(CB.STATISTIC_MONTHLY.value))
+async def statistic_select_page(cb: CallbackQuery, state: FSMContext):
+    # _, user_id_str = cb.data.split(':')
+    # user_id = int(user_id_str)
+
+    # active_creatives = await db.get_creative_full_data(user_id=cb.from_user.id, for_monthly_report=True)
+    active_creatives = await db.get_creative_full_data_t(user_id_statistic=cb.from_user.id, for_monthly_report=True)
+
+
+    await state.set_state(UserState.SEND_STATISTIC)
+    await state.update_data(data={'page': 0, 'active_creatives': active_creatives, 'sending_list': []})
+    await base.start_statistic(
+        active_creatives=active_creatives,
+        user_id=cb.from_user.id,
+        sending_list=[],
+        state=state
+    )
+
+
 # Выбор страницы
 @dp.callback_query(lambda cb: cb.data.startswith(CB.STATISTIC_SELECT_PAGE.value))
 async def statistic_select_page(cb: CallbackQuery, state: FSMContext):

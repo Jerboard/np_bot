@@ -107,7 +107,8 @@ async def add_creative(msg: Message, state: FSMContext):
 async def start_stats(msg: Message, state: FSMContext):
     await state.clear()
 
-    active_creatives = await db.get_statistics(msg.from_user.id)
+    # active_creatives = await db.get_statistics(msg.from_user.id)
+    active_creatives = await db.get_creative_full_data(user_id=msg.from_user.id)
 
     # Получаем первый доступный campaign_id для пользователя
     if active_creatives:

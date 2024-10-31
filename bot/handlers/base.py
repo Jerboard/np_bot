@@ -429,6 +429,11 @@ async def start_statistic(
         page: int = 0,
         message_id: int = 0,
 ):
+    # if not state:
+    #     state = FSMContext
+    #     await state.set_state(UserState.SEND_STATISTIC)
+    #     await state.update_data(data={'page': 0, 'active_creatives': active_creatives, 'sending_list': []})
+
     text = (f'Отправьте количество просмотров по креативу:\n\n'
             f'{active_creatives[page].url}')
 

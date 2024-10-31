@@ -298,3 +298,10 @@ def get_end_act_kb(contract_id: int) -> InlineKeyboardMarkup:
     kb.button(text=f'Нет, изменить', callback_data=f'{CB.ACTS_SELECT_PAGE.value}:{contract_id}:{Action.YES.value}')
 
     return kb.adjust(1).as_markup()
+
+
+# завершает создание акта
+def get_send_monthly_statistic_kb(user_id: int) -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    kb.button(text="📊 Отправить статистику в ОРД", callback_data=f'{CB.STATISTIC_MONTHLY.value}:{user_id}'),
+    return kb.adjust(1).as_markup()

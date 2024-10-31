@@ -93,7 +93,12 @@ async def get_contract_full_data(contract_id: int = None) -> ContractDistRow:
 
 
 # возвращает кампании с креативом
-async def get_creative_full_data(campaign_id: int = None, user_id: int = None) -> list[CreativeFullRow]:
+async def get_creative_full_data(
+        campaign_id: int = None,
+        user_id: int = None,
+        user_id_statistic: int = None,
+        for_monthly_report: bool = False
+) -> list[CreativeFullRow]:
     query = (
         sa.select (
             CreativeTable.c.id.label('creative_id'),
@@ -110,7 +115,8 @@ async def get_creative_full_data(campaign_id: int = None, user_id: int = None) -
         )
         .select_from (
             CreativeTable.join (
-                StatisticTable, CreativeTable.c.id == StatisticTable.c.creative_id
+                StatisticTable, CreativeTable.c.id == StatisticTable.c.creative_id,
+                isouter=True
             )
         )
     ).where(
@@ -122,6 +128,69 @@ async def get_creative_full_data(campaign_id: int = None, user_id: int = None) -
 
     if user_id:
         query = query.where(CreativeTable.c.user_id == user_id)
+
+    if user_id_statistic:
+        query = query.where(StatisticTable.c.user_id == user_id_statistic)
+
+    if for_monthly_report:
+        current_year = datetime.now().year
+        current_month = datetime.now().month
+
+        query = query.where(
+            sa.and_(
+                StatisticTable.c.views == 0,
+                sa.extract('year', StatisticTable.c.created_at) == current_year,
+                sa.extract('month', StatisticTable.c.created_at) == current_month
+            ))
+
+    async with begin_connection () as conn:
+        result = await conn.execute (query)
+
+    return result.all()
+
+
+# возвращает кампании с креативом
+async def get_creative_full_data_t(
+        campaign_id: int = None,
+        user_id: int = None,
+        user_id_statistic: int = None,
+        for_monthly_report: bool = False
+) -> list[CreativeFullRow]:
+    current_year = datetime.now().year
+    current_month = datetime.now().month
+
+    query = ((
+        sa.select (
+            CreativeTable.c.id.label('creative_id'),
+            CreativeTable.c.created_at,
+            CreativeTable.c.user_id,
+            CreativeTable.c.campaign_id,
+            CreativeTable.c.token,
+            CreativeTable.c.ord_id.label('creative_ord_id'),
+            StatisticTable.c.id.label('statistic_id'),
+            StatisticTable.c.url,
+            StatisticTable.c.views,
+            StatisticTable.c.platform_id,
+
+        )
+        .select_from (
+            StatisticTable.join (
+                CreativeTable, StatisticTable.c.creative_id == CreativeTable.c.id,
+                # isouter=True
+            )
+        )
+    ))
+    # .where(
+    #     ContractTable.c.status == Status.ACTIVE
+    # ))
+
+    query = query.where(
+        sa.and_(
+            StatisticTable.c.views == 0,
+            sa.extract('year', StatisticTable.c.created_at) == current_year,
+            sa.extract('month', StatisticTable.c.created_at) == current_month,
+            StatisticTable.c.user_id == user_id_statistic
+        ))
 
     async with begin_connection () as conn:
         result = await conn.execute (query)
