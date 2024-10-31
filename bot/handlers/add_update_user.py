@@ -198,14 +198,23 @@ async def collect_role(cb: CallbackQuery, state: FSMContext):
         await cb.message.answer(text)
 
         # регистрируем договор между партнер и пользователем
-        ord_id = f'{Config.partner_data["inn"]}-m-{cb.from_user.id}'
+        contract_ord_id = f'{Config.partner_data["inn"]}-m-{cb.from_user.id}'
         date_str = datetime.now().strftime(Config.ord_date_form)
         await ut.send_contract_to_ord(
-            ord_id=ord_id,
+            ord_id=contract_ord_id,
             client_external_id=str(cb.from_user.id),
             contractor_external_id=Config.my,
             contract_date=date_str,
             serial=str(cb.from_user.id)
+        )
+
+        await db.add_contract(
+            user_id=cb.from_user.id,
+            contractor_id=0,
+            start_date=datetime.now().date(),
+            ord_id=contract_ord_id,
+            serial=str(cb.from_user.id),
+            contract_type=ContractType.AGENCY.value
         )
 
         if is_update:
@@ -228,15 +237,7 @@ async def collect_role(cb: CallbackQuery, state: FSMContext):
                 in_ord=True
             )
 
-            contract_ord_id = ut.get_ord_id(cb.from_user.id, Delimiter.C.value)
-            await db.add_contract(
-                user_id=cb.from_user.id,
-                contractor_id=0,
-                start_date=datetime.now().date(),
-                ord_id=contract_ord_id,
-                serial=str(cb.from_user.id),
-                contract_type=ContractType.AGENCY.value
-            )
+            # contract_ord_id = ut.get_ord_id(cb.from_user.id, Delimiter.C.value)
 
         if role == Role.ADVERTISER:
             await preloader_advertiser_entity(cb.message)

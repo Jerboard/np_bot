@@ -34,9 +34,9 @@ ContractTable: sa.Table = sa.Table(
     sa.Column('contract_date', sa.Date()),
     sa.Column('end_date', sa.Date()),
     sa.Column('serial', sa.String(255)),
-    sa.Column('amount', sa.Float),
+    sa.Column('amount', sa.Float, default=0),
     sa.Column('status', sa.String(255), default=Status.ACTIVE.value),
-    sa.Column('ord_id', sa.String(255)),
+    sa.Column('ord_id', sa.String(255), unique=True),
     sa.Column('act_ord_id', sa.String(255)),
 
 )
@@ -50,11 +50,14 @@ async def add_contract(
         ord_id: str,
         end_date: date = None,
         serial: str = None,
-        amount: float = None,
+        amount: float = 0,
         contract_type: str = None,
 ) -> int:
     now = datetime.now()
-    query = ContractTable.insert().values(
+    # query = ContractTable.insert().values(
+    # )
+
+    query = psql.insert(ContractTable).values(
         user_id=user_id,
         created_at=now,
         contractor_id=contractor_id,
@@ -64,6 +67,12 @@ async def add_contract(
         end_date=end_date,
         serial=serial,
         amount=amount
+    ).on_conflict_do_update(
+        index_elements=[ContractTable.c.ord_id],
+        set_={
+            'contract_type': contract_type,
+            'updated_at': now
+        }
     )
 
     async with begin_connection() as conn:

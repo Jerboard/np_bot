@@ -344,7 +344,11 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int, state: FS
     # log_error(f'response: {response}', wt=False)
     erid = response.get('erid') if response else None
     if not erid:
-        await bot.send_message(chat_id=user_id, text="Сообщение при ошибки регистрации в орд", reply_markup=kb.get_help_button())
+        await bot.send_message(
+            chat_id=user_id,
+            text="Сообщение при ошибки регистрации в орд",
+            reply_markup=kb.get_help_button()
+        )
         # тут ещё возврат денег
         ut.refund_payment(data['pay_id'])
         return
@@ -391,6 +395,7 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int, state: FS
     data_str = datetime.now().strftime(Config.ord_date_form)
     act_data = {
         "contract_external_id": agency_contract.ord_id,
+        # "contract_external_id": '6141027912-m-5772948261',
         "date": data_str,
         # "serial": ut.get_ord_id(creative_ord_id),
         "date_start": data_str,
@@ -399,11 +404,13 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int, state: FS
         "flags": [
             "vat_included"
         ],
-        "client_role": user_info.role,
+        # "client_role": user_info.role,
+        "client_role": Role.ADVERTISER.value,
         "contractor_role": Role.AGENCY.value,
         "items": [
             {
                 "contract_external_id": agency_contract.ord_id,
+                # "contract_external_id": '6141027912-m-5772948261',
                 "amount": f'{Config.service_price:.2f}',
                 "flags": [
                     "vat_included"
