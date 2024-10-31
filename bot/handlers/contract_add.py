@@ -179,8 +179,7 @@ async def handle_vat_selection(cb: CallbackQuery, state: FSMContext):
         contractor_external_id=contractor_external_id,
         contract_date=data.get('start_date'),
         serial=data.get('num'),
-        # vat_flag=vat_flag,
-        amount=data.get('sum')
+        amount=data.get('sum', '0')
     )
 
     if response <= 201:

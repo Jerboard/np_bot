@@ -159,12 +159,17 @@ async def acts_send(cb: CallbackQuery, state: FSMContext):
         creative: db.CreativeRow
 
         creative_platforms = []
+        used_platform_ord = []
         statistics = await db.get_statistics(creative_id=creative.id)
         for statistic in statistics:
             platform: db.PlatformRow = cash_platforms.get(statistic.platform_id)
             if not platform:
                 platform: db.PlatformRow = await db.get_platform(platform_id=statistic.platform_id)
                 cash_platforms[statistic.platform_id] = platform
+
+            # если эта платформа для креатива уже отмечена
+            if platform.ord_id in used_platform_ord:
+                continue
 
             creative_platforms.append(
                 {
@@ -180,6 +185,7 @@ async def acts_send(cb: CallbackQuery, state: FSMContext):
                     "pay_type": "other"
                 }
             )
+            used_platform_ord.append(platform.ord_id)
 
         creative_data.append({
               "creative_external_id": creative.ord_id,
@@ -211,15 +217,20 @@ async def acts_send(cb: CallbackQuery, state: FSMContext):
       ]
     }
 
+    ut.print_dict(act_data, 'act_data')
     is_suc = await ut.send_acts_to_ord(ord_id=ord_id, act_data=act_data)
 
     if not is_suc:
-        await cb.message.answer("❌ Акт не был отправлен\n\n"
-                                "Проверьте данные. При повторении ошибки обратитесь в поддержку")
+        await cb.message.answer(
+            text="❌ Акт не был отправлен\n\nПроверьте данные. При повторении ошибки обратитесь в поддержку",
+            reply_markup=kb.get_help_button()
+        )
         return
 
     await cb.message.answer("✅ Данные об акте успешно отправлены в ОРД")
 
+    if Config.debug:
+        return
     # переводим в статус неактивно
     await db.update_contract(contract_id=data['contract_id'], status=Status.INACTIVE.value, act_ord_id=ord_id)
     await db.update_campaign(contract_id=contract.contract_id, status=Status.INACTIVE.value)

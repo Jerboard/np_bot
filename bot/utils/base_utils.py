@@ -21,7 +21,11 @@ def print_dict(data: dict, title: str = None) -> None:
         print(title)
 
     for k, v in data.items():
-        print(f'{k}: {v}')
+        if type(v) is dict:
+            for vk, vv in v.items():
+                print(f'    {vk}: {vv}')
+        else:
+            print(f'{k}: {v}')
 
 
 # Функция для получения ord_id

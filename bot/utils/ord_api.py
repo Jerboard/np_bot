@@ -58,8 +58,7 @@ async def send_contract_to_ord(
         contractor_external_id: str,
         contract_date: str,
         serial: str = None,
-        # vat_flag: list,
-        amount: str = None
+        amount: str = '0'
 ) -> int:
     url = f"{Config.ord_url}/v1/contract/{ord_id}"
     data = {
@@ -68,17 +67,15 @@ async def send_contract_to_ord(
         "contractor_external_id": contractor_external_id,
         "date": contract_date,
         "subject_type": "org_distribution",
+        "amount": amount,
         "flags": [
             "vat_included",
-            "contractor_is_creatives_reporter"
+            # "contractor_is_creatives_reporter"
         ],
         # "amount": str(amount)
     }
     if serial:
         data['serial'] = serial
-
-    if amount:
-        data['amount'] = str(amount)
 
     # for k, v in data.items():
     #     print(f'{k}: {v}')
@@ -97,7 +94,6 @@ async def send_contract_to_ord(
 
 
 # Функция для отправки данных о платформе в ОРД API
-# async def send_platform_to_ord(ord_id: str, platform_name: str, platform_url: str, person_external_id: str):
 async def send_platform_to_ord(ord_id: str, platform_name: str, platform_url: str, dist_ord_id: str) -> int:
     url = f"{Config.ord_url}/v1/pad/{ord_id}"
 
@@ -126,8 +122,7 @@ async def send_platform_to_ord(ord_id: str, platform_name: str, platform_url: st
 async def register_media_file(file_path: str, ord_id: str, description: str) -> int:
     url = f'{Config.ord_url}/v1/media/{ord_id}'
     headers = {
-        'Authorization': f'Bearer {Config.bearer}',
-        # "Content-Type": "multipart/form-data"
+        'Authorization': f'Bearer {Config.bearer}'
     }
     files = {
         'media_file': open(file_path, 'rb'),
@@ -141,13 +136,6 @@ async def register_media_file(file_path: str, ord_id: str, description: str) -> 
     if response.status_code > 201:
         log_error(f'send_media_to_ord\nrequest:\nord_id: {ord_id}\n{data} \nresponse:\n{response.text}', wt=False)
     return response.status_code
-
-'''
-{'description': 'Мы не храним данные о картах и пользователя все данные хранит сервис Юкасса'} 
- 'description'
-response:
-{"error":"Image file requires non-empty field 'description'"}
-'''
 
 
 async def send_creative_to_ord(
