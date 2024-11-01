@@ -19,7 +19,7 @@ async def main() -> None:
     await set_main_menu()
     if not Config.debug:
         await ut.start_schedulers()
-    await ut.request_monthly_statistic()
+    # await ut.request_monthly_statistic()
     await bot.delete_webhook (drop_pending_updates=True)
     await dp.start_polling(bot)
     # scheduler.shutdown()
