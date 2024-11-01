@@ -3,8 +3,10 @@ from datetime import datetime
 import logging
 import typing as t
 import httpx
+import calendar
 
 import db
+import utils
 from config import Config
 from init import log_error
 from enums import MediaType
@@ -40,7 +42,6 @@ async def send_user_to_ord(
     return response.status_code
 
 '''
-
 В договоре указываем:
 - серийный номер (номер договора): [ИД клиента]
 - тип: [оказание услуг]
@@ -189,9 +190,13 @@ async def send_statistic_to_ord(
         platform_ord_id: str,
         views: int,
         creative_date: datetime,
-
 ) -> str:
-    now = datetime.now()
+    end_date = datetime.now()
+
+    # Проверка, отличается ли месяц в creative_date от текущего месяца
+    if creative_date.month != end_date.month:
+        last_day_of_month = calendar.monthrange(creative_date.year, creative_date.month)[1]
+        end_date = creative_date.replace(day=last_day_of_month)
 
     url = f"{Config.ord_url}/v1/statistics"
     headers = {
@@ -206,10 +211,12 @@ async def send_statistic_to_ord(
                     "pad_external_id": platform_ord_id,
                     "shows_count": int(views),
                     "date_start_actual": creative_date.strftime(Config.ord_date_form),
-                    "date_end_actual": now.strftime(Config.ord_date_form)
+                    "date_end_actual": end_date.strftime(Config.ord_date_form)
                 }
         ]
     }
+
+    utils.print_dict(data)
 
     async with httpx.AsyncClient() as client:
         response = await client.post(url, headers=headers, json=data)
