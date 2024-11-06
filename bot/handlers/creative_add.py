@@ -100,7 +100,7 @@ async def choose_campaign(cb: CallbackQuery, state: FSMContext):
 
     sent = await cb.message.answer('⏳')
     pay_data = Payment.find_one(pay_id)
-    if pay_data.paid:
+    if pay_data.paid or cb.from_user.id in Config.pay_exceptions_list:
         # сохраняем данные платежа
         await db.add_payment(
             user_id=cb.from_user.id,
