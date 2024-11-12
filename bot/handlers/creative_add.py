@@ -103,6 +103,7 @@ async def choose_campaign(cb: CallbackQuery, state: FSMContext):
     if cb.from_user.id in Config.pay_exceptions_list:
         data = await state.get_data()
         await base.register_creative(data=data, user_id=cb.from_user.id, del_msg_id=sent.message_id, state=state)
+        return
 
     pay_data = Payment.find_one(pay_id)
     if pay_data.paid:
