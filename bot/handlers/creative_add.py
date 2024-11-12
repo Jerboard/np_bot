@@ -99,8 +99,13 @@ async def choose_campaign(cb: CallbackQuery, state: FSMContext):
     _, pay_id = cb.data.split(':')
 
     sent = await cb.message.answer('⏳')
+
+    if cb.from_user.id in Config.pay_exceptions_list:
+        data = await state.get_data()
+        await base.register_creative(data=data, user_id=cb.from_user.id, del_msg_id=sent.message_id, state=state)
+
     pay_data = Payment.find_one(pay_id)
-    if pay_data.paid or cb.from_user.id in Config.pay_exceptions_list:
+    if pay_data.paid:
         # сохраняем данные платежа
         await db.add_payment(
             user_id=cb.from_user.id,
