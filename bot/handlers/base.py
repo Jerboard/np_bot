@@ -1,5 +1,6 @@
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
+from aiogram.enums.content_type import ContentType
 from asyncio import sleep
 from apscheduler.triggers.date import DateTrigger
 from datetime import datetime, timedelta
@@ -241,8 +242,9 @@ async def add_creative_start(msg: Message, state: FSMContext, campaign_id: int):
 async def creative_upload(msg: Message, state: FSMContext):
     # Попробовать с медиагруппой
     if msg.content_type in ['text', 'photo', 'video', 'audio', 'voice']:
-        if msg.video and msg.video.file_size >= 50000000:
-            await msg.answer(f'❌ Слишком большое видео. Размер видео не должен быть больше 50 МВ ')
+        # >>> 28773074
+        if msg.video and msg.video.file_size >= 20000000:
+            await msg.answer(f'❌ Слишком большое видео. Размер видео не должен быть больше 20 МВ ')
             return
 
         current_state = await state.get_state()

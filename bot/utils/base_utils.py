@@ -157,9 +157,9 @@ async def save_media_ord(creatives: list[dict], creative_ord_id: str, user_id: i
             )
 
             # Удаление файла после обработки
-            # if os.path.exists(file_path):
-            #     os.remove(file_path)
-    #
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
     return media_ord_ids
 
 

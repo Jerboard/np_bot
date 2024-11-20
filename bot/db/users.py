@@ -115,7 +115,7 @@ async def update_user(
         email: str = None,
         fio: str = None,
 ) -> None:
-    query = UserTable.update().where(UserTable.c.user_id == user_id)
+    query = UserTable.update().where(UserTable.c.user_id == user_id).values(last_visit=datetime.now())
 
     if role:
         query = query.values(role=role)
