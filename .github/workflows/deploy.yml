@@ -15,7 +15,7 @@ jobs:
       with:
         host: your-server-ip
         username: your-username
-        key: ${{ secrets.markirovka }}
+        key: ${{ secrets.SSH_KEY }}
         script: |
           cd ~/home/np_bot/docker
           git pull origin main
