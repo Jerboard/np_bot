@@ -1,0 +1,23 @@
+name: Deploy Bot Translator
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Deploy via SSH
+      uses: appleboy/ssh-action@v0.1.5
+      with:
+        host: your-server-ip
+        username: your-username
+        key: ${{ secrets.markirovka }}
+        script: |
+          cd ~/home/np_bot/docker
+          git pull origin main
+          docker-compose down
+          docker-compose up -d
