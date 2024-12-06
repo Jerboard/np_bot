@@ -15,7 +15,7 @@ from enums import CB, Command, UserState, Action
 
 
 # 781602290203
-# test update github 2
+# test update github 3
 # Обработчик команды /start
 @dp.message(CommandStart())
 async def start(msg: Message, state: FSMContext):
