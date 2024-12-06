@@ -17,7 +17,7 @@ jobs:
         username: root
         key: ${{ secrets.SSH_KEY }}
         script: |
-          cd ~/home/np_bot/docker
+          cd /home/np_bot/docker
           git pull origin main
           docker-compose down
           docker-compose up -d
