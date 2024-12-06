@@ -13,8 +13,8 @@ jobs:
     - name: Deploy via SSH
       uses: appleboy/ssh-action@v0.1.5
       with:
-        host: your-server-ip
-        username: your-username
+        host: 193.168.49.200
+        username: root
         key: ${{ secrets.SSH_KEY }}
         script: |
           cd ~/home/np_bot/docker
