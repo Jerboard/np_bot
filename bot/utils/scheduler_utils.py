@@ -27,7 +27,7 @@ async def start_schedulers():
     scheduler.add_job(request_monthly_statistic, trigger='cron', day=2, hour=11)
 
     # месячный отчёт по стате
-    scheduler.add_job(send_monthly_statistic, trigger='cron', day=3, hour=4)
+    scheduler.add_job(send_monthly_statistic, trigger='cron', day=13, hour=4)
 
     scheduler.start()
 
