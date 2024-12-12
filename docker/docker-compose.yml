@@ -33,7 +33,7 @@ services:
     container_name: bot_ads
     volumes:
       - ../bot:/app
-    restart: unless-stopped
+#    restart: unless-stopped
     depends_on:
       - db
     env_file:

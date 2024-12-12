@@ -134,14 +134,14 @@ async def get_creative_full_data(
 
     if for_monthly_report:
         now = datetime.now()
-        if now.day <= 3:
-            now = datetime.now() - timedelta(days=4)
+        if now.day <= 15:
+            now = datetime.now() - timedelta(days=15)
 
         query = query.where(
             sa.and_(
                 StatisticTable.c.ord_id.is_(None),
-                sa.extract('year', StatisticTable.c.created_at) == now.year,
-                sa.extract('month', StatisticTable.c.created_at) == now.month
+                sa.extract('year', CreativeTable.c.created_at) == now.year,
+                sa.extract('month', CreativeTable.c.created_at) == now.month
             ))
 
     async with begin_connection () as conn:
