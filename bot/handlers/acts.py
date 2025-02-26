@@ -1,3 +1,5 @@
+import inspect
+
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command as CommandFilter, StateFilter
 from aiogram.fsm.context import FSMContext
@@ -15,6 +17,7 @@ from enums import CB, Delimiter, UserState, Action, Step, Status
 # Выбор страницы
 @dp.callback_query(lambda cb: cb.data.startswith(CB.ACTS_SELECT_PAGE.value))
 async def acts_select_page(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     _, page_str, action = cb.data.split(':')
     page = int(page_str)
 
@@ -56,6 +59,7 @@ async def ask_amount(user_id: int, serial: str, amount: int):
 # выбор шага
 @dp.callback_query(lambda cb: cb.data.startswith(CB.ACT_NEXT_STEP_CHECK.value))
 async def act_next_step_check(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     _, action = cb.data.split(':')
 
     data = await state.get_data()
@@ -87,6 +91,7 @@ async def act_next_step_check(cb: CallbackQuery, state: FSMContext):
 # Обработка команды /acts
 @dp.message(StateFilter(UserState.ACTS))
 async def start_save_data(msg: Message, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     data = await state.get_data()
 
     if data['step'] == Step.END_DATE:
@@ -133,6 +138,7 @@ end_date_str: 2024-10-12
 # отправка данных в орд
 @dp.callback_query(lambda cb: cb.data.startswith(CB.ACT_SEND.value))
 async def acts_send(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     data = await state.get_data()
     await state.clear()
 
@@ -203,8 +209,8 @@ async def acts_send(cb: CallbackQuery, state: FSMContext):
       "flags": [
         "vat_included"
       ],
-      "client_role": user_info.role,
-      "contractor_role": contractor.role,
+      "client_role": 'advertiser',
+      "contractor_role": 'publisher',
       "items": [
         {
           "contract_external_id": contract.contract_ord_id,

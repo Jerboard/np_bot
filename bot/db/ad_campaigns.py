@@ -13,6 +13,7 @@ class CampaignRow(t.Protocol):
     user_id: int
     contract_id: int
     brand: str
+    kktu: str
     service: str
     links: list[str]
 
@@ -27,6 +28,7 @@ CampaignTable: sa.Table = sa.Table(
     sa.Column('user_id', sa.BigInteger),
     sa.Column('contract_id', sa.Integer),
     sa.Column('brand', sa.String(255)),
+    sa.Column('kktu', sa.String(255)),
     sa.Column('service', sa.String(255)),
     sa.Column('status', sa.String(255), default=Status.ACTIVE.value),
     sa.Column('links', psql.ARRAY(sa.String(255))),
@@ -34,13 +36,14 @@ CampaignTable: sa.Table = sa.Table(
 
 
 # добавляет рекламную компанию
-async def add_campaign(user_id: int, contract_id: int, brand: str, service: str, links: list) -> int:
+async def add_campaign(user_id: int, contract_id: int, brand: str, kktu: str, service: str, links: list) -> int:
     now = datetime.now()
     query = CampaignTable.insert().values(
             created_at=now,
             user_id=user_id,
             contract_id=contract_id,
             brand=brand,
+            kktu=kktu,
             service=service,
             links=links,
         )

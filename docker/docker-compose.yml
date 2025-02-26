@@ -6,7 +6,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ../data_pg:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
     env_file:
       - ../docker/.env
@@ -39,6 +39,10 @@ services:
     env_file:
       - ../docker/.env
 
+networks:
+  default:
+    name: np_bot_default
+    external: true
 
 volumes:
   postgres_data:

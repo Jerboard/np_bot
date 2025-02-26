@@ -1,13 +1,19 @@
-import sys
-import logging
-import asyncio
-import os
 
-from init import log_error, set_main_menu, bot, scheduler
-from config import Config
-from handlers import dp
-from db.base_db import init_models
+from dotenv import load_dotenv
+load_dotenv('../docker/.env')
+
+import asyncio
+import logging
+import os
+import sys
+
+
 import utils as ut
+from config import Config
+from db.base_db import init_models
+from handlers import dp
+from init import log_error, set_main_menu, bot
+
 
 
 async def main() -> None:

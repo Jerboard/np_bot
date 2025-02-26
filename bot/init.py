@@ -1,5 +1,5 @@
 from aiogram import Dispatcher, Bot
-from aiogram.types import BotCommand
+from aiogram.types import BotCommand, ErrorEvent
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 from yookassa import Configuration
@@ -38,6 +38,7 @@ Configuration.secret_key = Config.yoo_secret_key
 async def set_main_menu():
     main_menu_commands = [
         BotCommand(command=f'/{Command.START.value}', description='Главное меню'),
+        BotCommand(command=f'/{Command.SUBSCRIPTION.value}', description='Управление подпиской'),
         BotCommand(command=f'/{Command.COUNTERAGENT.value}', description='Добавить контрагента'),
         BotCommand(command=f'/{Command.PLATFORM.value}', description='Добавить площадку'),
         BotCommand(command=f'/{Command.CONTRACT.value}', description='Добавить договор'),
@@ -45,6 +46,7 @@ async def set_main_menu():
         BotCommand(command=f'/{Command.TOKEN.value}', description='Промаркировать креатив'),
         BotCommand(command=f'/{Command.STATS.value}', description='Добавить статистику'),
         BotCommand(command=f'/{Command.ACTS.value}', description='Добавить акт'),
+        BotCommand(command=f'/{Command.GUIDES.value}', description='Инструкции к боту'),
         BotCommand(command=f'/{Command.HELP.value}', description='Написать в поддержку'),
     ]
 
@@ -60,7 +62,16 @@ async def set_main_menu():
 Добавить статистику /stats
 Добавить акт /acts
 Написать в поддержку /help
+Гайды /guides
 '''
+
+
+@dp.error()
+async def global_error_handler(event: ErrorEvent):
+    # This logs the exception with a traceback
+    logging.critical("Critical error caused by %s", event.exception, exc_info=True)
+    # Optionally, return True to signal that the error has been handled
+    return True
 
 
 # запись ошибок

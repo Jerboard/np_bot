@@ -1,3 +1,5 @@
+import inspect
+
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command as CommandFilter, StateFilter
 from aiogram.fsm.context import FSMContext
@@ -17,6 +19,7 @@ from enums import CB, Command, UserState, platform_dict, Role, Action
 # если не хочет выбирать платформу
 @dp.callback_query(lambda cb: cb.data.startswith(CB.NO_CHOOSE_PLATFORM.value))
 async def no_choose_platform(cb: CallbackQuery):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     await cb.message.answer("Вы можете в любой момент продолжить добавление рекламной площадки "
                             "нажав на соответствующий пункт в меню")
 
@@ -24,12 +27,14 @@ async def no_choose_platform(cb: CallbackQuery):
 # выбор платформы
 @dp.callback_query(lambda cb: cb.data.startswith(CB.PLATFORM_START.value))
 async def choose_platform(cb: CallbackQuery):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     await cb.message.answer("Выберите площадку:", reply_markup=kb.get_choose_platform_kb())
 
 
 # сохраняем платформу просим ссылку
 @dp.callback_query(lambda cb: cb.data.startswith(CB.PLATFORM_SELECT.value))
 async def collect_platform(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     _, platform = cb.data.split(':')
 
     await state.set_state(UserState.ADD_PLATFORM_NAME)
@@ -51,6 +56,7 @@ async def collect_platform(cb: CallbackQuery, state: FSMContext):
 # принимаем ссылку
 @dp.message(StateFilter(UserState.ADD_PLATFORM_NAME))
 async def collect_advertiser_link(msg: Message, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     entity = msg.entities[0].type if msg.entities else None
     if entity != MessageEntityType.URL:
         await msg.answer('❗️ Некорректная ссылка\n\nПришлите ссылку на аккаунт рекламораспространителя.')
@@ -71,6 +77,7 @@ async def collect_advertiser_link(msg: Message, state: FSMContext):
 # подтверждение ссылки
 @dp.callback_query(lambda cb: cb.data.startswith(CB.PLATFORM_CORRECT.value))
 async def handle_platform_verification(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     _, action = cb.data.split(':')
     if action == Action.YES:
         await state.set_state(UserState.ADD_PLATFORM_VIEW)
@@ -82,6 +89,7 @@ async def handle_platform_verification(cb: CallbackQuery, state: FSMContext):
 # Функция для проверки введенных данных и перехода к следующему шагу
 @dp.message(StateFilter(UserState.ADD_PLATFORM_VIEW))
 async def process_average_views(msg: Message, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     if msg.text.isdigit():
         await state.update_data(data={'view': int(msg.text)})
 
@@ -111,6 +119,7 @@ async def process_average_views(msg: Message, state: FSMContext):
 # выбор контрагента
 @dp.callback_query(lambda cb: cb.data.startswith(CB.PLATFORM_DIST.value))
 async def handle_contractor_selection(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     _, dist_ord_id_str = cb.data.split(':')
 
     await state.update_data(data={'dist_id': dist_ord_id_str})
@@ -120,6 +129,7 @@ async def handle_contractor_selection(cb: CallbackQuery, state: FSMContext):
 # завершение создания платформы. Следующий шаг
 @dp.callback_query(lambda cb: cb.data.startswith(CB.PLATFORM_FIN.value))
 async def handle_success_add_platform(cb: CallbackQuery):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     _, action = cb.data.split(':')
 
     if action == Action.ADD:

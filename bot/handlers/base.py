@@ -44,7 +44,20 @@ async def start_bot(
         else:
             name_label = f'ФИО: <b>{user.name}</b>\n'
 
+        subscription_text = ''
+        sub_data = await db.get_subscription(user.user_id)
+        tokens_left = sub_data.tokens_additional + sub_data.tokens_subscription
+        if sub_data.end_date:
+            subscription_text += f"Подписка до: {sub_data.end_date.strftime(Config.date_form)}"
+            if sub_data.is_cancelled:
+                subscription_text += ' (отменена)'
+        else:
+            subscription_text += f"У вас нет подписки."
+        subscription_text += f"\nОсталось токенов: <b>{tokens_left}</b>"
+        if not tokens_left:
+            subscription_text += f"\nОформите подписку или докупите токенов: /subscription"
         text = (f"Информация о вас:\n\n"
+                f"{subscription_text}\n\n"
                 f"{name_label}"
                 f"ИНН: <b>{user.inn}</b>\n"
                 f"Правовой статус: <b>{dt.juridical_type_map.get(user.j_type, user.j_type)}</b>\n"
@@ -299,7 +312,8 @@ async def creative_upload(msg: Message, state: FSMContext):
         await sent.delete()
 
 
-async def register_creative(data: dict, user_id: int, del_msg_id: int, state: FSMContext):
+async def register_creative(data: dict, user_id: int, state: FSMContext, del_msg_id: int = None):
+    print('[register_creative] Data:', data)
     creatives: list[dict] = data.get('creatives', [])
     creative_texts: list[str] = data.get('text', [])
 
@@ -335,6 +349,7 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int, state: FS
     response = await ut.send_creative_to_ord(
         creative_id=creative_ord_id,
         brand=campaign.brand,
+        kktu=campaign.kktu,
         creative_name=f'{contractor_name}',
         creative_text=creative_texts,
         description=campaign.service,
@@ -376,8 +391,17 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int, state: FS
     # trigger_time = datetime.now() + timedelta(minutes=1)
     scheduler.add_job(ut.check_post_link, DateTrigger(run_date=trigger_time), args=[creative_id, user_id])
 
-    await bot.delete_message(chat_id=user_id, message_id=del_msg_id)
+    if del_msg_id:
+        await bot.delete_message(chat_id=user_id, message_id=del_msg_id)
     await bot.send_message(chat_id=user_id, text=text, reply_markup=kb.get_end_creative_kb(creative_id))
+
+    print('--- Consuming 1 token')
+    subscription = await db.get_subscription(user_id)
+    await db.update_subscription(
+        user_id=user_id,
+        tokens_subscription=subscription.tokens_subscription - 1 if not subscription.tokens_additional else None,
+        tokens_additional=subscription.tokens_additional - 1 if subscription.tokens_additional else None,
+    )
 
     # подача акта
 
@@ -393,8 +417,9 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int, state: FS
     '''
 
     agency_contract = await db.get_agency_contract(user_id=user_id)
-    user_info = await db.get_user_info(user_id=user_id)
+    # user_info = await db.get_user_info(user_id=user_id)
     data_str = datetime.now().strftime(Config.ord_date_form)
+    # state_data = await state.get_data()
     act_data = {
         "contract_external_id": agency_contract.ord_id,
         # "contract_external_id": '6141027912-m-5772948261',
@@ -402,7 +427,7 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int, state: FS
         # "serial": ut.get_ord_id(creative_ord_id),
         "date_start": data_str,
         "date_end": data_str,
-        "amount": f'{Config.service_price:.2f}',
+        "amount": "400.00",
         "flags": [
             "vat_included"
         ],
@@ -413,7 +438,7 @@ async def register_creative(data: dict, user_id: int, del_msg_id: int, state: FS
             {
                 "contract_external_id": agency_contract.ord_id,
                 # "contract_external_id": '6141027912-m-5772948261',
-                "amount": f'{Config.service_price:.2f}',
+                "amount": "400.00",
                 "flags": [
                     "vat_included"
                 ],

@@ -97,10 +97,11 @@ async def get_creative_full_data(
         campaign_id: int = None,
         user_id: int = None,
         user_id_statistic: int = None,
-        for_monthly_report: bool = False
+        for_monthly_report: bool = False,
+        without_stats: bool = False,
 ) -> list[CreativeFullRow]:
     query = (
-        sa.select (
+        sa.select(
             CreativeTable.c.id.label('creative_id'),
             CreativeTable.c.created_at,
             CreativeTable.c.user_id,
@@ -111,11 +112,11 @@ async def get_creative_full_data(
             StatisticTable.c.url,
             StatisticTable.c.views,
             StatisticTable.c.platform_id,
-
         )
-        .select_from (
-            CreativeTable.join (
-                StatisticTable, CreativeTable.c.id == StatisticTable.c.creative_id,
+        .select_from(
+            CreativeTable.join(
+                StatisticTable,
+                CreativeTable.c.id == StatisticTable.c.creative_id,
                 isouter=True
             )
         )
@@ -136,15 +137,27 @@ async def get_creative_full_data(
         now = datetime.now()
         if now.day <= 15:
             now = datetime.now() - timedelta(days=15)
-
         query = query.where(
             sa.and_(
                 StatisticTable.c.ord_id.is_(None),
                 sa.extract('year', CreativeTable.c.created_at) == now.year,
                 sa.extract('month', CreativeTable.c.created_at) == now.month
-            ))
+            )
+        )
 
-    async with begin_connection () as conn:
-        result = await conn.execute (query)
+    # Exclude creatives with any statistic having a non-null ord_id when without_stats is True.
+    if without_stats:
+        stat_exists = sa.exists(
+            sa.select(1)
+            .select_from(StatisticTable)
+            .where(
+                StatisticTable.c.creative_id == CreativeTable.c.id,
+                StatisticTable.c.ord_id.isnot(None)
+            )
+        ).correlate(CreativeTable)
+        query = query.where(~stat_exists)
+
+    async with begin_connection() as conn:
+        result = await conn.execute(query)
 
     return result.all()

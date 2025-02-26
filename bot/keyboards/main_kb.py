@@ -2,6 +2,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder, InlineKeyboardMarkup
 
 import db
 from config import Config
+from enums.subscriptions import Subscription
 from init import log_error
 from enums import CB, Role, JStatus, Platform, Action
 
@@ -211,24 +212,17 @@ def get_end_creative_kb(creative_id: int, with_add: bool = True) -> InlineKeyboa
 
 
 # выбор карты
-def get_select_card_kb(save_cards: list[db.SaveCardRow]) -> InlineKeyboardMarkup:
+def get_select_card_kb() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text="Оплатить новой картой", callback_data=f"{CB.PAY_YK_NEW.value}:{1}")
-    for card in save_cards:
-        kb.button(text=f"Оплатить {card.card_info}", callback_data=f"{CB.PAY_YK_FAST.value}:{card.id}")
-
-    # markup.add(kb.button(text="Продолжить", callback_data=f"continue_creative_:{pay_id}:{campaign_id}"))
+    kb.button(text="Оплатить картой", callback_data=f"{CB.PAY_YK_NEW.value}:{1}")
     return kb.adjust(1).as_markup()
 
 
 # кб со ссылкой на оплату в юкассе
 # def get_yk_pay_kb(pay_id: str, campaign_id: str, save_cards: tuple) -> InlineKeyboardMarkup:
-def get_yk_pay_kb(pay_id: str, save_card: bool) -> InlineKeyboardMarkup:
+def get_yk_pay_kb(pay_id: str, amount_rub: int) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    checkbox = '✔️ ' if save_card else ''
-    edit_save_card = 0 if save_card else 1
-    kb.button(text=f"{checkbox} Сохранить карту", callback_data=f"{CB.PAY_YK_NEW.value}:{int(not save_card)}")
-    kb.button(text=f"Оплатить {Config.service_price} р.", url=Config.pay_link.format(payment_id=pay_id))
+    kb.button(text=f"Оплатить {amount_rub} р.", url=Config.pay_link.format(payment_id=pay_id))
     kb.button(text="Продолжить", callback_data=f"{CB.PAY_YK_CHECK.value}:{pay_id}")
     return kb.adjust(1).as_markup()
 
@@ -304,4 +298,44 @@ def get_end_act_kb(contract_id: int) -> InlineKeyboardMarkup:
 def get_send_monthly_statistic_kb(user_id: int) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     kb.button(text="📊 Отправить статистику в ОРД", callback_data=f'{CB.STATISTIC_MONTHLY.value}:{user_id}'),
+    return kb.adjust(1).as_markup()
+
+
+def get_subscription_main_kb(current_subscription: str | None, was_subscribed_at_least_once: bool) -> InlineKeyboardMarkup:
+    if current_subscription:
+        assert hasattr(Subscription, current_subscription), f"[get_subscription_main_kb] Invalid current_subscription: {current_subscription}"
+    kb = InlineKeyboardBuilder()
+
+    for subscription in Subscription:
+        if subscription == Subscription.TESTER and was_subscribed_at_least_once:
+            continue
+        if current_subscription != subscription:
+            kb.button(text=f"+ {subscription.value}", callback_data=f"{CB.SUBSCRIPTION_BUY_PLAN.value}:{subscription.name}")
+    if current_subscription:
+        kb.button(text='+ Приобрести больше токенов', callback_data=f"{CB.SUBSCRIPTION_BUY_TOKENS.value}")
+        kb.button(text='❌ Отменить подписку', callback_data=f"{CB.SUBSCRIPTION_CANCEL.value}")
+    return kb.adjust(1).as_markup()
+
+
+def get_subscription_buy_plan_confirm_kb() -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+
+    kb.button(text='Перейти к оплате', callback_data=f"{CB.PAY_YK_NEW.value}")
+    kb.button(text='Назад', callback_data=f"{CB.SUBSCRIPTION_BUY_BACK.value}")
+    return kb.adjust(1).as_markup()
+
+
+def get_subscription_buy_tokens_confirm_kb() -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+
+    kb.button(text='Перейти к оплате', callback_data=f"{CB.PAY_YK_NEW.value}")
+    kb.button(text='Назад', callback_data=f"{CB.SUBSCRIPTION_BUY_BACK.value}")
+    return kb.adjust(1).as_markup()
+
+
+def get_subscription_cancel_kb() -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+
+    kb.button(text='Отменить подписку', callback_data=f"{CB.SUBSCRIPTION_CANCEL_CONFIRMED.value}")
+    kb.button(text='Назад', callback_data=f"{CB.SUBSCRIPTION_BUY_BACK.value}")
     return kb.adjust(1).as_markup()

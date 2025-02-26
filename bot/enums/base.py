@@ -58,6 +58,8 @@ class Command(str, Enum):
     STATS = 'stats'
     ACTS = 'acts'
     HELP = 'help'
+    GUIDES = 'guides'
+    SUBSCRIPTION = 'subscription'
 
 
 class Platform(str, Enum):

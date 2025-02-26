@@ -12,17 +12,17 @@ class Config:
         token = os.getenv('TEST_TOKEN')  # test (test)
         bearer = os.getenv('VK_TEST_API_KEY')
         ord_url = 'https://api-sandbox.ord.vk.com'
-        service_price = 10
+        token_price = 10
         default_email = 'dgushch@gmail.com'
         yoo_account_id = '891569'
         yoo_secret_key = 'test_AtpTCVjudZJgiE8bVPHfO_4DLuURvqcTl65ZmbpSf7U'
-        bot_link = 'https://t.me/tushchkan_test_3_bot'
+        bot_link = os.getenv('TEST_BOT_LINK') or 'https://t.me/tushchkan_test_3_bot'
 
     else:
         token = os.getenv('TOKEN')
         bearer = os.getenv('VK_API_KEY')
         ord_url = 'https://api.ord.vk.com'
-        service_price = 500
+        token_price = 500
         default_email = 'mark.check@np61.ru'
         yoo_account_id = os.getenv('YOO_ACCOUNT_ID')
         yoo_secret_key = os.getenv('YOO_SECRET_KEY')
@@ -36,7 +36,7 @@ class Config:
     db_url = f'postgresql+asyncpg://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
 
     pay_link = os.getenv('PAY_LINK')
-    pay_exceptions_list = [243593145, 6658564172, 524275902]
+    pay_exceptions_list = [243593145, 6658564172, 524275902]#, 1042686923]
     my = 'my'
 
     # YOO_ACCOUNT_ID = int(os.getenv('YOO_ACCOUNT_ID'))

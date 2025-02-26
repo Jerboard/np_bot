@@ -9,3 +9,4 @@ from .media import *
 from .save_card import *
 from .statistic import *
 from .common import *
+from .subscriptions import *

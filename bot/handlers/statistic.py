@@ -1,3 +1,5 @@
+import inspect
+
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command as CommandFilter, StateFilter
 from aiogram.fsm.context import FSMContext
@@ -13,6 +15,7 @@ from enums import CB, Command, UserState, Action, Role
 # Отправка месячной статистики
 @dp.callback_query(lambda cb: cb.data.startswith(CB.STATISTIC_MONTHLY.value))
 async def statistic_select_page(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     active_creatives = await db.get_creative_full_data(user_id_statistic=cb.from_user.id, for_monthly_report=True)
 
     await state.set_state(UserState.SEND_STATISTIC)
@@ -28,6 +31,7 @@ async def statistic_select_page(cb: CallbackQuery, state: FSMContext):
 # Выбор страницы
 @dp.callback_query(lambda cb: cb.data.startswith(CB.STATISTIC_SELECT_PAGE.value))
 async def statistic_select_page(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     _, page_str, action = cb.data.split(':')
     page = int(page_str)
 
@@ -51,6 +55,7 @@ async def statistic_select_page(cb: CallbackQuery, state: FSMContext):
 # Сохраняет статистику по креативу
 @dp.message(StateFilter(UserState.SEND_STATISTIC))
 async def send_statistic(msg: Message, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     await msg.delete()
 
     if not msg.text.isdigit():

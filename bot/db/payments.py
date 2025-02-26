@@ -12,8 +12,8 @@ class PaymentRow(t.Protocol):
     created_at: datetime
     user_id: int
     pay_id: str
+    amount: int
     card: str
-    save_card: bool
 
 
 PaymentTable: sa.Table = sa.Table(
@@ -25,17 +25,17 @@ PaymentTable: sa.Table = sa.Table(
     sa.Column('user_id', sa.BigInteger),
     sa.Column('pay_id', sa.String(255)),
     sa.Column('amount', sa.Integer),
+    sa.Column('card', sa.String(255)),
 )
 
 
-# добавляет оплату
-async def add_payment(user_id: int, pay_id: str) -> None:
+async def add_payment(user_id: int, pay_id: str, amount: int) -> None:
     now = datetime.now()
     query = PaymentTable.insert().values(
             created_at=now,
             user_id=user_id,
             pay_id=pay_id,
-            amount=Config.service_price
+            amount=amount,
         )
 
     async with begin_connection() as conn:

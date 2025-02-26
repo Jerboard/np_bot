@@ -11,6 +11,7 @@ class UserState(str, Enum):
     ADD_PLATFORM_VIEW = 'add_platform_view'
 
     ADD_CAMPAIGN_BRAND = 'add_campaign_brand'
+    ADD_CAMPAIGN_KKTU = 'add_campaign_kktu'
     ADD_CAMPAIGN_SERVICE = 'add_campaign_service'
     ADD_CAMPAIGN_LINK = 'add_campaign_link'
 
@@ -21,6 +22,8 @@ class UserState(str, Enum):
     ADD_CONTRACT_END_DATE = 'add_contract_end_date'
     ADD_CONTRACT_SERIAL = 'add_contract_serial'
     ADD_CONTRACT_AMOUNT = 'add_contract_amount'
+
+    SUBSCRIPTION_INPUT_TOKENS_AMOUNT = 'subscription_input_tokens_amount'
 
     SEND_STATISTIC = 'send_statistic'
 

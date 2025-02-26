@@ -3,23 +3,21 @@ from yookassa import Payment, Refund
 import json
 import uuid
 
-from init import log_error
 from config import Config
 
 
-def create_simple_pay_link(email: str = None) -> str:
-    print(Config.service_price)
+def create_simple_pay_link(email: str = None, amount_rub: int = 500, metadata: dict = None) -> str:
     if not email:
         email = Config.default_email
 
-    payment = Payment.create({
+    payment_body = {
         "amount": {
-            "value": str(Config.service_price),
+            "value": str(amount_rub),
             "currency": "RUB"
         },
         "confirmation": {
             "type": "redirect",
-            "return_url": "https://t.me/markirovkaNP_bot"
+            "return_url": Config.bot_link,
         },
         "capture": True,
         "description": "Оплата услуг маркировки рекламы",
@@ -32,7 +30,7 @@ def create_simple_pay_link(email: str = None) -> str:
                         "description": f"Оплата услуг маркировки рекламы",
                         "quantity": "1.00",
                         "amount": {
-                            "value": Config.service_price,
+                            "value": str(amount_rub),
                             "currency": "RUB"
                         },
                         "vat_code": 0,
@@ -41,11 +39,16 @@ def create_simple_pay_link(email: str = None) -> str:
                     }
                 ]
             },
-    }, uuid.uuid4())
-    return payment.id
+    }
+
+    if metadata:
+        payment_body['metadata'] = metadata
+
+    return Payment.create(payment_body, uuid.uuid4()).id
 
 
 def create_recurrent_pay_link(email: str = Config.default_email) -> str:
+    raise NotImplementedError('[create_recurrent_pay_link] Function is not implemented.')
     payment = Payment.create({
         "amount": {
             "value": Config.service_price,
@@ -85,9 +88,10 @@ def create_recurrent_pay_link(email: str = Config.default_email) -> str:
 
 # вернуть деньги
 def refund_payment(pay_id: str):
-    refund = Refund.create({
+    raise NotImplementedError('[create_recurrent_pay_link] Function is not implemented.')
+    Refund.create({
         "amount": {
-            "value": Config.service_price,
+            "value": Config.token_price,
             "currency": "RUB"
         },
         "payment_id": pay_id
@@ -96,6 +100,7 @@ def refund_payment(pay_id: str):
 
 # быстрая оплата рекурент
 def fast_pay(last_pay_id: str, email: str = None) -> Payment:
+    raise NotImplementedError('[fast_pay] Function is not implemented.')
     if not email:
         email = Config.default_email
     payment = Payment.create({
@@ -136,6 +141,7 @@ def fast_pay(last_pay_id: str, email: str = None) -> Payment:
 
 # проверка оплаты по ю кассе
 def get_payment_card_info(payment: Payment) -> str:
+    raise NotImplementedError('[get_payment_card_info] Function is not implemented.')
     pay_data = json.loads(payment.payment_method.json())
     return f'{pay_data["card"]["card_type"]} **{pay_data["card"]["last4"]}'
 

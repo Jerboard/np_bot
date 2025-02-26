@@ -1,3 +1,5 @@
+import inspect
+
 from aiogram.types import Message
 from aiogram.types import CallbackQuery
 from aiogram.filters import CommandStart, StateFilter
@@ -19,6 +21,7 @@ from enums import CB, JStatus, UserState, Role, Step, Delimiter, ContractType
 # Согласие с обработкой данных
 @dp.callback_query(lambda cb: cb.data == CB.AGREE.value)
 async def agree(cb: CallbackQuery):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     await cb.answer('Спасибо за согласие!')
     await cb.message.answer("Укажите свой правовой статус", reply_markup=kb.get_register_kb())
 
@@ -26,12 +29,14 @@ async def agree(cb: CallbackQuery):
 # Обработчик нажатий на кнопки подтверждения
 @dp.callback_query(lambda cb: cb.data.startswith(CB.CONFIRM_USER.value))
 async def confirmation(cb: CallbackQuery):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     await cb.message.answer("✅ Данные подтверждены. Вы можете продолжить работу с ботом.")
 
 
 # Обработчик нажатий на кнопки подтверждения или смены роли
 @dp.callback_query(lambda cb: cb.data.startswith(CB.CHANGE_ROLE.value))
 async def select_role(cb: CallbackQuery):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     await cb.message.answer(
         text="Выберите свою роль:\n\n"
              "<b>Рекламодатель</b> - тот, кто заказывает и оплачивает рекламу.\n"
@@ -45,6 +50,7 @@ async def select_role(cb: CallbackQuery):
 # Обработчик для сбора информации о пользователе
 @dp.callback_query(lambda cb: cb.data.startswith(CB.RED_J_TYPE.value))
 async def collect_info(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     _, juridical_type = cb.data.split(':')
 
     if juridical_type == JStatus.IP:
@@ -63,6 +69,7 @@ async def collect_info(cb: CallbackQuery, state: FSMContext):
 # принимает имя
 @dp.message(StateFilter(UserState.USER_ADD_NAME))
 async def add_fio(msg: Message, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     data = await state.get_data()
 
     if data['j_type'] == JStatus.JURIDICAL and data['step'] == Step.NAME:
@@ -91,6 +98,7 @@ async def add_fio(msg: Message, state: FSMContext):
 # принимает ИНН
 @dp.message(StateFilter(UserState.USER_ADD_INN))
 async def add_inn(msg: Message, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     data = await state.get_data()
 
     if data['step'] == Step.INN:
@@ -161,6 +169,7 @@ async def add_inn(msg: Message, state: FSMContext):
 # Обработчик для выбора роли CB.USER_SELECT_ROLE.value
 @dp.callback_query(lambda cb: cb.data.startswith(CB.USER_SELECT_ROLE.value))
 async def collect_role(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     _, role = cb.data.split(':')
 
     data = await state.get_data()
@@ -207,6 +216,7 @@ async def collect_role(cb: CallbackQuery, state: FSMContext):
             contract_date=date_str,
             serial=str(cb.from_user.id)
         )
+        print('--- HERE ---')
 
         if is_update:
             await db.update_user(user_id=cb.from_user.id, role=role)

@@ -1,30 +1,33 @@
+import inspect
+
 from aiogram.types import Message, CallbackQuery
-from aiogram.filters import Command as CommandFilter, StateFilter
+from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.enums.message_entity_type import MessageEntityType
-from datetime import datetime
 from yookassa import Payment
-from asyncio import sleep
 
 import db
 import keyboards as kb
 from config import Config
-from init import dp, log_error, bot
+from init import dp
 import utils as ut
 from . import base
-from enums import CB, Command, UserState, Action, Role, Delimiter
+from enums import CB, UserState, Action
+from .base import register_creative
 
 
 # media_ord_id: 524275902-m-8688379168, 524275902-m-8258534790, 524275902-m-4984138183
 # Обработчик загрузки креатива
 @dp.message(StateFilter(UserState.ADD_CREATIVE))
 async def handle_creative_upload_st(msg: Message, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     await base.creative_upload(msg, state)
 
 
 # Обработчик выбора рекламной кампании CREATIVE_SELECT_CAMPAIGN
 @dp.callback_query(lambda cb: cb.data.startswith(CB.CREATIVE_SELECT_CAMPAIGN.value))
 async def creative_select_campaign(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     _, page_str, action = cb.data.split(':')
     page = int(page_str)
 
@@ -40,6 +43,7 @@ async def creative_select_campaign(cb: CallbackQuery, state: FSMContext):
             f'Выберите рекламную кампанию для этого креатива:\n'
             f'{page + 1}/{len(campaigns)}:\n\n'
             f'{campaigns[page].brand}\n'
+            f'{campaigns[page].kktu}\n'
             f'{campaigns[page].service}'
         ).replace('None', '')
 
@@ -52,84 +56,24 @@ async def creative_select_campaign(cb: CallbackQuery, state: FSMContext):
 
     else:
         await state.update_data(data={'campaign_id': page})
-        # data = await state.get_data()
 
-        # ищем карточки для быстрой оплаты
-        # sent = await cb.message.answer('⏳')
-        save_cards = await db.get_user_card(cb.from_user.id)
-
-        # pay_id = ut.create_pay_link(data['campaign_id'])
-        # await sent.delete()
-        await cb.message.answer(
-            text='Для получения токена (маркировки) произведите оплату.\n\n'
-                 'Выберите карту для оплаты или добавьте новую.',
-            reply_markup=kb.get_select_card_kb(save_cards)
-        )
-
-
-# создаёт ссылку на оплату
-@dp.callback_query(lambda cb: cb.data.startswith(CB.PAY_YK_NEW.value))
-async def pay_yk(cb: CallbackQuery, state: FSMContext):
-    _, save_card = cb.data.split(':')
-    save_card = bool(int(save_card))
-    await state.update_data(data={'save_card': save_card})
-
-    data = await state.get_data()
-    pay_id = data.get('pay_id')
-    if not pay_id:
-        user = await db.get_user_info(cb.from_user.id)
-        pay_id = ut.create_simple_pay_link(user.email)
-        await state.update_data(data={'pay_id': pay_id})
-
-    text = 'Перейдите по ссылке и оплатите маркировку креатива, затем нажмите "Продолжить"\n\n'
-
-    if save_card:
-        text += '✔️ Карта сохранена для быстрой оплаты\n\n'
-    else:
-        text += '❕ Поставьте галочку "Сохранить карту", чтоб сохранить данные для быстрой оплаты\n\n'
-
-    # text += 'Мы не храним данные о картах и пользователя все данные хранит сервис Юкасса...❓❓❓'
-
-    await cb.message.edit_text(text=text, reply_markup=kb.get_yk_pay_kb(pay_id, save_card))
-
-
-# Обработчик кнопки "Продолжить". Обычная оплата
-@dp.callback_query(lambda cb: cb.data.startswith(CB.PAY_YK_CHECK.value))
-async def choose_campaign(cb: CallbackQuery, state: FSMContext):
-    _, pay_id = cb.data.split(':')
-
-    sent = await cb.message.answer('⏳')
-
-    if cb.from_user.id in Config.pay_exceptions_list:
-        data = await state.get_data()
-        await base.register_creative(data=data, user_id=cb.from_user.id, del_msg_id=sent.message_id, state=state)
-        return
-
-    pay_data = Payment.find_one(pay_id)
-    if pay_data.paid:
-        # сохраняем данные платежа
-        await db.add_payment(
-            user_id=cb.from_user.id,
-            pay_id=pay_data.id,
-        )
-        data = await state.get_data()
-        if data.get('save_card'):
-            await db.add_card(
-                user_id=cb.from_user.id,
-                pay_id=pay_id,
-                card_info=ut.get_payment_card_info(pay_data)
+        subscription = await db.get_subscription(user_id=cb.from_user.id)
+        if (subscription.tokens_subscription + subscription.tokens_additional) > 0:
+            await register_creative(data=await state.get_data(), user_id=cb.from_user.id, state=state)
+        else:
+            # pay_id = ut.create_pay_link(data['campaign_id'])
+            # await sent.delete()
+            await state.update_data(data={'amount_rub': Config.token_price, 'payment_type': 'buy_one_token_for_marking'})
+            await cb.message.answer(
+                text='У вас нет доступных токенов для получения токена. Для получения токена (маркировки) произведите оплату.\n\n'
+                     'Управление подпиской: /subscription',
             )
-
-        await base.register_creative(data=data, user_id=cb.from_user.id, del_msg_id=sent.message_id, state=state)
-
-    else:
-        await sent.delete()
-        await cb.answer('❗️  Оплата не прошла нажмите "Оплатить" и совершите платёж', show_alert=True)
 
 
 # Быстрая оплата
 @dp.callback_query(lambda cb: cb.data.startswith(CB.PAY_YK_FAST.value))
 async def choose_campaign(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     _, card_id_str = cb.data.split(':')
     card_id = int(card_id_str)
 
@@ -165,6 +109,7 @@ async def choose_campaign(cb: CallbackQuery, state: FSMContext):
 # Добавление ссылки на креатив
 @dp.callback_query(lambda cb: cb.data.startswith(CB.CREATIVE_ADD_LINK.value))
 async def add_link(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     _, creative_id = cb.data.split(':')
 
     await state.set_state(UserState.ADD_CREATIVE_LINK)
@@ -177,6 +122,7 @@ async def add_link(cb: CallbackQuery, state: FSMContext):
 # Обработчик загрузки ссылки на креатив
 @dp.message(StateFilter(UserState.ADD_CREATIVE_LINK))
 async def handle_creative_upload(msg: Message, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     if msg.entities and msg.entities[0].type == MessageEntityType.URL:
         data = await state.get_data()
 
@@ -200,7 +146,7 @@ async def handle_creative_upload(msg: Message, state: FSMContext):
         else:
             platforms = await db.get_user_platforms(msg.from_user.id)
             text = f'Укажите платформу размещения <a href="{msg.text}">креатива</a>'
-            await msg.answer(text=text, reply_markup=kb.get_select_creative_platform_kb(platforms))
+            await msg.answer(text=text, reply_markup=kb.get_select_creative_platform_kb(platforms), disable_web_page_preview=True)
 
     else:
         await msg.answer('❌ Некорректный формат ссылки')
@@ -208,6 +154,7 @@ async def handle_creative_upload(msg: Message, state: FSMContext):
 
 @dp.callback_query(lambda cb: cb.data.startswith(CB.CREATIVE_SELECT_PLATFORM.value))
 async def link_done(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     _, platform_id = cb.data.split(':')
     data = await state.get_data()
 
@@ -229,6 +176,7 @@ async def link_done(cb: CallbackQuery, state: FSMContext):
 
 @dp.callback_query(lambda cb: cb.data.startswith(CB.CREATIVE_DONE.value))
 async def link_done(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     _, creative_id = cb.data.split(':')
 
     published_creative = await db.get_statistics(creative_id=int(creative_id))
@@ -246,8 +194,3 @@ async def link_done(cb: CallbackQuery, state: FSMContext):
             "пришлите ссылку на каждую площадку.",
             reply_markup=kb.get_end_creative_kb(int(creative_id))
         )
-
-
-@dp.message()
-async def handle_creative_upload(msg: Message, state: FSMContext):
-    await base.creative_upload(msg, state)

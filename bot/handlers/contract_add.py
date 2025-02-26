@@ -1,3 +1,5 @@
+import inspect
+
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command as CommandFilter, StateFilter
 from aiogram.fsm.context import FSMContext
@@ -16,6 +18,7 @@ from enums import CB, Command, UserState, JStatus, Role, Step, Delimiter
 # возвращает к старту контракта
 @dp.callback_query(lambda cb: cb.data.startswith(CB.CONTRACT_BACK))
 async def start_contract_hnd(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     await state.clear()
     await start_contract(cb.message, user_id=cb.from_user.id)
 
@@ -23,6 +26,7 @@ async def start_contract_hnd(cb: CallbackQuery, state: FSMContext):
 # Обработчик выбора контрагента
 @dp.callback_query(lambda cb: cb.data.startswith(CB.CONTRACT_DIST_SELECT))
 async def process_contract_start_date(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     _, dist_id_str = cb.data.split(':')
 
     await state.clear()
@@ -40,6 +44,7 @@ async def process_contract_start_date(cb: CallbackQuery, state: FSMContext):
 # Обработчик для обработки даты начала договора
 @dp.message(StateFilter(UserState.ADD_CONTRACT))
 async def process_contract_start_date(msg: Message, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     data = await state.get_data()
     error_text = ''
 
@@ -114,6 +119,7 @@ async def process_contract_start_date(msg: Message, state: FSMContext):
 # следующий шаг
 @dp.callback_query(lambda cb: cb.data.startswith('add_contract_next_step_check'))
 async def add_contract_next_step_check(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     _, step, answer_str = cb.data.split(':')
     answer = bool(int(answer_str))
 
@@ -156,6 +162,7 @@ async def add_contract_next_step_check(cb: CallbackQuery, state: FSMContext):
 # Обработчик для выбора НДС
 @dp.callback_query(lambda cb: cb.data.startswith(CB.CONTRACT_END.value))
 async def handle_vat_selection(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     user = await db.get_user_info(cb.from_user.id)
     data = await state.get_data()
     await state.clear()
@@ -167,11 +174,11 @@ async def handle_vat_selection(cb: CallbackQuery, state: FSMContext):
 
     contractor = await db.get_contractor(contractor_id=data['dist_id'])
     if user.role == Role.ADVERTISER:
-        client_external_id = f"{cb.from_user.id}"
+        client_external_id = str(cb.from_user.id)
         contractor_external_id = contractor.ord_id
     else:
         client_external_id = contractor.ord_id
-        contractor_external_id = f"{cb.from_user.id}"
+        contractor_external_id = str(cb.from_user.id)
 
     response = await ut.send_contract_to_ord(
         ord_id=ord_id,
@@ -204,13 +211,3 @@ async def handle_vat_selection(cb: CallbackQuery, state: FSMContext):
     else:
         await cb.message.answer("Произошла ошибка при регистрации договора в ОРД.", reply_markup=kb.get_help_button())
         # logging.error(f"Error registering contract in ORD: {response}")
-
-
-
-
-
-
-# else:
-#     await message.answer("Произошла ошибка. Данные о договоре не найдены.")
-#     logging.error(
-#         f"Contract data not found for chat_id: {chat_id}, contractor_id: {contractor_id}, ord_id: {ord_id}")

@@ -1,3 +1,5 @@
+import inspect
+
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command as CommandFilter, StateFilter
 from aiogram.fsm.context import FSMContext
@@ -22,6 +24,7 @@ from enums import CB, Command, UserState, JStatus, Role, Delimiter
 
 @dp.callback_query(lambda cb: cb.data == CB.NO_ADVERTISER.value)
 async def handle_no_advertiser(cb: CallbackQuery):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     await cb.message.answer(
         "Вы можете в любой момент продолжить добавление контрагента нажав на соответствующий пункт в меню"
     )
@@ -30,6 +33,7 @@ async def handle_no_advertiser(cb: CallbackQuery):
 # создаём контрагента первый этап
 @dp.callback_query(lambda cb: cb.data.startswith(CB.REGISTER_ADVERTISER_ENTITY.value))
 async def register_advertiser_entity(cb: CallbackQuery):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     await cb.message.answer(
         "Укажите правовой статус вашего контрагента",
         reply_markup=kb.get_register_advertiser_entity_kb()
@@ -39,6 +43,7 @@ async def register_advertiser_entity(cb: CallbackQuery):
 # Обработчик для сбора информации о контрагентах
 @dp.callback_query(lambda cb: cb.data.startswith(CB.ADD_ADVERTISER.value))
 async def collect_advertiser_info(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     _, j_type = cb.data.split(':')
 
     await state.set_state(UserState.ADD_ADVERTISER_NAME)
@@ -55,6 +60,7 @@ async def collect_advertiser_info(cb: CallbackQuery, state: FSMContext):
 # принимает имя контрагента
 @dp.message(StateFilter(UserState.ADD_ADVERTISER_NAME))
 async def add_advisor_name(msg: Message, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     await state.set_state(UserState.ADD_ADVERTISER_INN)
     await state.update_data(data={'name': msg.text})
     data = await state.get_data()
@@ -75,6 +81,7 @@ async def add_advisor_name(msg: Message, state: FSMContext):
 # Обработчик для сбора ИНН контрагента
 @dp.message(StateFilter(UserState.ADD_ADVERTISER_INN))
 async def inn_collector_advertiser(msg: Message, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     data = await state.get_data()
 
     if not ut.validate_inn(msg.text, j_type=data['j_type']):
@@ -111,7 +118,7 @@ async def inn_collector_advertiser(msg: Message, state: FSMContext):
 
     # Функция для обработки ответа от ОРД и дальнейшего выполнения кода для контрагента
     if response and response in [200, 201]:
-        # async def add_campaign(user_id: int, contract_id: int, brand: str, service: str, links: list) -> int:
+        # async def add_campaign(user_id: int, contract_id: int, brand: str, kktu: str, service: str, links: list) -> int:
         contractor_id = await db.add_contractor(
             user_id=msg.from_user.id,
             name=data['name'],
@@ -139,12 +146,14 @@ async def inn_collector_advertiser(msg: Message, state: FSMContext):
 # Обработчик для кнопок после успешного добавления контрагента
 @dp.callback_query(lambda cb: cb.data.startswith(CB.ADD_ANOTHER_DISTRIBUTOR.value))
 async def handle_success_add_distributor(cb: CallbackQuery):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     await register_advertiser_entity(cb)
 
 
 # Обработчик для кнопок после успешного добавления контрагента
 @dp.callback_query(lambda cb: cb.data.startswith(CB.CONTINUE.value))
 async def handle_success_add_distributor(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     _, contractor_id_str = cb.data.split(':')
     contractor_id = int(contractor_id_str)
 

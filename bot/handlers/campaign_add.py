@@ -1,3 +1,6 @@
+import inspect
+import re
+
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command as CommandFilter, StateFilter
 from aiogram.fsm.context import FSMContext
@@ -9,6 +12,7 @@ import keyboards as kb
 from config import Config
 from init import dp
 import utils as ut
+from utils import KKTUS
 from . import base
 from enums import CB, Command, UserState, Action, Role, Step
 
@@ -25,7 +29,8 @@ from enums import CB, Command, UserState, Action, Role, Step
 
 # Смена страницы контрактов
 @dp.callback_query(lambda cb: cb.data.startswith(CB.CONTRACT_PAGE.value))
-async def save_brand(cb: CallbackQuery, state: FSMContext):
+async def change_pageee(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     _, page_str, action = cb.data.split(':')
     page = int(page_str)
 
@@ -54,8 +59,44 @@ async def save_brand(cb: CallbackQuery, state: FSMContext):
 # Обработчик для сохранения бренда
 @dp.message(StateFilter(UserState.ADD_CAMPAIGN_BRAND))
 async def save_brand(msg: Message, state: FSMContext):
-    await state.set_state(UserState.ADD_CAMPAIGN_SERVICE)
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
+    await state.set_state(UserState.ADD_CAMPAIGN_KKTU)
     await state.update_data(data={'brand': msg.text})
+    text = '''Укажите ККТУ.
+
+Как правильно определить ККТУ для товара или услуги  
+
+1. Открываем ККТУ по <a href="https://docs.google.com/spreadsheets/d/13Sp_MHIqLmRRJ85hfin2lppPkmub0oaSjdyHh9pZGyQ/edit?usp=sharing">этой ссылке</a> и смотрим его структуру. В нём есть три уровня:  
+   - 1 уровень – общие категории (например, "Одежда").  
+   - 2 уровень – подкатегории (например, "Верхняя одежда").  
+   - 3 уровень – конкретные товары/услуги (например, "Куртки").  
+
+2. Находим свой товар или услугу. Идём сверху вниз:  
+   - Сначала выбираем общую категорию.  
+   - Затем подкатегорию, которая ближе всего подходит.  
+   - В конце выбираем конкретное название.  
+
+Готово! Теперь у вас есть точный ККТУ.'''
+    await msg.answer(text=text, disable_web_page_preview=True)
+
+
+# Обработчик для сохранения бренда
+@dp.message(StateFilter(UserState.ADD_CAMPAIGN_KKTU))
+async def save_kktu(msg: Message, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
+
+    # Validate KKTU:
+    kktu = re.sub(r'\D+', '.', msg.text).split('.')
+    if len(kktu) != 3:
+        await msg.answer('Неверный формат. Пример кода ККТУ: 16.1.1')
+        return
+    kktu = '.'.join(kktu)
+    if kktu not in KKTUS:
+        await msg.answer('Такой ККТУ не существует. Введите существующий код ККТУ')
+        return
+
+    await state.set_state(UserState.ADD_CAMPAIGN_SERVICE)
+    await state.update_data(data={'kktu': msg.text})
     # await msg.answer("Бренд сохранен.")
     msg = await msg.answer(
         text="Кратко опишите товар или услугу, которые вы планируете рекламировать (не более 60 символов)."
@@ -65,6 +106,7 @@ async def save_brand(msg: Message, state: FSMContext):
 # Обработчик для сохранения услуги
 @dp.message(StateFilter(UserState.ADD_CAMPAIGN_SERVICE))
 async def save_service(msg: Message, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     await state.set_state(UserState.ADD_CAMPAIGN_LINK)
     await state.update_data(data={'service': msg.text[:60]})
 
@@ -77,6 +119,7 @@ async def save_service(msg: Message, state: FSMContext):
 # Обработчик для сохранения целевой ссылки
 @dp.message(StateFilter(UserState.ADD_CAMPAIGN_LINK))
 async def save_target_link(msg: Message, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     target_link = msg.text
     if not target_link:
         await msg.answer('❌ Неверный формат. Отправьте ссылку сообщением')
@@ -98,6 +141,7 @@ async def save_target_link(msg: Message, state: FSMContext):
 
 @dp.callback_query(lambda cb: cb.data.startswith(CB.CAMPAIGN_ADD_ANOTHER_LINK.value))
 async def handle_additional_link(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     _, action = cb.data.split(':')
     if action == '1':
         await state.set_state(UserState.ADD_CAMPAIGN_LINK)
@@ -113,6 +157,7 @@ async def handle_additional_link(cb: CallbackQuery, state: FSMContext):
         await cb.message.answer(
             f"❕ Проверьте, правильно ли указана информация о рекламной кампании:\n\n"
             f"<b>Бренд:</b> {data['brand']}\n"
+            f"<b>ККТУ:</b> {data['kktu']}\n"
             f"<b>Услуга:</b> {data['service']}\n"
             f"{links_str}",
             reply_markup=kb.get_confirm_ad_campaign_kb(),
@@ -123,6 +168,7 @@ async def handle_additional_link(cb: CallbackQuery, state: FSMContext):
 # Обработка выбора подтверждения, изменения или удаления рекламной кампании CAMPAIGN_ADD_CONFIRM
 @dp.callback_query(lambda cb: cb.data.startswith(CB.CAMPAIGN_ADD_CONFIRM.value))
 async def handle_ad_campaign_callback(cb: CallbackQuery, state: FSMContext):
+    print(f"[{inspect.stack()[0][3]}]")  # print func name
     _, action = cb.data.split(':')
     if action == Action.ADD:
         data = await state.get_data()
@@ -131,12 +177,13 @@ async def handle_ad_campaign_callback(cb: CallbackQuery, state: FSMContext):
             user_id=cb.from_user.id,
             contract_id=data['contract_id'],
             brand=data['brand'],
+            kktu=data['kktu'],
             service=data['service'],
             links=data.get('links', []),
         )
 
         await cb.message.answer(
-            f"Рекламная кампания с брендом {data['brand']} успешно создана!"
+            f"Рекламная кампания с брендом {data['brand']} (ККТУ {data['kktu']}) успешно создана!"
         )
         await base.add_creative_start(cb.message, state, campaign_id)
 

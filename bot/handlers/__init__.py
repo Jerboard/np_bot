@@ -6,6 +6,7 @@ from .campaign_add import dp
 from .choose_platform import dp
 from .contract_add import dp
 from .acts import dp
+from .subscription import dp
 from .creative_add import dp
 from .exceptions import dp
 
