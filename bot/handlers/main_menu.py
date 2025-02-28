@@ -164,7 +164,7 @@ async def command_help(msg: Message, state: FSMContext):
     await state.clear()
 
     await msg.answer(
-        'Напишите свой вопрос или пожелание по улучшению сервиса @id_np61',
+        'Напишите свой вопрос или пожелание по улучшению сервиса @Andrey_Tatarnik',
         reply_markup=kb.get_help_button()
     )
 
